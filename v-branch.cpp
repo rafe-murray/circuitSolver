@@ -1,6 +1,9 @@
 #include "v-branch.h"
-Variable VoltageSource::current() {
-  Variable current;
-  current.known = false;
-  return current;
+Expression VoltageSource::current() {
+  set<Variable *> vars;
+  vars.insert(_current);
+  expressionFunction fn = [&](vector<double> args, expressionMap map) {
+    return args[map[_current]];
+  };
+  return Expression(vars, fn);
 }
