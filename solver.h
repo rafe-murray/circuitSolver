@@ -11,5 +11,6 @@ namespace Solver {
  * that describes the total error or deviation from the correct values
  */
 std::vector<double> solve(nlopt::vfunc errFunc);
+void solveCircuit(CircuitGraph graph);
 
 } // namespace Solver

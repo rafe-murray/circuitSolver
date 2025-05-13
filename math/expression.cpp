@@ -1,85 +1,61 @@
 #include "expression.h"
+#include "additionNode.h"
+#include "divisionNode.h"
+#include "exponentiationNode.h"
+#include "expressionNode.h"
+#include "multiplicationNode.h"
+#include "negationNode.h"
+#include "subtractionNode.h"
+#include "variable.h"
 
-Expression::Expression(set<Variable *> vars, expressionFunction fn)
-    : vars(vars), fn(fn) {}
-
-Expression::Expression()
-    : Expression(set<Variable *>(),
-                 [](vector<double>, expressionMap) { return 0.0; }) {}
-
-Expression Expression::operator+(const Expression &other) {
-  set<Variable *> newVars = vars;
-  newVars.insert(other.vars.begin(), other.vars.end());
-
-  expressionFunction newFn = [&](vector<double> args, expressionMap) {
-    expressionMap varMapping;
-    unsigned i = 0;
-    for (auto var : newVars) {
-      varMapping[var] = i;
-      i++;
-    }
-    return fn(args, varMapping) + other.fn(args, varMapping);
-  };
-
-  return Expression(newVars, newFn);
+Expression::Expression() : Expression(new Variable(0)) {}
+Expression Expression::operator+(const Expression &rhs) const {
+  return Expression(new AdditionNode(root, rhs.root));
+}
+Expression Expression::operator-(const Expression &rhs) const {
+  return Expression(new SubtractionNode(root, rhs.root));
+}
+Expression Expression::operator*(const Expression &rhs) const {
+  return Expression(new MultiplicationNode(root, rhs.root));
+}
+Expression Expression::operator/(const Expression &rhs) const {
+  return Expression(new DivisionNode(root, rhs.root));
+}
+Expression Expression::operator-() const {
+  return Expression(new NegationNode(root));
+}
+Expression Expression::exp() const {
+  return Expression(new ExponentiationNode(root));
 }
 
-Expression Expression::operator-(const Expression &other) {
-  set<Variable *> newVars = vars;
-  newVars.insert(other.vars.begin(), other.vars.end());
-
-  expressionFunction newFn = [&](vector<double> args, expressionMap) {
-    expressionMap varMapping;
-    unsigned i = 0;
-    for (auto var : newVars) {
-      varMapping[var] = i;
-      i++;
-    }
-    return fn(args, varMapping) - other.fn(args, varMapping);
-  };
-
-  return Expression(newVars, newFn);
+set<const Variable *> Expression::getUnknowns() {
+  set<const Variable *> unknowns;
+  this->root->getUnknowns(unknowns);
+  return unknowns;
 }
-
-Expression Expression::square() {
-  expressionFunction newFn = [&](vector<double> args, expressionMap map) {
-    return fn(args, map) * fn(args, map);
-  };
-  return Expression(vars, newFn);
-}
-
-function<double(vector<double>)> Expression::toFunction() {
-  expressionMap varMapping;
+expressionMap Expression::getMap() {
+  expressionMap map;
   unsigned i = 0;
-  for (auto var : vars) {
-    varMapping[var] = i;
+  for (auto unknown : getUnknowns()) {
+    map[(Variable *)unknown] = i;
     i++;
   }
-
-  function<double(vector<double>)> newFn = [&](vector<double> args) {
-    vector<double> localArgs(vars.size());
-    auto argsIter = args.begin();
-    auto localArgsIt = localArgs.begin();
-    for (auto var : vars) {
-      if (var->known) {
-        *localArgsIt = var->value;
-      } else {
-        *localArgsIt = *argsIter;
-        argsIter++;
-      }
-      localArgsIt++;
-    }
-    return fn(localArgs, varMapping);
-  };
-  return newFn;
+  return map;
+}
+void *Expression::getFunctionData() {
+  expressionMap map = getMap();
+  FunctionData *data = new FunctionData(this->root, map);
+  return (void *)data;
 }
 
-vector<Variable *> Expression::getUnknowns() {
-  vector<Variable *> unknowns;
-  for (Variable *var : vars) {
-    if (!var->known) {
-      unknowns.push_back(var);
+nlopt::vfunc Expression::toFunction() {
+  return [](const vector<double> &args, vector<double> &grad, void *ref) {
+    FunctionData *data = (FunctionData *)ref;
+    ExpressionNode *expression = data->expression;
+    double returnVal = expression->compute(args, data->map);
+    for (auto entry : data->map) {
+      grad[entry.second] = entry.first->gradient;
     }
-  }
-  return unknowns;
+    return returnVal;
+  };
 }

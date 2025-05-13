@@ -68,7 +68,7 @@ template <typename V, typename E> vector<E> Graph<V, E>::getIncident(V v) {
   return edges;
 }
 
-template <typename V, typename E> vector<V> Graph<V, E>::getVertices() {
+template <typename V, typename E> vector<V> Graph<V, E>::getVertices() const {
   vector<V> vertices;
   for (const auto &[v, _] : adjacencyList) {
     vertices.push_back(v);

@@ -1,28 +1,34 @@
-#include "variable.h"
-#include <autodiff/reverse/var.hpp>
-#include <cstdlib>
-#include <functional>
-#include <set>
-#include <unordered_map>
-#include <vector>
+#ifndef EXPRESSION_H
+#define EXPRESSION_H
 
-using namespace std;
+#include "expressionNode.h"
 
-typedef unordered_map<Variable *, unsigned> expressionMap;
-typedef function<double(vector<double>, expressionMap)> expressionFunction;
+struct FunctionData {
+  ExpressionNode *expression;
+  const expressionMap map;
+  FunctionData(ExpressionNode *expression, const expressionMap map)
+      : expression(expression), map(map) {}
+};
 
 class Expression {
 public:
   Expression();
-  Expression(set<Variable *> vars, expressionFunction fn);
-  Expression operator+(const Expression &other);
-  Expression operator-(const Expression &other);
-  const Expression &operator+=(const Expression &other);
-  Expression square();
-  vector<Variable *> getUnknowns();
+  Expression operator+(const Expression &rhs) const;
+  Expression operator-(const Expression &rhs) const;
+  Expression operator*(const Expression &rhs) const;
+  Expression operator/(const Expression &rhs) const;
+  Expression operator-() const;
+  Expression exp() const;
+
+  nlopt::vfunc toFunction();
+  void *getFunctionData();
+  set<const Variable *> getUnknowns();
+  expressionMap getMap();
 
 private:
-  set<Variable *> vars;
-  expressionFunction fn;
-  function<double(vector<double>)> toFunction();
+  Expression(ExpressionNode *root);
+  ExpressionNode *root;
+  friend class Variable;
 };
+
+#endif

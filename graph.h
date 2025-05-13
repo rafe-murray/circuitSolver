@@ -59,7 +59,13 @@ public:
    * Gets all vertices in the graph
    * @return a vector containing all the vertices in the graph
    */
-  vector<V> getVertices();
+  vector<V> getVertices() const;
+
+  /**
+   * Gets all edges in the graph
+   * @return a vector containing all the edges in the graph
+   */
+  vector<E> getEdges() const;
 
 private:
   /**

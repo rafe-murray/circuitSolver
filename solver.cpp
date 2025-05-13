@@ -1,13 +1,10 @@
-#include <nlopt.hpp>
-#include <vector>
-
-// TODO: add a linear solver for faster solving time on linear problems
-
-namespace Solver {
-/**
- * Returns a vector with the solved values of the unkown variables in the
- * function Takes the function to solve as an argument. errFunc is a function
- * that describes the total error or deviation from the correct values
- */
-std::vector<double> solve(nlopt::vfunc errFunc) {}
-} // namespace Solver
+#include "solver.h"
+void Solver::solveCircuit(CircuitGraph graph) {
+  Expression error = graph.getErrorExpression();
+  set<const Variable *> unknowns = error.getUnknowns();
+  nlopt::opt opt(nlopt::LD_MMA, unknowns.size());
+  opt.set_min_objective(error.toFunction(), error.getFunctionData());
+  double resultVal;
+  vector<double> solution(unknowns.size());
+  nlopt::result result = opt.optimize(solution, resultVal);
+}
