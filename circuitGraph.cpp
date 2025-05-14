@@ -15,3 +15,12 @@ Expression CircuitGraph::getErrorExpression() {
   }
   return error;
 }
+
+Expression CircuitGraph::getNodeCurrents(Variable node) {
+  Expression nodeCurrents;
+  for (Branch branch : graph.getIncident(node)) {
+    Expression current = branch.current();
+    nodeCurrents = nodeCurrents + current * current;
+  }
+  return nodeCurrents;
+}
