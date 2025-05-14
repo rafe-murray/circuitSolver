@@ -8,7 +8,7 @@ class SubtractionNode : public ExpressionNode {
 public:
   SubtractionNode(ExpressionNode *lhs, ExpressionNode *rhs)
       : lhs(lhs), rhs(rhs) {}
-  double compute(vector<double> values, expressionMap map) {
+  double compute(const vector<double> &values, const expressionMap &map) {
     value = lhs->compute(values, map) - rhs->compute(values, map);
     return value;
   }

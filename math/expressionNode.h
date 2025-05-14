@@ -1,7 +1,6 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
-#include <nlopt.hpp>
 #include <set>
 #include <unordered_map>
 #include <vector>
@@ -19,11 +18,14 @@ typedef unordered_map<Variable *, unsigned> expressionMap;
 
 class ExpressionNode {
 public:
+  virtual ~ExpressionNode() {}
   virtual double compute(const vector<double> &values,
-                         const expressionMap &map) const;
-  virtual void getUnknowns(set<const Variable *> &unknowns) const;
+                         const expressionMap &map) {
+    return 0.0;
+  }
+  virtual void getUnknowns(set<const Variable *> &unknowns) const {}
 
-  virtual void updateChildrenGradient();
+  virtual void updateChildrenGradient() {}
   double gradient;
   double value;
 };

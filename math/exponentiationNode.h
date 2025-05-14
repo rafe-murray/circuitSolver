@@ -8,7 +8,7 @@
 class ExponentiationNode : public ExpressionNode {
 public:
   ExponentiationNode(ExpressionNode *child) : child(child) {}
-  double compute(vector<double> values, expressionMap map) {
+  double compute(const vector<double> &values, const expressionMap &map) {
     value = std::exp(child->compute(values, map));
     return value;
   }

@@ -15,13 +15,13 @@
 class Variable : public ExpressionNode {
 public:
   operator Expression() { return Expression(this); }
+  bool operator==(const Variable &rhs) const { return this == &rhs; }
   double value;
   bool known;
   Variable() : known(false){};
   Variable(double value) : value(value), known(true){};
-  double compute(vector<double> values,
-                 unordered_map<Variable *, unsigned> map) {
-    return values[map[this]];
+  double compute(const vector<double> &values, const expressionMap &map) {
+    return values[map.at(this)];
   };
   void updateChildrenGradient() {}
   void getUnknowns(set<const Variable *> &unknowns) const {
@@ -29,5 +29,14 @@ public:
       unknowns.insert(this);
   }
 };
+
+namespace std {
+template <> struct hash<Variable> {
+  size_t operator()(const Variable &v) const {
+    hash<const Variable *> pointerHash;
+    return pointerHash(&v);
+  }
+};
+}; // namespace std
 
 #endif

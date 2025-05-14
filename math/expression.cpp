@@ -9,6 +9,7 @@
 #include "variable.h"
 
 Expression::Expression() : Expression(new Variable(0)) {}
+Expression::Expression(ExpressionNode *root) : root(root) {}
 Expression Expression::operator+(const Expression &rhs) const {
   return Expression(new AdditionNode(root, rhs.root));
 }
@@ -48,14 +49,18 @@ void *Expression::getFunctionData() {
   return (void *)data;
 }
 
-nlopt::vfunc Expression::toFunction() {
-  return [](const vector<double> &args, vector<double> &grad, void *ref) {
-    FunctionData *data = (FunctionData *)ref;
-    ExpressionNode *expression = data->expression;
-    double returnVal = expression->compute(args, data->map);
-    for (auto entry : data->map) {
-      grad[entry.second] = entry.first->gradient;
-    }
-    return returnVal;
-  };
+/*nlopt::vfunc Expression::toFunction() {*/
+/*  return [](const vector<double> &args, vector<double> &grad, void *ref) {*/
+/*    FunctionData *data = (FunctionData *)ref;*/
+/*    ExpressionNode *expression = data->expression;*/
+/*    double returnVal = expression->compute(args, data->map);*/
+/*    for (auto entry : data->map) {*/
+/*      grad[entry.second] = entry.first->gradient;*/
+/*    }*/
+/*    return returnVal;*/
+/*  };*/
+/*}*/
+
+bool operator==(const Variable &lhs, const Variable &rhs) {
+  return &lhs == &rhs;
 }

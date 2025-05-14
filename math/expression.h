@@ -2,6 +2,7 @@
 #define EXPRESSION_H
 
 #include "expressionNode.h"
+/*#include <nlopt.hpp>*/
 
 struct FunctionData {
   ExpressionNode *expression;
@@ -20,7 +21,7 @@ public:
   Expression operator-() const;
   Expression exp() const;
 
-  nlopt::vfunc toFunction();
+  /*nlopt::vfunc toFunction();*/
   void *getFunctionData();
   set<const Variable *> getUnknowns();
   expressionMap getMap();

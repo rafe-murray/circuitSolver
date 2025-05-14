@@ -7,7 +7,7 @@
 class NegationNode : public ExpressionNode {
 public:
   NegationNode(ExpressionNode *child) : child(child) {}
-  double compute(vector<double> values, expressionMap map) {
+  double compute(const vector<double> &values, const expressionMap &map) {
     value = -child->compute(values, map);
     return value;
   }
