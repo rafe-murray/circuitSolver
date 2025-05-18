@@ -1,11 +1,10 @@
 #include "circuitGraph.h"
 #include "math/expression.h"
-#include "math/variable.h"
 
-CircuitGraph::CircuitGraph(Graph<Variable, Branch> graph) : graph(graph) {}
+CircuitGraph::CircuitGraph(Graph<Expression, Branch> graph) : graph(graph) {}
 Expression CircuitGraph::getErrorExpression() {
-  Expression error;
-  for (Variable node : graph.getVertices()) {
+  Expression error(0.0);
+  for (Expression node : graph.getVertices()) {
     Expression netCurrent = getNodeCurrents(node);
     error = error + netCurrent * netCurrent;
   }
@@ -16,10 +15,10 @@ Expression CircuitGraph::getErrorExpression() {
   return error;
 }
 
-Expression CircuitGraph::getNodeCurrents(Variable node) {
-  Expression nodeCurrents;
+Expression CircuitGraph::getNodeCurrents(Expression node) {
+  Expression nodeCurrents(0.0);
   for (Branch branch : graph.getIncident(node)) {
-    Expression current = branch.current();
+    Expression current = branch.getCurrent();
     nodeCurrents = nodeCurrents + current * current;
   }
   return nodeCurrents;

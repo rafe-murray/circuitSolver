@@ -22,7 +22,7 @@ public:
    * @param v - the vertex to add
    * @return true on succesful insertion
    */
-  bool addVertex(V v) {
+  bool addVertex(const V &v) {
     // Only add the vertex if it doesn't already exist
     if (adjacencyList.count(v) == 0) {
       adjacencyList[v] = unordered_map<V, E>();
@@ -36,7 +36,7 @@ public:
    * @param v - the vertex to remove
    * @return true if the vertex was part of the graph before and it is no longer
    */
-  bool removeVertex(V v) {
+  bool removeVertex(const V &v) {
     if (adjacencyList.count(v) == 0)
       return false;
 
@@ -55,7 +55,7 @@ public:
    * @param e - the edge to add
    * @return true if the edge was not part of the graph before and now it is
    */
-  bool addEdge(E e) {
+  bool addEdge(const E &e) {
     V v1 = e.v1;
     V v2 = e.v2;
 
@@ -78,7 +78,7 @@ public:
    * @param e - the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(E e) { return removeEdge(e.v1, e.v2); }
+  bool removeEdge(const E &e) { return removeEdge(e.v1, e.v2); }
 
   /**
    * Removes an edge from the graph
@@ -86,7 +86,7 @@ public:
    * @param v2 - the other endpoint of the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(V v1, V v2) {
+  bool removeEdge(const V &v1, const V &v2) {
     if (adjacencyList.count(v1) && adjacencyList[v1].count(v2)) {
       adjacencyList[v1].erase(v2);
       adjacencyList[v2].erase(v1);
@@ -101,7 +101,7 @@ public:
    * @param v - the vertex which the edges are incident on
    * @return a vector containing all incident edges
    */
-  vector<E> getIncident(V v) const {
+  vector<E> getIncident(const V &v) const {
     vector<E> edges;
     auto it1 = adjacencyList.find(v);
     if (it1 != adjacencyList.end()) {

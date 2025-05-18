@@ -2,11 +2,13 @@
 #define MULTIPLICATIONNODE_H
 
 #include "expressionNode.h"
+#include <memory>
 #include <vector>
 
 class MultiplicationNode : public ExpressionNode {
 public:
-  MultiplicationNode(ExpressionNode *lhs, ExpressionNode *rhs)
+  MultiplicationNode(shared_ptr<ExpressionNode> lhs,
+                     shared_ptr<ExpressionNode> rhs)
       : lhs(lhs), rhs(rhs) {}
   double compute(const vector<double> &values, const expressionMap &map) {
     value = lhs->compute(values, map) * rhs->compute(values, map);
@@ -22,10 +24,16 @@ public:
     lhs->getUnknowns(unknowns);
     rhs->getUnknowns(unknowns);
   }
+  void print(ostream &out, int indent = 0) const {
+    out << string(indent, ' ') << "MultiplicationNode (value=" << value << ")"
+        << endl;
+    lhs->print(out, indent + 1);
+    rhs->print(out, indent + 1);
+  }
 
 private:
-  ExpressionNode *lhs;
-  ExpressionNode *rhs;
+  shared_ptr<ExpressionNode> lhs;
+  shared_ptr<ExpressionNode> rhs;
 };
 
 #endif

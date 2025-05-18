@@ -7,26 +7,35 @@
 #include "negationNode.h"
 #include "subtractionNode.h"
 #include "variable.h"
+#include <memory>
 
-Expression::Expression() : Expression(new Variable(0)) {}
-Expression::Expression(ExpressionNode *root) : root(root) {}
+using namespace std;
+Expression::Expression() : Expression(make_shared<Variable>()) {}
+Expression::Expression(double value)
+    : Expression(make_shared<Variable>(value)) {}
+Expression::Expression(shared_ptr<ExpressionNode> root)
+    : root(std::move(root)) {}
+Expression::~Expression() {}
 Expression Expression::operator+(const Expression &rhs) const {
-  return Expression(new AdditionNode(root, rhs.root));
+  return Expression(make_shared<AdditionNode>(root, rhs.root));
 }
 Expression Expression::operator-(const Expression &rhs) const {
-  return Expression(new SubtractionNode(root, rhs.root));
+  return Expression(make_shared<SubtractionNode>(root, rhs.root));
 }
 Expression Expression::operator*(const Expression &rhs) const {
-  return Expression(new MultiplicationNode(root, rhs.root));
+  return Expression(make_shared<MultiplicationNode>(root, rhs.root));
 }
 Expression Expression::operator/(const Expression &rhs) const {
-  return Expression(new DivisionNode(root, rhs.root));
+  return Expression(make_shared<DivisionNode>(root, rhs.root));
 }
 Expression Expression::operator-() const {
-  return Expression(new NegationNode(root));
+  return Expression(make_shared<NegationNode>(root));
 }
 Expression Expression::exp() const {
-  return Expression(new ExponentiationNode(root));
+  return Expression(make_shared<ExponentiationNode>(root));
+}
+bool Expression::operator==(const Expression &rhs) const {
+  return root == rhs.root;
 }
 
 set<const Variable *> Expression::getUnknowns() {
@@ -49,18 +58,19 @@ void *Expression::getFunctionData() {
   return (void *)data;
 }
 
-/*nlopt::vfunc Expression::toFunction() {*/
-/*  return [](const vector<double> &args, vector<double> &grad, void *ref) {*/
-/*    FunctionData *data = (FunctionData *)ref;*/
-/*    ExpressionNode *expression = data->expression;*/
-/*    double returnVal = expression->compute(args, data->map);*/
-/*    for (auto entry : data->map) {*/
-/*      grad[entry.second] = entry.first->gradient;*/
-/*    }*/
-/*    return returnVal;*/
-/*  };*/
-/*}*/
+double Expression::getValue() { return root->value; }
 
-bool operator==(const Variable &lhs, const Variable &rhs) {
-  return &lhs == &rhs;
+nlopt::vfunc Expression::toFunction() {
+  return [](const vector<double> &args, vector<double> &grad, void *ref) {
+    FunctionData *data = (FunctionData *)ref;
+    shared_ptr<ExpressionNode> expression = data->expression;
+    double returnVal = expression->compute(args, data->map);
+    if (!grad.empty()) {
+      for (auto entry : data->map) {
+        grad[entry.second] = entry.first->gradient;
+      }
+    }
+    return returnVal;
+  };
 }
+void Expression::print(std::ostream &out) const { root->print(out); }

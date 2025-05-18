@@ -3,11 +3,12 @@
 #include "expressionNode.h"
 #include "multiplicationNode.h"
 #include <math.h>
+#include <memory>
 #include <vector>
 
 class ExponentiationNode : public ExpressionNode {
 public:
-  ExponentiationNode(ExpressionNode *child) : child(child) {}
+  ExponentiationNode(shared_ptr<ExpressionNode> child) : child(child) {}
   double compute(const vector<double> &values, const expressionMap &map) {
     value = std::exp(child->compute(values, map));
     return value;
@@ -19,9 +20,14 @@ public:
   void getUnknowns(set<const Variable *> &unknowns) const {
     child->getUnknowns(unknowns);
   }
+  void print(ostream &out, int indent = 0) const {
+    out << string(indent, ' ') << "ExpressionNode (value=" << value << ")"
+        << endl;
+    child->print(out, indent + 1);
+  }
 
 private:
-  ExpressionNode *child;
+  shared_ptr<ExpressionNode> child;
 };
 
 #endif

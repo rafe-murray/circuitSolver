@@ -6,7 +6,7 @@
 
 class NegationNode : public ExpressionNode {
 public:
-  NegationNode(ExpressionNode *child) : child(child) {}
+  NegationNode(shared_ptr<ExpressionNode> child) : child(child) {}
   double compute(const vector<double> &values, const expressionMap &map) {
     value = -child->compute(values, map);
     return value;
@@ -18,9 +18,14 @@ public:
   void getUnknowns(set<const Variable *> &unknowns) const {
     child->getUnknowns(unknowns);
   }
+  void print(ostream &out, int indent = 0) const {
+    out << string(indent, ' ') << "NegationNode (value=" << value << ")"
+        << endl;
+    child->print(out, indent + 1);
+  }
 
 private:
-  ExpressionNode *child;
+  shared_ptr<ExpressionNode> child;
 };
 
 #endif
