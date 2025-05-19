@@ -9,23 +9,28 @@
 #include "multiplicationNode.h"
 #include "negationNode.h"
 #include "subtractionNode.h"
+#include <iostream>
 #include <unordered_map>
 #include <vector>
 
 class Variable : public ExpressionNode {
 public:
   bool known;
-  Variable() : known(false), ExpressionNode() {}
-  Variable(double value) : known(true), ExpressionNode(value){};
-  double compute(const vector<double> &values, const expressionMap &map) {
-    return values[map.at(this)];
+  Variable() : ExpressionNode(), known(false) {}
+  Variable(double value) : ExpressionNode(value), known(true){};
+  double compute(const double* const values, const expressionMap& map) {
+    if (known) {
+      return value;
+    } else {
+      return values[map.at(this)];
+    }
   };
   void updateChildrenGradient() {}
-  void getUnknowns(set<const Variable *> &unknowns) const {
+  void getUnknowns(set<Variable*>& unknowns) {
     if (!known)
       unknowns.insert(this);
   }
-  void print(ostream &out, int indent = 0) const {
+  void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "VariableNode (value=" << value << ","
         << "known=" << known << ")" << endl;
   }
@@ -33,8 +38,8 @@ public:
 
 namespace std {
 template <> struct hash<Variable> {
-  size_t operator()(const Variable &&v) const {
-    hash<const Variable *> pointerHash;
+  size_t operator()(const Variable&& v) const {
+    hash<const Variable*> pointerHash;
     return pointerHash(&v);
   }
 };

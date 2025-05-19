@@ -1,0 +1,46 @@
+#ifndef EXPRESSION_COST_FUNCTION_H
+#define EXPRESSION_COST_FUNCTION_H
+#include "expressionNode.h"
+#include "variable.h"
+#include <ceres/ceres.h>
+class ExpressionCostFunction : public ceres::CostFunction {
+public:
+  ExpressionCostFunction(int n, expressionMap* map,
+                         shared_ptr<ExpressionNode> root)
+      : map(map), root(root) {
+    set_num_residuals(1);
+    *mutable_parameter_block_sizes() = std::vector<int32_t>();
+    for (size_t i = 0; i < n; i++) {
+      mutable_parameter_block_sizes()->push_back(1);
+    }
+  }
+  virtual ~ExpressionCostFunction() { /*delete map;*/
+  }
+  virtual bool Evaluate(double const* const* parameters, double* residuals,
+                        double** jacobians) const {
+    residuals[0] = root->compute(parameters[0], *map);
+    root->gradient = 1.0;
+    root->updateChildrenGradient();
+    if (jacobians != nullptr && jacobians[0] != nullptr) {
+      for (auto entry : *map) {
+        jacobians[0][entry.second] = entry.first->gradient;
+      }
+    }
+    return true;
+
+    /*const double x = parameters[0][0];*/
+    /*residuals[0] = 1;*/
+    /**/
+    /*// Compute the Jacobian if asked for.*/
+    /*if (jacobians != nullptr && jacobians[0] != nullptr) {*/
+    /*  jacobians[0][0] = -1;*/
+    /*}*/
+    /*return true;*/
+  }
+
+private:
+  expressionMap* map;
+  shared_ptr<ExpressionNode> root;
+};
+
+#endif

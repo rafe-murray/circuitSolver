@@ -2,38 +2,59 @@
 #include "graph.h"
 #include "math/expression.h"
 #include "math/expressionNode.h"
-#include "nlopt.hpp"
+#include "resistor.h"
+#include "voltageSource.h"
 #include <ostream>
 #include <stdexcept>
 
 class CircuitGraph {
 public:
-  CircuitGraph(Graph<Expression, Branch> graph);
+  CircuitGraph(Graph<Expression, Branch*>& graph);
   Expression getErrorExpression();
   void solveCircuit() {
-    Expression error = getErrorExpression();
-    error.print();
-    set<const Variable *> unknowns = error.getUnknowns();
-    nlopt::opt opt(nlopt::LD_MMA, unknowns.size());
-    opt.set_min_objective(error.toFunction(), error.getFunctionData());
-    opt.set_lower_bounds(-10);
-    opt.set_upper_bounds(10);
-    opt.set_xtol_rel(1e-4);
-    double resultVal;
-    vector<double> solution(unknowns.size());
-    for (unsigned i = 0; i < solution.size(); i++) {
-      solution[i] = 0.0;
+    ceres::Problem problem;
+    for (Expression node : graph.getVertices()) {
+      Expression netCurrent = getNodeCurrents(node);
+      netCurrent.print();
+      vector<double*> unknowns = netCurrent.getUnknownVals();
+      ceres::CostFunction* costFunction =
+          netCurrent.getCostFunction(unknowns.size());
+      double* x0 = new double[unknowns.size()];
+      cout << "Starting error for this node is: "
+           << netCurrent.root->compute(x0, *netCurrent.getMap()) << endl;
+      problem.AddResidualBlock(costFunction, nullptr, unknowns);
     }
-    try {
-      nlopt::result result = opt.optimize(solution, resultVal);
-    } catch (std::runtime_error &e) {
-      throw e;
+    for (Branch* branch : graph.getEdges()) {
+      Expression constraint = branch->constraint();
+      constraint.print();
+      vector<double*> unknowns = constraint.getUnknownVals();
+      ceres::CostFunction* costFunction =
+          constraint.getCostFunction(unknowns.size());
+      double* x0 = new double[unknowns.size()];
+      cout << "Starting error for this branch is: "
+           << constraint.root->compute(x0, *constraint.getMap()) << endl;
+      problem.AddResidualBlock(costFunction, nullptr, unknowns);
     }
-    expressionMap map = error.getMap();
-    for (auto entry : map) {
-      entry.first->value = solution[entry.second];
-      entry.first->known = true;
-    }
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.minimizer_progress_to_stdout = true;
+    ceres::Solver::Summary summary;
+    Solve(options, &problem, &summary);
+
+    std::cout << summary.FullReport() << "\n";
+    /*Expression error = getErrorExpression();*/
+    /*error.print();*/
+    /*set<const Variable*> unknowns = error.getUnknowns();*/
+    /*vector<double> solution(unknowns.size());*/
+    /*for (unsigned i = 0; i < solution.size(); i++) {*/
+    /*  solution[i] = 0.0;*/
+    /*}*/
+    /*expressionMap* map = error.getMap();*/
+    /*for (auto entry : *map) {*/
+    /*  entry.first->value = solution[entry.second];*/
+    /*  entry.first->known = true;*/
+    /*}*/
+    /*delete map;*/
   }
 
 private:
@@ -46,5 +67,5 @@ private:
    * @pre node is in this.graph
    */
   Expression getNodeCurrents(Expression node);
-  const Graph<Expression, Branch> graph;
+  Graph<Expression, Branch*> graph;
 };

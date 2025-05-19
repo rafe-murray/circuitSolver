@@ -17,7 +17,7 @@ class ExponentiationNode;
 class Variable;
 
 using namespace std;
-typedef unordered_map<Variable *, unsigned> expressionMap;
+typedef unordered_map<Variable*, unsigned> expressionMap;
 
 // TODO: Test Expression class; see where it is going wrong.
 // It might be necessary to switch the circuitGraph classes to using pointers
@@ -26,19 +26,19 @@ public:
   virtual ~ExpressionNode() {}
   ExpressionNode() : ExpressionNode(0.0) {}
   ExpressionNode(double value) : value(value), gradient(0.0) {}
-  virtual double compute(const vector<double> &values,
-                         const expressionMap &map) {
+  // TODO: fix this signature for all implementations of this
+  virtual double compute(const double* const values, const expressionMap& map) {
     return 0.0;
   }
-  virtual void getUnknowns(set<const Variable *> &unknowns) const {}
-  virtual void print(ostream &out, int indent = 0) const {
+  virtual void getUnknowns(set<Variable*>& unknowns) {}
+  virtual void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "ExpressionNode (value=" << value << ")"
         << endl;
   }
 
   virtual void updateChildrenGradient() {}
-  double gradient;
   double value;
+  double gradient;
 };
 
 #endif

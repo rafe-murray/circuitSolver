@@ -9,7 +9,7 @@
 class ExponentiationNode : public ExpressionNode {
 public:
   ExponentiationNode(shared_ptr<ExpressionNode> child) : child(child) {}
-  double compute(const vector<double> &values, const expressionMap &map) {
+  double compute(const double* const values, const expressionMap& map) {
     value = std::exp(child->compute(values, map));
     return value;
   }
@@ -17,10 +17,8 @@ public:
     child->gradient += value * gradient;
     child->updateChildrenGradient();
   }
-  void getUnknowns(set<const Variable *> &unknowns) const {
-    child->getUnknowns(unknowns);
-  }
-  void print(ostream &out, int indent = 0) const {
+  void getUnknowns(set<Variable*>& unknowns) { child->getUnknowns(unknowns); }
+  void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "ExpressionNode (value=" << value << ")"
         << endl;
     child->print(out, indent + 1);

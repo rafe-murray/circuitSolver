@@ -8,7 +8,7 @@ class AdditionNode : public ExpressionNode {
 public:
   AdditionNode(shared_ptr<ExpressionNode> lhs, shared_ptr<ExpressionNode> rhs)
       : lhs(lhs), rhs(rhs) {}
-  double compute(const vector<double> &values, const expressionMap &map) {
+  double compute(const double* const values, const expressionMap& map) {
     value = lhs->compute(values, map) + rhs->compute(values, map);
     return value;
   }
@@ -18,11 +18,11 @@ public:
     rhs->gradient += gradient;
     rhs->updateChildrenGradient();
   }
-  void getUnknowns(set<const Variable *> &unknowns) const {
+  void getUnknowns(set<Variable*>& unknowns) {
     lhs->getUnknowns(unknowns);
     rhs->getUnknowns(unknowns);
   }
-  void print(ostream &out, int indent = 0) const {
+  void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "AdditionNode (value=" << value << ")"
         << endl;
     lhs->print(out, indent + 1);
