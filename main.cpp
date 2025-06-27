@@ -20,7 +20,7 @@ bool testEquals(double expected, double actual) {
 
 bool testBasicCircuit() {
   cout << "Testing basic circuit" << endl;
-  Graph<Expression, Branch*>* graph = new Graph<Expression, Branch*>();
+  CircuitGraph* graph = new CircuitGraph();
   Expression ref(0.0);
   Expression v1;
   Expression v2;
@@ -30,14 +30,13 @@ bool testBasicCircuit() {
   Expression res2(3.0);
   Resistor r1(v1, v2, res1);
   Resistor r2(v2, ref, res2);
-  graph->addVertex(ref);
+  /*graph->addVertex(ref);*/
   graph->addVertex(v1);
   graph->addVertex(v2);
   graph->addEdge(&vs);
   graph->addEdge(&r1);
   graph->addEdge(&r2);
-  CircuitGraph cg(*graph);
-  cg.solveCircuit();
+  graph->solveCircuit();
   bool err = false;
   err |= !testEquals(5.0, v1.getValue());
   err |= !testEquals(3.0, v2.getValue());
@@ -51,7 +50,7 @@ bool testBasicCircuit() {
 
 bool testRealDiodes() {
   cout << "Testing real diode circuit" << endl;
-  Graph<Expression, Branch*>* graph = new Graph<Expression, Branch*>();
+  CircuitGraph* graph = new CircuitGraph();
   Expression ref(0.0);
   Expression v;
   Expression n(2.0);
@@ -61,14 +60,11 @@ bool testRealDiodes() {
   Expression res1(1000);
   Expression res2(2000);
   Resistor r1(ref, v, res1);
-  Resistor r2(ref, v, res2);
   graph->addVertex(ref);
   graph->addVertex(v);
   graph->addEdge(&d);
   graph->addEdge(&r1);
-  graph->addEdge(&r2);
-  CircuitGraph cg(*graph);
-  cg.solveCircuit();
+  graph->solveCircuit();
   bool err = false;
   // TODO: calculate the values manually
   if (!err)

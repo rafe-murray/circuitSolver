@@ -1,14 +1,13 @@
 #include "circuitGraph.h"
 #include "math/expression.h"
 
-CircuitGraph::CircuitGraph(Graph<Expression, Branch*>& graph) : graph(graph) {}
 Expression CircuitGraph::getErrorExpression() {
   Expression error(0.0);
-  for (Expression node : graph.getVertices()) {
+  for (Expression node : getVertices()) {
     Expression netCurrent = getNodeCurrents(node);
     error = error + netCurrent * netCurrent;
   }
-  for (const Branch* const branch : graph.getEdges()) {
+  for (const Branch* const branch : getEdges()) {
     Expression constraint = branch->constraint();
     error = error + constraint * constraint;
   }
@@ -17,7 +16,7 @@ Expression CircuitGraph::getErrorExpression() {
 
 Expression CircuitGraph::getNodeCurrents(Expression node) {
   Expression nodeCurrents(0.0);
-  for (Branch* branch : graph.getIncident(node)) {
+  for (Branch* branch : getIncident(node)) {
     Expression current = branch->getCurrent();
     if (branch->v1 == node) {
       nodeCurrents = nodeCurrents - current;
