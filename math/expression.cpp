@@ -14,36 +14,126 @@
 #include <ostream>
 
 using namespace std;
+
 Expression::Expression() : Expression(make_shared<VariableNode>()) {}
+
 Expression::Expression(double value)
     : Expression(make_shared<VariableNode>(value)) {}
+
 Expression::Expression(shared_ptr<ExpressionNode> root)
     : root(std::move(root)) {}
+
 Expression::~Expression() {}
+
 Expression Expression::operator+(const Expression& rhs) const {
+  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  if (u && u->known && u->value == 0) {
+    return Expression(root);
+  }
+
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  if (v && v->known && v->value == 0) {
+    return Expression(rhs.root);
+  }
+
+  if (v && u && v->known && u->known) {
+    return Expression(u->value + v->value);
+  }
+
   return Expression(make_shared<AdditionNode>(root, rhs.root));
 }
+
 Expression Expression::operator-(const Expression& rhs) const {
+  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  if (u && u->known && u->value == 0) {
+    return Expression(root);
+  }
+
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  if (v && v->known && v->value == 0) {
+    return Expression(rhs.root);
+  }
+
+  if (v && u && v->known && u->known) {
+    return Expression(v->value - u->value);
+  }
+
+  if (root == rhs.root) {
+    return Expression(0.0);
+  }
+
   return Expression(make_shared<SubtractionNode>(root, rhs.root));
 }
+
 Expression Expression::operator*(const Expression& rhs) const {
+  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  if (u && u->known) {
+    if (u->value == 0) {
+      return Expression(rhs.root);
+    } else if (u->value == 1) {
+      return Expression(root);
+    }
+  }
+
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  if (v && v->known) {
+    if (v->value == 0) {
+      return Expression(root);
+    } else if (v->value == 1) {
+      return Expression(rhs.root);
+    }
+  }
+
+  if (v && u && v->known && u->known) {
+    return Expression(u->value * v->value);
+  }
+
   return Expression(make_shared<MultiplicationNode>(root, rhs.root));
 }
+
 Expression Expression::operator/(const Expression& rhs) const {
+  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  if (u && u->known && u->value == 1) {
+    return Expression(root);
+  }
+
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+
+  if (v && u && v->known && u->known) {
+    return Expression(v->value / u->value);
+  }
+
+  if (root == rhs.root) {
+    return Expression(1.0);
+  }
+
   return Expression(make_shared<DivisionNode>(root, rhs.root));
 }
+
 Expression Expression::operator-() const {
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  if (v && v->known) {
+    return Expression(-v->value);
+  }
   return Expression(make_shared<NegationNode>(root));
 }
+
 Expression Expression::exp(const Expression& arg) {
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(arg.root);
+  if (v && v->known) {
+    return Expression(std::exp(v->value));
+  }
   return Expression(make_shared<ExponentiationNode>(arg.root));
 }
+
 bool Expression::operator==(const Expression& rhs) const {
   return root == rhs.root;
 }
+
 Condition Expression::operator<(const Expression& rhs) const {
   return Condition(ConditionType::LT, root, rhs.root);
 }
+
 Condition Expression::operator<=(const Expression& rhs) const {
   return Condition(ConditionType::LEQ, root, rhs.root);
 }
