@@ -17,11 +17,17 @@ public:
     child->gradient += value * gradient;
     child->updateChildrenGradient();
   }
-  void getUnknowns(set<Variable*>& unknowns) { child->getUnknowns(unknowns); }
+  void getUnknowns(set<VariableNode*>& unknowns) {
+    child->getUnknowns(unknowns);
+  }
   void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "ExpressionNode (value=" << value << ")"
         << endl;
     child->print(out, indent + 1);
+  }
+  void serialize(ostream& out) const {
+    out << "e^";
+    child->serialize(out);
   }
 
 private:

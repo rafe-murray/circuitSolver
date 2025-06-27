@@ -1,5 +1,7 @@
 #include "expression.h"
 #include "additionNode.h"
+#include "condition.h"
+#include "conditionNode.h"
 #include "divisionNode.h"
 #include "exponentiationNode.h"
 #include "expressionCostFunction.h"
@@ -9,11 +11,12 @@
 #include "subtractionNode.h"
 #include "variable.h"
 #include <memory>
+#include <ostream>
 
 using namespace std;
-Expression::Expression() : Expression(make_shared<Variable>()) {}
+Expression::Expression() : Expression(make_shared<VariableNode>()) {}
 Expression::Expression(double value)
-    : Expression(make_shared<Variable>(value)) {}
+    : Expression(make_shared<VariableNode>(value)) {}
 Expression::Expression(shared_ptr<ExpressionNode> root)
     : root(std::move(root)) {}
 Expression::~Expression() {}
@@ -32,23 +35,47 @@ Expression Expression::operator/(const Expression& rhs) const {
 Expression Expression::operator-() const {
   return Expression(make_shared<NegationNode>(root));
 }
-Expression Expression::exp() const {
-  return Expression(make_shared<ExponentiationNode>(root));
+Expression Expression::exp(const Expression& arg) {
+  return Expression(make_shared<ExponentiationNode>(arg.root));
 }
 bool Expression::operator==(const Expression& rhs) const {
   return root == rhs.root;
 }
+Condition Expression::operator<(const Expression& rhs) const {
+  return Condition(ConditionType::LT, root, rhs.root);
+}
+Condition Expression::operator<=(const Expression& rhs) const {
+  return Condition(ConditionType::LEQ, root, rhs.root);
+}
+Condition Expression::operator>(const Expression& rhs) const {
+  return Condition(ConditionType::GT, root, rhs.root);
+}
+Condition Expression::operator>=(const Expression& rhs) const {
+  return Condition(ConditionType::GEQ, root, rhs.root);
+}
+Condition Expression::operator!=(const Expression& rhs) const {
+  return Condition(ConditionType::NEQ, root, rhs.root);
+}
+Condition Expression::equals(const Expression& rhs) const {
+  return Condition(ConditionType::EQ, root, rhs.root);
+}
+Expression Expression::makeConditional(Condition condition,
+                                       const Expression& valIfTrue,
+                                       const Expression& valIfFalse) {
+  return Expression(
+      make_shared<ConditionNode>(condition, valIfTrue.root, valIfFalse.root));
+}
 
-set<Variable*> Expression::getUnknowns() {
-  set<Variable*> unknowns;
+set<VariableNode*> Expression::getUnknowns() {
+  set<VariableNode*> unknowns;
   this->root->getUnknowns(unknowns);
   return unknowns;
 }
 vector<double*> Expression::getUnknownVals() {
-  set<Variable*> unknowns = getUnknowns();
+  set<VariableNode*> unknowns = getUnknowns();
   vector<double*> vals(unknowns.size());
   size_t i = 0;
-  for (Variable* var : unknowns) {
+  for (VariableNode* var : unknowns) {
     vals[i] = &var->value;
     i++;
   }
@@ -58,34 +85,48 @@ expressionMap* Expression::getMap() {
   expressionMap* map = new expressionMap();
   unsigned i = 0;
   for (auto unknown : getUnknowns()) {
-    (*map)[(Variable*)unknown] = i;
+    (*map)[(VariableNode*)unknown] = i;
     i++;
   }
   return map;
 }
-/*void* Expression::getFunctionData() {*/
-/*  expressionMap map = getMap();*/
-/*  FunctionData* data = new FunctionData(this->root, map);*/
-/*  return (void*)data;*/
-/*}*/
 
 double Expression::getValue() { return root->value; }
 
-/*nlopt::vfunc Expression::toFunction() {*/
-/*  return [](const vector<double>& args, vector<double>& grad, void* ref) {*/
-/*    FunctionData* data = (FunctionData*)ref;*/
-/*    shared_ptr<ExpressionNode> expression = data->expression;*/
-/*    double returnVal = expression->compute(args, data->map);*/
-/*    if (!grad.empty()) {*/
-/*      for (auto entry : data->map) {*/
-/*        grad[entry.second] = entry.first->gradient;*/
-/*      }*/
-/*    }*/
-/*    return returnVal;*/
-/*  };*/
-/*}*/
-void Expression::print(std::ostream& out) const { root->print(out); }
-ExpressionCostFunction* Expression::getCostFunction(int n) {
+ostream& operator<<(ostream& out, const Expression& e) {
+  e.root->serialize(out);
+  return out;
+}
+ExpressionCostFunction* Expression::getCostFunction() {
   expressionMap* map = getMap();
-  return new ExpressionCostFunction(n, map, root);
+  return new ExpressionCostFunction(map, root);
+}
+ostream& operator<<(ostream& out, const Condition& c) {
+  string opString;
+  switch (c.op) {
+  case ConditionType::LT:
+    opString = " < ";
+    break;
+  case ConditionType::LEQ:
+    opString = " <= ";
+    break;
+  case ConditionType::EQ:
+    opString = " == ";
+    break;
+  case ConditionType::NEQ:
+    opString = " != ";
+    break;
+  case ConditionType::GEQ:
+    opString = " >= ";
+    break;
+  case ConditionType::GT:
+    opString = " > ";
+    break;
+  }
+  out << "(";
+  c.lhs->serialize(out);
+  out << opString;
+  c.rhs->serialize(out);
+  out << ")";
+  return out;
 }

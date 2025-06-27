@@ -19,7 +19,7 @@ public:
     rhs->gradient -= gradient;
     rhs->updateChildrenGradient();
   }
-  void getUnknowns(set<Variable*>& unknowns) {
+  void getUnknowns(set<VariableNode*>& unknowns) {
     lhs->getUnknowns(unknowns);
     rhs->getUnknowns(unknowns);
   }
@@ -28,6 +28,13 @@ public:
         << endl;
     lhs->print(out, indent + 1);
     rhs->print(out, indent + 1);
+  }
+  void serialize(ostream& out) const {
+    out << "(";
+    lhs->serialize(out);
+    out << " - ";
+    rhs->serialize(out);
+    out << ")";
   }
 
 private:

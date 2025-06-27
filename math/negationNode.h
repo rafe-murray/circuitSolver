@@ -15,11 +15,19 @@ public:
     child->gradient -= gradient;
     child->updateChildrenGradient();
   }
-  void getUnknowns(set<Variable*>& unknowns) { child->getUnknowns(unknowns); }
+  void getUnknowns(set<VariableNode*>& unknowns) {
+    child->getUnknowns(unknowns);
+  }
   void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "NegationNode (value=" << value << ")"
         << endl;
     child->print(out, indent + 1);
+  }
+  void serialize(ostream& out) const {
+    out << "("
+        << "-";
+    child->serialize(out);
+    out << ")";
   }
 
 private:

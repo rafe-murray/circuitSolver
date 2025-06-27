@@ -20,15 +20,16 @@ public:
     rhs->gradient += lhs->value * gradient;
     rhs->updateChildrenGradient();
   }
-  void getUnknowns(set<Variable*>& unknowns) {
+  void getUnknowns(set<VariableNode*>& unknowns) {
     lhs->getUnknowns(unknowns);
     rhs->getUnknowns(unknowns);
   }
-  void print(ostream& out, int indent = 0) const {
-    out << string(indent, ' ') << "MultiplicationNode (value=" << value << ")"
-        << endl;
-    lhs->print(out, indent + 1);
-    rhs->print(out, indent + 1);
+  void serialize(ostream& out) const {
+    out << "(";
+    lhs->serialize(out);
+    out << " * ";
+    rhs->serialize(out);
+    out << ")";
   }
 
 private:

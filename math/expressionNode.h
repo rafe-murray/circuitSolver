@@ -14,28 +14,26 @@ class MultiplicationNode;
 class DivisionNode;
 class NegationNode;
 class ExponentiationNode;
-class Variable;
+class VariableNode;
 
 using namespace std;
-typedef unordered_map<Variable*, unsigned> expressionMap;
+typedef unordered_map<VariableNode*, size_t> expressionMap;
 
-// TODO: Test Expression class; see where it is going wrong.
-// It might be necessary to switch the circuitGraph classes to using pointers
 class ExpressionNode {
 public:
   virtual ~ExpressionNode() {}
-  ExpressionNode() : ExpressionNode(0.0) {}
+  ExpressionNode() : ExpressionNode(1.0) {}
   ExpressionNode(double value) : value(value), gradient(0.0) {}
   // TODO: fix this signature for all implementations of this
   virtual double compute(const double* const values, const expressionMap& map) {
     return 0.0;
   }
-  virtual void getUnknowns(set<Variable*>& unknowns) {}
+  virtual void getUnknowns(set<VariableNode*>& unknowns) {}
   virtual void print(ostream& out, int indent = 0) const {
     out << string(indent, ' ') << "ExpressionNode (value=" << value << ")"
         << endl;
   }
-
+  virtual void serialize(ostream& out) const {}
   virtual void updateChildrenGradient() {}
   double value;
   double gradient;

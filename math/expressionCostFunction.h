@@ -5,12 +5,11 @@
 #include <ceres/ceres.h>
 class ExpressionCostFunction : public ceres::CostFunction {
 public:
-  ExpressionCostFunction(int n, expressionMap* map,
-                         shared_ptr<ExpressionNode> root)
+  ExpressionCostFunction(expressionMap* map, shared_ptr<ExpressionNode> root)
       : map(map), root(root) {
     set_num_residuals(1);
     *mutable_parameter_block_sizes() = std::vector<int32_t>();
-    for (size_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < map->size(); i++) {
       mutable_parameter_block_sizes()->push_back(1);
     }
   }
@@ -26,6 +25,22 @@ public:
         jacobians[0][entry.second] = entry.first->gradient;
       }
     }
+    cout << "Parameters: ";
+    for (int i = 0; i < map->size(); i++) {
+      cout << parameters[0][i] << ", ";
+    }
+    cout << endl;
+
+    cout << "Residual: " << residuals[0] << endl;
+
+    if (jacobians != nullptr && jacobians[0] != nullptr) {
+      cout << "Gradient: ";
+      for (int i = 0; i < map->size(); i++) {
+        cout << jacobians[0][i] << ", ";
+      }
+      cout << endl;
+    }
+
     return true;
 
     /*const double x = parameters[0][0];*/
