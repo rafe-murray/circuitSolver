@@ -7,6 +7,12 @@
 #include <ostream>
 #include <stdexcept>
 
+// TODO: add error handling for:
+//  - Cases where there are too few equations for the number of unknowns
+//  - Cases where there is no solution (e.g. no possible intersection)
+//  - Maybe include the relative tolerance in the printed results
+
+// TODO: replace Branch* with Branch in method signatures
 class CircuitGraph {
 public:
   Expression getErrorExpression();
@@ -14,7 +20,7 @@ public:
     ceres::Problem problem;
     cout << "Current expressions: " << endl;
     for (Expression node : getVertices()) {
-      if (node == Expression(0.0))
+      if (node.isConstant())
         continue;
       Expression netCurrent = getNodeCurrents(node);
       vector<double*> unknowns = netCurrent.getUnknownVals();
@@ -32,14 +38,17 @@ public:
     }
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
-    options.use_nonmonotonic_steps = true;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_type = ceres::TRUST_REGION;
+    /*options.use_nonmonotonic_steps = true;*/
+    options.logging_type = ceres::SILENT;
+    /*options.minimizer_progress_to_stdout = true;*/
+    options.function_tolerance = 0;
+    options.gradient_tolerance = 0;
+    options.parameter_tolerance = 0;
+    /*options.max_num_iterations = INT_MAX;*/
     ceres::Solver::Summary summary;
     Solve(options, &problem, &summary);
     cout << summary.FullReport() << endl;
-
-    // Uncomment for debugging
-    /*std::cout << summary.FullReport() << "\n";*/
   }
 
   /**
@@ -47,9 +56,7 @@ public:
    */
   CircuitGraph()
       : adjacencyList(
-            unordered_map<Expression, unordered_map<Expression, Branch*>>()) {
-    this->addVertex(0);
-  }
+            unordered_map<Expression, unordered_map<Expression, Branch*>>()) {}
 
   /**
    * Adds a vertex to the graph
@@ -139,7 +146,7 @@ public:
     vector<Branch*> edges;
     auto it1 = adjacencyList.find(v);
     if (it1 != adjacencyList.end()) {
-      unordered_map<Expression, Branch*>& edgeMap = it1->second;
+      unordered_map<Expression, Branch*> edgeMap = it1->second;
       for (auto it2 = edgeMap.begin(); it2 != edgeMap.end(); it2++) {
         edges.push_back(it2->second);
       }

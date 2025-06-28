@@ -93,6 +93,14 @@ public:
   bool operator==(const Expression& rhs) const;
 
   /**
+   * Checks if this expression is a constant value
+   *
+   * @return true if this is a constant or true if there are one or more
+   * unknowns
+   */
+  bool isConstant() const;
+
+  /**
    * Exponentiates an expression
    *
    * @return an Expression representing e^this

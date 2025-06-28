@@ -32,6 +32,7 @@ public:
 
 private:
   shared_ptr<ExpressionNode> child;
+  friend class Expression;
 };
 
 #endif

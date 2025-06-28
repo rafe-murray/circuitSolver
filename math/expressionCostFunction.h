@@ -17,7 +17,12 @@ public:
   }
   virtual bool Evaluate(double const* const* parameters, double* residuals,
                         double** jacobians) const {
-    residuals[0] = root->compute(parameters[0], *map);
+    auto val = root->compute(parameters[0], *map);
+    if (val >= 1000) {
+      cout << "Value was " << val << endl;
+    }
+    residuals[0] = val;
+    /*residuals[0] = root->compute(parameters[0], *map);*/
     root->gradient = 1.0;
     root->updateChildrenGradient();
     if (jacobians != nullptr && jacobians[0] != nullptr) {

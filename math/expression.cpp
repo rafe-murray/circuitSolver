@@ -40,6 +40,10 @@ Expression Expression::operator+(const Expression& rhs) const {
     return Expression(u->value + v->value);
   }
 
+  shared_ptr<NegationNode> n = dynamic_pointer_cast<NegationNode>(rhs.root);
+  if (n)
+    return Expression(make_shared<SubtractionNode>(root, n->child));
+
   return Expression(make_shared<AdditionNode>(root, rhs.root));
 }
 
@@ -51,7 +55,9 @@ Expression Expression::operator-(const Expression& rhs) const {
 
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
-    return Expression(rhs.root);
+    if (u && u->known)
+      return Expression(-u->value);
+    return -Expression(rhs.root);
   }
 
   if (v && u && v->known && u->known) {
@@ -127,6 +133,12 @@ Expression Expression::exp(const Expression& arg) {
 }
 
 bool Expression::operator==(const Expression& rhs) const {
+  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(root);
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(rhs.root);
+  if (u && v && u->known && v->known) {
+    /*cout << "Exressions had same value of " << u->value << endl;*/
+    return u->value == v->value;
+  }
   return root == rhs.root;
 }
 
@@ -154,6 +166,11 @@ Expression Expression::makeConditional(Condition condition,
                                        const Expression& valIfFalse) {
   return Expression(
       make_shared<ConditionNode>(condition, valIfTrue.root, valIfFalse.root));
+}
+
+bool Expression::isConstant() const {
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  return v && v->known;
 }
 
 set<VariableNode*> Expression::getUnknowns() {
