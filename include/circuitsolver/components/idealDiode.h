@@ -7,6 +7,7 @@
 
 class IdealDiode : public Edge {
 public:
+  ~IdealDiode() {}
   IdealDiode(int id, const Vertex& v1, const Vertex& v2,
              const Expression& voltage, const Expression& current)
       : Edge(id, v1, v2), voltage(voltage), current(current) {}

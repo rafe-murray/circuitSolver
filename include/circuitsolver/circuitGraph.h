@@ -1,6 +1,10 @@
+#ifndef CIRCUIT_GRAPH_H
+#define CIRCUIT_GRAPH_H
+
 #include "components/edge.h"
 #include "components/vertex.h"
 #include "math/expression.h"
+#include <memory>
 #include <unordered_map>
 
 // TODO: add error handling for:
@@ -17,7 +21,8 @@ public:
    * Creates a new graph instance
    */
   CircuitGraph()
-      : adjacencyList(unordered_map<Vertex, unordered_map<Vertex, Edge>>()) {}
+      : adjacencyList(
+            unordered_map<Vertex, unordered_map<Vertex, shared_ptr<Edge>>>()) {}
 
   /**
    * Adds a vertex to the graph
@@ -38,14 +43,14 @@ public:
    * @param e - the edge to add
    * @return true if the edge was not part of the graph before and now it is
    */
-  bool addEdge(const Edge& e);
+  bool addEdge(shared_ptr<Edge> e);
 
   /**
    * Removes an edge from the graph
    * @param e - the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(const Edge& e);
+  bool removeEdge(shared_ptr<Edge> e);
 
   /**
    * Removes an edge from the graph
@@ -61,7 +66,7 @@ public:
    * @param v - the vertex which the edges are incident on
    * @return a vector containing all incident edges
    */
-  vector<Edge> getIncident(const Vertex& v);
+  vector<shared_ptr<Edge>> getIncident(const Vertex& v);
 
   /**
    * Gets all vertices in the graph
@@ -69,7 +74,7 @@ public:
    */
   vector<Vertex> getVertices() const;
 
-  vector<Edge> getEdges() const;
+  vector<shared_ptr<Edge>> getEdges() const;
 
   // pre: the circuit is solved
   string toJson() const;
@@ -100,7 +105,7 @@ private:
    * @param id the id of the `Edge`
    * @throws std::out_of_range if no `Edge` with `id` is a member of `this`
    */
-  Edge getEdge(int id);
+  shared_ptr<Edge> getEdge(int id);
 
   /**
    * Get the reference node for the graph
@@ -110,7 +115,7 @@ private:
   /**
    * An adjacency list representation of the graph
    */
-  unordered_map<Vertex, unordered_map<Vertex, Edge>> adjacencyList;
+  unordered_map<Vertex, unordered_map<Vertex, shared_ptr<Edge>>> adjacencyList;
 
   /**
    * Map of vertex id to vertex
@@ -120,5 +125,7 @@ private:
   /**
    * Map of edge id to edge
    */
-  unordered_map<int, Edge> edges;
+  unordered_map<int, shared_ptr<Edge>> edges;
 };
+
+#endif // !CIRCUIT_GRAPH_H

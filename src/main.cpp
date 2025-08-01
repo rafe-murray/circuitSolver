@@ -1,9 +1,10 @@
-#include "circuitGraph.h"
-#include "components/realDiode.h"
-#include "components/resistor.h"
-#include "components/vertex.h"
-#include "components/voltageSource.h"
-#include "math/expression.h"
+#include "circuitsolver/circuitGraph.h"
+#include "circuitsolver/components/edge.h"
+#include "circuitsolver/components/realDiode.h"
+#include "circuitsolver/components/resistor.h"
+#include "circuitsolver/components/vertex.h"
+#include "circuitsolver/components/voltageSource.h"
+#include "circuitsolver/math/expression.h"
 #include <iostream>
 bool testEquals(double expected, double actual) {
   double rtol = 1e-4;
@@ -23,11 +24,11 @@ bool testBasicCircuit() {
   Vertex v1(1);
   Vertex v2(2);
   Expression voltage(5.0);
-  VoltageSource vs(0, ref, v1, voltage);
+  auto vs = make_shared<VoltageSource>(0, ref, v1, voltage);
   Expression res1(2.0);
   Expression res2(3.0);
-  Resistor r1(1, v1, v2, res1);
-  Resistor r2(2, v2, ref, res2);
+  auto r1 = make_shared<Resistor>(1, v1, v2, res1);
+  auto r2 = make_shared<Resistor>(2, v2, ref, res2);
   assert(graph->addVertex(ref));
   assert(graph->addVertex(v1));
   assert(graph->addVertex(v2));
@@ -38,7 +39,7 @@ bool testBasicCircuit() {
   bool err = false;
   err |= !testEquals(5.0, v1.getVoltage().getValue());
   err |= !testEquals(3.0, v2.getVoltage().getValue());
-  err |= !testEquals(1.0, vs.getCurrent().getValue());
+  err |= !testEquals(1.0, vs->getCurrent().getValue());
   if (!err)
     cout << "Test Passed!" << endl;
   else
@@ -56,15 +57,15 @@ bool testRealDiodes() {
   Expression n = 1.5;
   Expression vt = 25e-3;
   Expression i0 = 50e-12;
-  RealDiode d(0, v1, v2, i0, vt, n);
+  auto d = make_shared<RealDiode>(0, v1, v2, i0, vt, n);
   Expression res1(2000);
   Expression res2(3000);
   Expression res3(3000);
   Expression res4(3000);
-  Resistor r1(1, vcc, v1, res1);
-  Resistor r2(2, vcc, v2, res2);
-  Resistor r3(3, v1, ref, res3);
-  Resistor r4(4, v2, ref, res4);
+  auto r1 = make_shared<Resistor>(1, vcc, v1, res1);
+  auto r2 = make_shared<Resistor>(2, vcc, v2, res2);
+  auto r3 = make_shared<Resistor>(3, v1, ref, res3);
+  auto r4 = make_shared<Resistor>(4, v2, ref, res4);
   graph->addVertex(ref);
   graph->addVertex(vcc);
   graph->addVertex(v1);
@@ -78,7 +79,7 @@ bool testRealDiodes() {
   bool err = false;
   err |= !testEquals(8.595, v1.getVoltage().getValue());
   err |= !testEquals(8.006, v2.getVoltage().getValue());
-  err |= !testEquals(337.2e-6, d.getCurrent().getValue());
+  err |= !testEquals(337.2e-6, d->getCurrent().getValue());
   if (!err)
     cout << "Test Passed!" << endl;
   return err;

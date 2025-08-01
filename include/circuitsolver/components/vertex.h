@@ -17,7 +17,7 @@ public:
   rapidjson::Value toJson(rapidjson::MemoryPoolAllocator<>& allocator) const {
     rapidjson::Value vertex(rapidjson::kObjectType);
     vertex.AddMember("id", id, allocator);
-    vertex.AddMember("voltage", voltage, allocator);
+    vertex.AddMember("voltage", voltage.getValue(), allocator);
     return vertex;
   }
 

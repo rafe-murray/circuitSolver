@@ -8,6 +8,7 @@
 
 class Resistor : public Edge {
 public:
+  ~Resistor() {}
   Resistor(int id, const Vertex& v1, const Vertex& v2,
            const Expression& resistance)
       : resistance(resistance), Edge(id, v1, v2) {}

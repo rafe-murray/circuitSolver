@@ -8,6 +8,7 @@
 
 class ZenerDiode : public Edge {
 public:
+  ~ZenerDiode() {}
   ZenerDiode(int id, const Vertex& v1, const Vertex& v2, const Expression& vzt,
              const Expression& rzt, const Expression& izt)
       : resistance(rzt), voltage(vzt - rzt * izt), Edge(id, v1, v2) {}

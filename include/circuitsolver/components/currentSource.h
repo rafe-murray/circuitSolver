@@ -7,6 +7,7 @@
 #include <rapidjson/document.h>
 class CurrentSource : public Edge {
 public:
+  ~CurrentSource() {}
   CurrentSource(int id, const Vertex& v1, const Vertex& v2,
                 const Expression& current)
       : current(current), Edge(id, v1, v2) {}

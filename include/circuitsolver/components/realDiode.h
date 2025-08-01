@@ -7,6 +7,7 @@
 
 class RealDiode : public Edge {
 public:
+  ~RealDiode() {}
   RealDiode(int id, const Vertex& v1, const Vertex& v2)
       : Edge(id, v1, v2), i0(), vt(), n() {}
   RealDiode(int id, const Vertex& v1, const Vertex& v2, Expression i0,
@@ -20,9 +21,9 @@ public:
   toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "realDiode", allocator);
-    edge.AddMember("i0", i0, allocator);
-    edge.AddMember("vt", vt, allocator);
-    edge.AddMember("n", n, allocator);
+    edge.AddMember("i0", i0.getValue(), allocator);
+    edge.AddMember("vt", vt.getValue(), allocator);
+    edge.AddMember("n", n.getValue(), allocator);
     return edge;
   }
 

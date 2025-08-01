@@ -1,10 +1,12 @@
-#include "circuitGraph.h"
-#include "components/currentSource.h"
-#include "components/edge.h"
-#include "components/vertex.h"
-#include "components/voltageSource.h"
-#include "math/expression.h"
-#include "math/expressionCostFunction.h"
+#include "circuitsolver/circuitGraph.h"
+#include "circuitsolver/components/currentSource.h"
+#include "circuitsolver/components/edge.h"
+#include "circuitsolver/components/resistor.h"
+#include "circuitsolver/components/vertex.h"
+#include "circuitsolver/components/voltageSource.h"
+#include "circuitsolver/math/expression.h"
+#include "circuitsolver/math/expressionCostFunction.h"
+#include <memory>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/rapidjson.h>
@@ -21,8 +23,8 @@ Expression CircuitGraph::getErrorExpression() {
     Expression netCurrent = getNodeCurrents(node);
     error = error + netCurrent * netCurrent;
   }
-  for (Edge edge : getEdges()) {
-    Expression constraint = edge.getConstraint();
+  for (shared_ptr<Edge> edge : getEdges()) {
+    Expression constraint = edge->getConstraint();
     error = error + constraint * constraint;
   }
   return error;
@@ -41,8 +43,8 @@ void CircuitGraph::solveCircuit() {
     cout << netCurrent << endl;
   }
   cout << "Constraint expressions: " << endl;
-  for (Edge edge : getEdges()) {
-    Expression constraint = edge.getConstraint();
+  for (shared_ptr<Edge> edge : getEdges()) {
+    Expression constraint = edge->getConstraint();
     vector<double*> unknowns = constraint.getUnknownVals();
     ceres::CostFunction* costFunction = constraint.getCostFunction();
     problem.AddResidualBlock(costFunction, nullptr, unknowns);
@@ -64,9 +66,9 @@ void CircuitGraph::solveCircuit() {
 }
 Expression CircuitGraph::getNodeCurrents(Vertex node) {
   Expression nodeCurrents(0.0);
-  for (Edge branch : getIncident(node)) {
-    Expression current = branch.getCurrent();
-    if (branch.getV1() == node) {
+  for (shared_ptr<Edge> branch : getIncident(node)) {
+    Expression current = branch->getCurrent();
+    if (branch->getV1() == node) {
       nodeCurrents = nodeCurrents - current;
     } else {
       nodeCurrents = nodeCurrents + current;
@@ -75,11 +77,11 @@ Expression CircuitGraph::getNodeCurrents(Vertex node) {
   return nodeCurrents;
 }
 Vertex CircuitGraph::getVertex(int id) { return vertices.at(id); }
-Edge CircuitGraph::getEdge(int id) { return edges.at(id); }
+shared_ptr<Edge> CircuitGraph::getEdge(int id) { return edges.at(id); }
 bool CircuitGraph::addVertex(const Vertex& v) {
   // Only add the vertex if it doesn't already exist
   if (adjacencyList.count(v) == 0) {
-    adjacencyList[v] = unordered_map<Vertex, Edge>();
+    adjacencyList[v] = unordered_map<Vertex, shared_ptr<Edge>>();
     vertices[v.getId()] = v;
     return true;
   }
@@ -101,9 +103,9 @@ bool CircuitGraph::removeVertex(const Vertex& v) {
   return true;
 }
 
-bool CircuitGraph::addEdge(const Edge& e) {
-  Vertex v1 = e.getV1();
-  Vertex v2 = e.getV2();
+bool CircuitGraph::addEdge(shared_ptr<Edge> e) {
+  Vertex v1 = e->getV1();
+  Vertex v2 = e->getV2();
 
   // If either vertex is not present return false
   if (!adjacencyList.count(v1) || !adjacencyList.count(v2))
@@ -116,19 +118,19 @@ bool CircuitGraph::addEdge(const Edge& e) {
   // Add the edge in both directions
   adjacencyList[v1][v2] = e;
   adjacencyList[v2][v1] = e;
-  edges[e.getId()] = e;
+  edges[e->getId()] = e;
   return true;
 }
 
 // NOTE: this is probably slightly less efficient since we have to fetch the
 // Edge again, but it is easier to maintain
-bool CircuitGraph::removeEdge(const Edge& e) {
-  return removeEdge(e.getV1(), e.getV2());
+bool CircuitGraph::removeEdge(shared_ptr<Edge> e) {
+  return removeEdge(e->getV1(), e->getV2());
 }
 
 bool CircuitGraph::removeEdge(const Vertex& v1, const Vertex& v2) {
   if (adjacencyList.count(v1) && adjacencyList[v1].count(v2)) {
-    int id = adjacencyList[v1][v2].getId();
+    int id = adjacencyList[v1][v2]->getId();
     adjacencyList[v1].erase(v2);
     adjacencyList[v2].erase(v1);
     edges.erase(id);
@@ -137,11 +139,11 @@ bool CircuitGraph::removeEdge(const Vertex& v1, const Vertex& v2) {
   return false;
 }
 
-vector<Edge> CircuitGraph::getIncident(const Vertex& v) {
-  vector<Edge> edges;
+vector<shared_ptr<Edge>> CircuitGraph::getIncident(const Vertex& v) {
+  vector<shared_ptr<Edge>> edges;
   auto it1 = adjacencyList.find(v);
   if (it1 != adjacencyList.end()) {
-    unordered_map<Vertex, Edge> edgeMap = it1->second;
+    unordered_map<Vertex, shared_ptr<Edge>> edgeMap = it1->second;
     for (auto it2 = edgeMap.begin(); it2 != edgeMap.end(); it2++) {
       edges.push_back(it2->second);
     }
@@ -158,8 +160,8 @@ vector<Vertex> CircuitGraph::getVertices() const {
   return vertexList;
 }
 
-vector<Edge> CircuitGraph::getEdges() const {
-  vector<Edge> edgeList;
+vector<shared_ptr<Edge>> CircuitGraph::getEdges() const {
+  vector<shared_ptr<Edge>> edgeList;
   edgeList.reserve(edges.size());
   for (auto el : edges) {
     edgeList.push_back(el.second);
@@ -224,28 +226,31 @@ CircuitGraph* CircuitGraph::fromJson(const string& json) {
     if (type == "voltageSource") {
       auto voltage = edges[i].FindMember("voltage");
       if (voltage != edges[i].MemberEnd()) {
-        VoltageSource vs(id, from, to, voltage->value.GetDouble());
+        auto vs = make_shared<VoltageSource>(id, from, to,
+                                             voltage->value.GetDouble());
         cg->addEdge(vs);
       } else {
-        VoltageSource vs(id, from, to);
+        auto vs = make_shared<VoltageSource>(id, from, to);
         cg->addEdge(vs);
       }
     } else if (type == "currentSource") {
       auto current = edges[i].FindMember("current");
       if (current != edges[i].MemberEnd()) {
-        CurrentSource cs(id, from, to, current->value.GetDouble());
+        auto cs = make_shared<CurrentSource>(id, from, to,
+                                             current->value.GetDouble());
         cg->addEdge(cs);
       } else {
-        CurrentSource cs(id, from, to);
+        auto cs = make_shared<CurrentSource>(id, from, to);
         cg->addEdge(cs);
       }
     } else if (type == "resistor") {
       auto resistance = edges[i].FindMember("resistance");
       if (resistance != edges[i].MemberEnd()) {
-        CurrentSource cs(id, from, to, resistance->value.GetDouble());
+        auto cs = make_shared<CurrentSource>(id, from, to,
+                                             resistance->value.GetDouble());
         cg->addEdge(cs);
       } else {
-        CurrentSource cs(id, from, to);
+        auto cs = make_shared<CurrentSource>(id, from, to);
         cg->addEdge(cs);
       }
     } else {
@@ -265,8 +270,8 @@ string CircuitGraph::toJson() const {
     vertexList.PushBack(vertex.toJson(allocator), allocator);
   }
   rapidjson::Value edgeList(rapidjson::kArrayType);
-  for (Edge edge : getEdges()) {
-    edgeList.PushBack(edge.toJson(allocator), allocator);
+  for (shared_ptr<Edge> edge : getEdges()) {
+    edgeList.PushBack(edge->toJson(allocator), allocator);
   }
   doc.AddMember("vertices", vertexList, allocator);
   doc.AddMember("edges", edgeList, allocator);

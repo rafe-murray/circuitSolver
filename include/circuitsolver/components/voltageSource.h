@@ -6,6 +6,7 @@
 #include <rapidjson/allocators.h>
 class VoltageSource : public Edge {
 public:
+  ~VoltageSource() {}
   VoltageSource(int id, const Vertex& v1, const Vertex& v2,
                 const Expression& voltage)
       : voltage(voltage), Edge(id, v1, v2) {}
