@@ -45,7 +45,9 @@ Then generate the compilation commands and run them
 
 ```bash
 cd circuitSolver
-cmake .
+mkdir build
+cd build
+cmake ..
 make
 ```
 
@@ -81,7 +83,9 @@ Then generate the compilation commands and run them
 
 ```bash
 cd circuitSolver
-cmake .
+mkdir build
+cd build
+cmake ..
 make
 ```
 

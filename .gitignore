@@ -1,10 +1,16 @@
+# Cmake artifacts
+build
+
+# Clangd artifacts
 .clangd
+compile_commands.json
+.cache
+
+# Compilation artifacts
 *.o
 a.out
 solver
-Makefile
-CMakeCache.txt
-CMakeFiles
-compile_commands.json
-.cache
-*.cmake
+
+# Other
+.vscode
+.DS_Store

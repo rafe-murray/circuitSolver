@@ -3,6 +3,7 @@
 
 #include "expressionNode.h"
 #include <memory>
+#include <set>
 using namespace std;
 enum class ConditionType { LT, LEQ, EQ, NEQ, GEQ, GT };
 class Condition {

@@ -3,7 +3,6 @@
 
 #include <set>
 #include <unordered_map>
-#include <vector>
 
 // FIXME remove after debugging
 #include <ostream>

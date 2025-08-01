@@ -198,7 +198,7 @@ expressionMap* Expression::getMap() {
   return map;
 }
 
-double Expression::getValue() { return root->value; }
+double Expression::getValue() const { return root->value; }
 
 ostream& operator<<(ostream& out, const Expression& e) {
   e.root->serialize(out);

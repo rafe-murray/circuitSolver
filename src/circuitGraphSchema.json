@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "id": "https://example.com/circuit-graph/schema.json",
+  "title": "Circuit Graph",
+  "description": "A graph representing a circuit",
+  "type": "object",
+  "properties": {
+    "vertices": {
+      "type": "array",
+      "description": "A list of all vertices in the graph",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "unique identifier"
+          },
+          "voltage": {
+            "type": "number",
+            "description": "optional voltage in volts"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "edges": {
+      "type": "array",
+      "description": "A list of all edges in the graph",
+      "items": {
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "unique identifier"
+            },
+            "from": {
+              "type": "integer",
+              "description": "id of the first vertex the edge connects to"
+            },
+            "to": {
+              "type": "integer",
+              "description": "id of the second vertex the edge connects to"
+            },
+            "type": {
+              "enum": [
+                "voltageSource",
+                "resistor",
+                "zenerDiode",
+                "idealDiode",
+                "realDiode",
+                "currentSource"
+              ],
+              "description": "type of branch"
+            },
+            "voltage": {
+              "type": "number"
+            },
+            "resistance": {
+              "type": "number"
+            },
+            "current": {
+              "type": "number"
+            },
+            "n": {
+              "type": "number"
+            },
+            "i0": {
+              "type": "number"
+            },
+            "vt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "from",
+            "to",
+            "type"
+          ]
+        }
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  }
+}

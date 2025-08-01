@@ -18,6 +18,7 @@ class ExpressionCostFunction;
  * TODO: it could potentially improve performance to cleanup unnecessary nodes
  * while building the expression tree. Additionally, this would allow us to use
  * this class more generally for things like symbolic differentiation, etc.
+ * TODO: support additional assignment operators
  */
 class Expression {
 public:
@@ -126,7 +127,7 @@ public:
    *
    * @return the value of the Expression
    */
-  double getValue();
+  double getValue() const;
 
   // TODO: turn this into an operator<< overload and use an inorder traversal to
   // print vals maybe with unknown@0x12345678 for the unknowns
@@ -159,5 +160,5 @@ template <> struct hash<Expression> {
     return pointerHash(v.root);
   }
 };
-}; // namespace std
+} // namespace std
 #endif

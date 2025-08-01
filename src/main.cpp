@@ -1,12 +1,10 @@
-#include "branch.h"
 #include "circuitGraph.h"
-#include "graph.h"
+#include "components/realDiode.h"
+#include "components/resistor.h"
+#include "components/vertex.h"
+#include "components/voltageSource.h"
 #include "math/expression.h"
-#include "realDiode.h"
-#include "resistor.h"
-#include "voltageSource.h"
 #include <iostream>
-#include <stdexcept>
 bool testEquals(double expected, double actual) {
   double rtol = 1e-4;
   if (fabs(expected - actual) / fabs(expected) < rtol) {
@@ -21,26 +19,26 @@ bool testEquals(double expected, double actual) {
 bool testBasicCircuit() {
   cout << "Testing basic circuit" << endl;
   CircuitGraph* graph = new CircuitGraph();
-  Expression ref(0.0);
-  Expression v1;
-  Expression v2;
+  Vertex ref(0, 0.0);
+  Vertex v1(1);
+  Vertex v2(2);
   Expression voltage(5.0);
-  VoltageSource vs(ref, v1, voltage);
+  VoltageSource vs(0, ref, v1, voltage);
   Expression res1(2.0);
   Expression res2(3.0);
-  Resistor r1(v1, v2, res1);
-  Resistor r2(v2, ref, res2);
+  Resistor r1(1, v1, v2, res1);
+  Resistor r2(2, v2, ref, res2);
   assert(graph->addVertex(ref));
   assert(graph->addVertex(v1));
   assert(graph->addVertex(v2));
-  assert(graph->addEdge(&vs));
-  assert(graph->addEdge(&r1));
-  assert(graph->addEdge(&r2));
+  assert(graph->addEdge(vs));
+  assert(graph->addEdge(r1));
+  assert(graph->addEdge(r2));
   graph->solveCircuit();
   bool err = false;
-  err |= !testEquals(5.0, v1.getValue());
-  err |= !testEquals(3.0, v2.getValue());
-  err |= !testEquals(1.0, vs.current.getValue());
+  err |= !testEquals(5.0, v1.getVoltage().getValue());
+  err |= !testEquals(3.0, v2.getVoltage().getValue());
+  err |= !testEquals(1.0, vs.getCurrent().getValue());
   if (!err)
     cout << "Test Passed!" << endl;
   else
@@ -51,35 +49,35 @@ bool testBasicCircuit() {
 bool testRealDiodes() {
   cout << "Testing real diode circuit" << endl;
   CircuitGraph* graph = new CircuitGraph();
-  Expression ref = 0;
-  Expression vcc = 15;
-  Expression v1;
-  Expression v2;
+  Vertex ref(0, 0.0);
+  Vertex v1(1);
+  Vertex v2(2);
+  Vertex vcc(3, 15);
   Expression n = 1.5;
   Expression vt = 25e-3;
   Expression i0 = 50e-12;
-  RealDiode d(v1, v2, i0, vt, n);
+  RealDiode d(0, v1, v2, i0, vt, n);
   Expression res1(2000);
   Expression res2(3000);
   Expression res3(3000);
   Expression res4(3000);
-  Resistor r1(vcc, v1, res1);
-  Resistor r2(vcc, v2, res2);
-  Resistor r3(v1, ref, res3);
-  Resistor r4(v2, ref, res4);
+  Resistor r1(1, vcc, v1, res1);
+  Resistor r2(2, vcc, v2, res2);
+  Resistor r3(3, v1, ref, res3);
+  Resistor r4(4, v2, ref, res4);
   graph->addVertex(ref);
   graph->addVertex(vcc);
   graph->addVertex(v1);
   graph->addVertex(v2);
-  graph->addEdge(&r1);
-  graph->addEdge(&r2);
-  graph->addEdge(&r3);
-  graph->addEdge(&r4);
-  graph->addEdge(&d);
+  graph->addEdge(r1);
+  graph->addEdge(r2);
+  graph->addEdge(r3);
+  graph->addEdge(r4);
+  graph->addEdge(d);
   graph->solveCircuit();
   bool err = false;
-  err |= !testEquals(8.595, v1.getValue());
-  err |= !testEquals(8.006, v2.getValue());
+  err |= !testEquals(8.595, v1.getVoltage().getValue());
+  err |= !testEquals(8.006, v2.getVoltage().getValue());
   err |= !testEquals(337.2e-6, d.getCurrent().getValue());
   if (!err)
     cout << "Test Passed!" << endl;
