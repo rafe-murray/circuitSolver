@@ -13,8 +13,8 @@ public:
       mutable_parameter_block_sizes()->push_back(1);
     }
   }
-  virtual ~ExpressionCostFunction() { /*delete map;*/
-  }
+  virtual ~ExpressionCostFunction() { /*delete map;*/ }
+  // TODO: can this use vectors?
   virtual bool Evaluate(double const* const* parameters, double* residuals,
                         double** jacobians) const {
     auto val = root->compute(parameters[0], *map);

@@ -12,6 +12,7 @@
 #include "circuitsolver/math/variable.h"
 #include <memory>
 #include <ostream>
+#include <stdexcept>
 
 using namespace std;
 
@@ -140,6 +141,17 @@ bool Expression::operator==(const Expression& rhs) const {
     return u->value == v->value;
   }
   return root == rhs.root;
+}
+
+Expression& Expression::operator=(double rhs) {
+  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  if (v) {
+    v->value = rhs;
+    v->known = true;
+  } else
+    throw invalid_argument("Attempting to assign to an Expression that is "
+                           "dependent on multiple unknowns");
+  return *this;
 }
 
 Condition Expression::operator<(const Expression& rhs) const {

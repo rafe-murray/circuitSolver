@@ -19,6 +19,7 @@ class ExpressionCostFunction;
  * while building the expression tree. Additionally, this would allow us to use
  * this class more generally for things like symbolic differentiation, etc.
  * TODO: support additional assignment operators
+ * TODO: support operators between int/double and Expression
  */
 class Expression {
 public:
@@ -74,6 +75,8 @@ public:
    * @return a new Expression that represents -this
    */
   Expression operator-() const;
+
+  Expression& operator=(double rhs);
 
   // TODO: add docs for these methods
   Condition operator<(const Expression& rhs) const;
