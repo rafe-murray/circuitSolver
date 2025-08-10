@@ -42,6 +42,9 @@ struct ExpressionNode {
   virtual void
   getUnknowns(std::unordered_set<const double*>& unknowns) const = 0;
 
+  // TODO: move all of these to friend declarations with implementations in the
+  // source file That way it will actually print - currently it is a node on the
+  // lhs
   /**
    * Prints the node to `out`
    * @param out the stream to print to
@@ -113,16 +116,15 @@ enum class BooleanBinaryOp { LT, LEQ, EQ, NEQ, GEQ, GT };
  * A Binary operation node in the AST that return a boolean value.
  * Note that all other nodes return `double` values
  */
-struct BooleanBinaryOpNode {
+struct Condition {
 
   /**
-   * Creates a `BooleanBinaryOpNode`
+   * Creates a `Condition`
    * @param lhs the left hand side of the operation
    * @param rhs the right hand side of the operation
    * @param op the type of operation
    */
-  BooleanBinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
-                      BooleanBinaryOp op);
+  Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BooleanBinaryOp op);
 
   /**
    * Evaluates the AST with `this` as a root.
@@ -177,7 +179,7 @@ struct TernaryOpNode : ExpressionNode {
    * @param valIfTrue expression to use if `condition` is true
    * @param valIfFalse expression to use if `condition` is false
    */
-  TernaryOpNode(std::shared_ptr<BooleanBinaryOpNode> condition,
+  TernaryOpNode(std::shared_ptr<Condition> condition,
                 ExpressionNodePtr valIfTrue, ExpressionNodePtr valIfFalse);
 
   /**
@@ -203,7 +205,7 @@ struct TernaryOpNode : ExpressionNode {
   /**
    * The condition used to determine which expression to evaluate
    */
-  std::shared_ptr<BooleanBinaryOpNode> condition;
+  std::shared_ptr<Condition> condition;
 
   /**
    * The expression to evaluate if `condition` is true

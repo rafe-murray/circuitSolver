@@ -5,12 +5,11 @@ BinaryOpNode::BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
                            BinaryOp op)
     : lhs(lhs), rhs(rhs), op(op) {}
 
-BooleanBinaryOpNode::BooleanBinaryOpNode(ExpressionNodePtr lhs,
-                                         ExpressionNodePtr rhs,
-                                         BooleanBinaryOp op)
+Condition::Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
+                     BooleanBinaryOp op)
     : lhs(lhs), rhs(rhs), op(op) {}
 
-TernaryOpNode::TernaryOpNode(std::shared_ptr<BooleanBinaryOpNode> condition,
+TernaryOpNode::TernaryOpNode(std::shared_ptr<Condition> condition,
                              ExpressionNodePtr valIfTrue,
                              ExpressionNodePtr valIfFalse)
     : condition(condition), valIfTrue(valIfTrue), valIfFalse(valIfFalse) {}
@@ -53,8 +52,7 @@ T BinaryOpNode::evaluateImplementation(T const* parameters,
 }
 
 template <typename T>
-bool BooleanBinaryOpNode::evaluate(T const* parameters,
-                                   const ExpressionMap& map) const {
+bool Condition::evaluate(T const* parameters, const ExpressionMap& map) const {
   switch (op) {
   case BooleanBinaryOp::EQ:
     return lhs->evaluate(parameters, map) == rhs->evaluate(parameters, map);
@@ -108,8 +106,7 @@ void BinaryOpNode::getUnknowns(
   rhs->getUnknowns(unknowns);
 }
 
-void BooleanBinaryOpNode::getUnknowns(
-    std::unordered_set<const double*>& unknowns) const {
+void Condition::getUnknowns(std::unordered_set<const double*>& unknowns) const {
   lhs->getUnknowns(unknowns);
   rhs->getUnknowns(unknowns);
 }
@@ -149,7 +146,7 @@ std::ostream& BinaryOpNode::operator<<(std::ostream& out) const {
   return out;
 }
 
-std::ostream& BooleanBinaryOpNode::operator<<(std::ostream& out) const {
+std::ostream& Condition::operator<<(std::ostream& out) const {
   out << "(" << lhs;
   switch (op) {
   case BooleanBinaryOp::EQ:

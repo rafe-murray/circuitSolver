@@ -1,11 +1,10 @@
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
-#include "condition.h"
+#include "expressionCostFunctor.h"
 #include "expressionNode.h"
 #include <ceres/ceres.h>
 #include <iostream>
-#include <memory>
 
 class ExpressionCostFunction;
 
@@ -99,7 +98,7 @@ public:
   /**
    * Checks if this expression is a constant value
    *
-   * @return true if this is a constant or true if there are one or more
+   * @return true if this is a constant or false if there are one or more
    * unknowns
    */
   bool isConstant() const;
@@ -112,56 +111,37 @@ public:
   static Expression exp(const Expression& arg);
 
   /**
-   * Gets a cost function for this Expression
-   */
-  ExpressionCostFunction* getCostFunction();
-
-  /**
    * Gets the unknowns this Expression depends on
    *
    * @return a vector of double* where each entry points to the value of one of
    * the unknowns of this expression
    */
-  vector<double*> getUnknownVals();
+  std::unordered_set<const double*> getUnknowns() const;
+
+  int getNumUnknowns() const;
+
+  ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor> getCostFunction();
 
   /**
-   * Gets the value of this expression given the current values set for the
-   * unknowns (i.e., by modifying the values returned from `getUnknownVals`)
+   * Evaluates the Expression, replacing unknowns with 0
    *
    * @return the value of the Expression
    */
-  double getValue() const;
+  double evaluate() const;
 
-  // TODO: turn this into an operator<< overload and use an inorder traversal to
-  // print vals maybe with unknown@0x12345678 for the unknowns
-  void print(std::ostream& out = std::cout) const;
+  double evaluate(double const* parameters, const ExpressionMap& map) const;
 
-  // FIXME: Make this private
-  shared_ptr<ExpressionNode> root;
+  double* getPtrToUnknown();
 
 private:
   /**
-   * Obtain a mapping of Variable* to array indices for function arguments.
+   * Obtain a mapping of double* to array indices for function arguments.
    * Since the unknowns are stored in a tree ADT we need a way to translate
    * between
-   * TODO: change expressionMap from using Variable* pointers to using double*
-   * pointers then remove the unnecessary getUnknowns, rename getUnknownVals
    */
-  expressionMap* getMap();
-  set<VariableNode*> getUnknowns();
-  Expression(shared_ptr<ExpressionNode> root);
-  friend std::hash<Expression>;
-  friend ostream& operator<<(ostream& out, const Expression& e);
+  ExpressionMap getMap() const;
+  Expression(ExpressionNodePtr root);
+  ExpressionNodePtr root;
+  friend std::ostream& operator<<(std::ostream& out, const Expression& e);
 };
-
-// Define a std::hash object so that Expressions can be used as keys in
-// std::unordered_map or std::unordered_set containers
-namespace std {
-template <> struct hash<Expression> {
-  size_t operator()(const Expression& v) const {
-    hash<shared_ptr<const ExpressionNode>> pointerHash;
-    return pointerHash(v.root);
-  }
-};
-} // namespace std
 #endif

@@ -1,18 +1,10 @@
-#include "circuitsolver/math/expression.h"
-#include "circuitsolver/math/additionNode.h"
-#include "circuitsolver/math/condition.h"
-#include "circuitsolver/math/conditionNode.h"
-#include "circuitsolver/math/divisionNode.h"
-#include "circuitsolver/math/exponentiationNode.h"
-#include "circuitsolver/math/expressionCostFunction.h"
-#include "circuitsolver/math/expressionNode.h"
-#include "circuitsolver/math/multiplicationNode.h"
-#include "circuitsolver/math/negationNode.h"
-#include "circuitsolver/math/subtractionNode.h"
-#include "circuitsolver/math/variable.h"
+#include "circuitsolver/expression.h"
+#include "circuitsolver/expressionCostFunctor.h"
+#include "circuitsolver/expressionNode.h"
 #include <memory>
 #include <ostream>
 #include <stdexcept>
+#include <unordered_set>
 
 using namespace std;
 
@@ -41,11 +33,12 @@ Expression Expression::operator+(const Expression& rhs) const {
     return Expression(u->value + v->value);
   }
 
-  shared_ptr<NegationNode> n = dynamic_pointer_cast<NegationNode>(rhs.root);
-  if (n)
-    return Expression(make_shared<SubtractionNode>(root, n->child));
+  shared_ptr<UnaryOpNode> n = dynamic_pointer_cast<UnaryOpNode>(rhs.root);
+  if (n && n->op == UnaryOp::NEG)
+    return Expression(
+        make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB));
 
-  return Expression(make_shared<AdditionNode>(root, rhs.root));
+  return Expression(make_shared<BinaryOpNode>(root, rhs.root, BinaryOp::ADD));
 }
 
 Expression Expression::operator-(const Expression& rhs) const {
@@ -69,7 +62,7 @@ Expression Expression::operator-(const Expression& rhs) const {
     return Expression(0.0);
   }
 
-  return Expression(make_shared<SubtractionNode>(root, rhs.root));
+  return Expression(make_shared<BinaryOpNode>(root, rhs.root, BinaryOp::SUB));
 }
 
 Expression Expression::operator*(const Expression& rhs) const {
@@ -95,7 +88,7 @@ Expression Expression::operator*(const Expression& rhs) const {
     return Expression(u->value * v->value);
   }
 
-  return Expression(make_shared<MultiplicationNode>(root, rhs.root));
+  return Expression(make_shared<BinaryOpNode>(root, rhs.root, BinaryOp::MUL));
 }
 
 Expression Expression::operator/(const Expression& rhs) const {
@@ -114,7 +107,7 @@ Expression Expression::operator/(const Expression& rhs) const {
     return Expression(1.0);
   }
 
-  return Expression(make_shared<DivisionNode>(root, rhs.root));
+  return Expression(make_shared<BinaryOpNode>(root, rhs.root, BinaryOp::DIV));
 }
 
 Expression Expression::operator-() const {
@@ -122,7 +115,7 @@ Expression Expression::operator-() const {
   if (v && v->known) {
     return Expression(-v->value);
   }
-  return Expression(make_shared<NegationNode>(root));
+  return Expression(make_shared<UnaryOpNode>(root, UnaryOp::NEG));
 }
 
 Expression Expression::exp(const Expression& arg) {
@@ -130,12 +123,13 @@ Expression Expression::exp(const Expression& arg) {
   if (v && v->known) {
     return Expression(std::exp(v->value));
   }
-  return Expression(make_shared<ExponentiationNode>(arg.root));
+  return Expression(make_shared<UnaryOpNode>(arg.root, UnaryOp::EXP));
 }
 
 bool Expression::operator==(const Expression& rhs) const {
   shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(root);
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(rhs.root);
+  // TODO: why has this been implemented this way?
   if (u && v && u->known && v->known) {
     /*cout << "Exressions had same value of " << u->value << endl;*/
     return u->value == v->value;
@@ -155,29 +149,29 @@ Expression& Expression::operator=(double rhs) {
 }
 
 Condition Expression::operator<(const Expression& rhs) const {
-  return Condition(ConditionType::LT, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::LT);
 }
 
 Condition Expression::operator<=(const Expression& rhs) const {
-  return Condition(ConditionType::LEQ, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::LEQ);
 }
 Condition Expression::operator>(const Expression& rhs) const {
-  return Condition(ConditionType::GT, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::GT);
 }
 Condition Expression::operator>=(const Expression& rhs) const {
-  return Condition(ConditionType::GEQ, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::GEQ);
 }
 Condition Expression::operator!=(const Expression& rhs) const {
-  return Condition(ConditionType::NEQ, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::NEQ);
 }
 Condition Expression::equals(const Expression& rhs) const {
-  return Condition(ConditionType::EQ, root, rhs.root);
+  return Condition(root, rhs.root, BooleanBinaryOp::EQ);
 }
 Expression Expression::makeConditional(Condition condition,
                                        const Expression& valIfTrue,
                                        const Expression& valIfFalse) {
   return Expression(
-      make_shared<ConditionNode>(condition, valIfTrue.root, valIfFalse.root));
+      make_shared<TernaryOpNode>(condition, valIfTrue.root, valIfFalse.root));
 }
 
 bool Expression::isConstant() const {
@@ -185,67 +179,49 @@ bool Expression::isConstant() const {
   return v && v->known;
 }
 
-set<VariableNode*> Expression::getUnknowns() {
-  set<VariableNode*> unknowns;
+std::unordered_set<const double*> Expression::getUnknowns() const {
+  unordered_set<const double*> unknowns;
   this->root->getUnknowns(unknowns);
   return unknowns;
 }
-vector<double*> Expression::getUnknownVals() {
-  set<VariableNode*> unknowns = getUnknowns();
-  vector<double*> vals(unknowns.size());
-  size_t i = 0;
-  for (VariableNode* var : unknowns) {
-    vals[i] = &var->value;
-    i++;
-  }
-  return vals;
-}
-expressionMap* Expression::getMap() {
-  expressionMap* map = new expressionMap();
+
+int Expression::getNumUnknowns() const { return getUnknowns().size(); }
+
+ExpressionMap Expression::getMap() const {
+  ExpressionMap map;
   unsigned i = 0;
   for (auto unknown : getUnknowns()) {
-    (*map)[(VariableNode*)unknown] = i;
+    (map)[unknown] = i;
     i++;
   }
   return map;
 }
 
-double Expression::getValue() const { return root->value; }
+ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>
+Expression::getCostFunction() {
+  ExpressionMap map = getMap();
+  ExpressionCostFunctor costFunctor(root, map);
+  return ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
+      &costFunctor);
+}
 
-ostream& operator<<(ostream& out, const Expression& e) {
-  e.root->serialize(out);
-  return out;
+double Expression::evaluate() const {
+  double* parameters = new double[getNumUnknowns()];
+  ExpressionMap map = getMap();
+  return root->evaluate(parameters, map);
 }
-ExpressionCostFunction* Expression::getCostFunction() {
-  expressionMap* map = getMap();
-  return new ExpressionCostFunction(map, root);
+
+double Expression::evaluate(double const* parameters,
+                            const ExpressionMap& map) const {
+  return root->evaluate(parameters, map);
 }
-ostream& operator<<(ostream& out, const Condition& c) {
-  string opString;
-  switch (c.op) {
-  case ConditionType::LT:
-    opString = " < ";
-    break;
-  case ConditionType::LEQ:
-    opString = " <= ";
-    break;
-  case ConditionType::EQ:
-    opString = " == ";
-    break;
-  case ConditionType::NEQ:
-    opString = " != ";
-    break;
-  case ConditionType::GEQ:
-    opString = " >= ";
-    break;
-  case ConditionType::GT:
-    opString = " > ";
-    break;
+
+double* Expression::getPtrToUnknown() {
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
+  if (v) {
+    return &v->value;
+  } else {
+    return nullptr;
   }
-  out << "(";
-  c.lhs->serialize(out);
-  out << opString;
-  c.rhs->serialize(out);
-  out << ")";
-  return out;
 }
