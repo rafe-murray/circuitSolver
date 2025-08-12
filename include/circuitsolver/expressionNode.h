@@ -1,13 +1,17 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
+#include <cmath>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
 
-class VariableNode;
+class BinaryOpNode;
 class ExpressionNode;
+class TernaryOpNode;
+class UnaryOpNode;
+class VariableNode;
 
 typedef std::unordered_map<const double*, size_t> ExpressionMap;
 typedef std::shared_ptr<ExpressionNode> ExpressionNodePtr;
@@ -20,18 +24,6 @@ struct ExpressionNode {
    * virtual destructor to enable dynamic dispatch
    */
   virtual ~ExpressionNode() {}
-
-  /**
-   * Evaluates the AST with `this` as a root.
-   * Note that this is templated so that `ceres` can do automatic
-   * differentiation
-   * @param parameters an array of values to be used for the unknowns
-   * @param map a mapping from pointers to the unknown values to the index of
-   * the corresponding value to use in `parameters`
-   * @return the value of the AST with `this` as a root
-   */
-  template <typename T>
-  T evaluate(T const* parameters, const ExpressionMap& map) const;
 
   /**
    * Stores pointers to all unknown values in the AST with `this` as a root in
@@ -79,7 +71,19 @@ struct BinaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const* parameters, const ExpressionMap& map) const;
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
+    switch (op) {
+    case BinaryOp::MUL:
+      return evaluate(lhs, parameters, map) * evaluate(rhs, parameters, map);
+    case BinaryOp::DIV:
+      return evaluate(lhs, parameters, map) / evaluate(rhs, parameters, map);
+    case BinaryOp::ADD:
+      return evaluate(lhs, parameters, map) + evaluate(rhs, parameters, map);
+    case BinaryOp::SUB:
+      return evaluate(lhs, parameters, map) - evaluate(rhs, parameters, map);
+    }
+  }
 
   /**
    * @inheritdoc
@@ -136,7 +140,22 @@ struct Condition {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  bool evaluate(T const* parameters, const ExpressionMap& map) const;
+  bool evaluate(T const* parameters, const ExpressionMap& map) const {
+    switch (op) {
+    case BooleanBinaryOp::EQ:
+      return evaluate(lhs, parameters, map) == evaluate(rhs, parameters, map);
+    case BooleanBinaryOp::GEQ:
+      return evaluate(lhs, parameters, map) >= evaluate(rhs, parameters, map);
+    case BooleanBinaryOp::LEQ:
+      return evaluate(lhs, parameters, map) <= evaluate(rhs, parameters, map);
+    case BooleanBinaryOp::LT:
+      return evaluate(lhs, parameters, map) < evaluate(rhs, parameters, map);
+    case BooleanBinaryOp::GT:
+      return evaluate(lhs, parameters, map) > evaluate(rhs, parameters, map);
+    case BooleanBinaryOp::NEQ:
+      return evaluate(lhs, parameters, map) != evaluate(rhs, parameters, map);
+    }
+  }
 
   /**
    * Stores pointers to all unknown values in the AST with `this` as a root in
@@ -190,7 +209,14 @@ struct TernaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const* parameters, const ExpressionMap& map) const;
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
+    if (condition->evaluate(parameters, map)) {
+      return evaluate(valIfTrue, parameters, map);
+    } else {
+      return evaluate(valIfFalse, parameters, map);
+    }
+  }
 
   /**
    * @inheritdoc
@@ -243,7 +269,15 @@ struct UnaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const* parameters, const ExpressionMap& map) const;
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
+    switch (op) {
+    case UnaryOp::EXP:
+      return std::exp(evaluate(operand, parameters, map));
+    case UnaryOp::NEG:
+      return -(evaluate(operand, parameters, map));
+    }
+  }
 
   /**
    * @inheritdoc
@@ -289,7 +323,14 @@ struct VariableNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const* parameters, const ExpressionMap& map) const;
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
+    if (known) {
+      return T(value);
+    } else {
+      return parameters[map.at(&value)];
+    }
+  }
 
   /**
    * @inheritdoc
@@ -312,4 +353,30 @@ struct VariableNode : ExpressionNode {
   bool known;
 };
 
+/**
+ * Evaluates the AST with `root` as a root.
+ * Note that this is templated so that `ceres` can do automatic
+ * differentiation
+ * @param parameters an array of values to be used for the unknowns
+ * @param map a mapping from pointers to the unknown values to the index of
+ * the corresponding value to use in `parameters`
+ * @return the value of the AST with `root` as a root
+ */
+template <typename T>
+T evaluate(ExpressionNodePtr root, T const* parameters,
+           const ExpressionMap& map) {
+  ExpressionNode* ptr = root.get();
+  if (auto node = dynamic_cast<const VariableNode*>(ptr)) {
+    node->evaluateImplementation(parameters, map);
+  }
+  if (auto node = dynamic_cast<const BinaryOpNode*>(ptr)) {
+    node->evaluateImplementation(parameters, map);
+  }
+  if (auto node = dynamic_cast<const UnaryOpNode*>(ptr)) {
+    node->evaluateImplementation(parameters, map);
+  }
+  if (auto node = dynamic_cast<const TernaryOpNode*>(ptr)) {
+    node->evaluateImplementation(parameters, map);
+  }
+}
 #endif
