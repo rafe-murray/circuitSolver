@@ -1,7 +1,7 @@
 #ifndef REALDIODE_H
 #define REALDIODE_H
 
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 
@@ -14,16 +14,16 @@ public:
             Expression vt, Expression n)
       : Edge(id, v1, v2), i0(i0), vt(vt), n(n) {}
   Expression getCurrent() {
-    return i0 * Expression::exp((v1.getVoltage() - v2.getVoltage()) / (n * vt));
+    return i0 * std::exp((v1.getVoltage() - v2.getVoltage()) / (n * vt));
   }
 
   rapidjson::Value
   toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "realDiode", allocator);
-    edge.AddMember("i0", i0.getValue(), allocator);
-    edge.AddMember("vt", vt.getValue(), allocator);
-    edge.AddMember("n", n.getValue(), allocator);
+    edge.AddMember("i0", i0.evaluate(), allocator);
+    edge.AddMember("vt", vt.evaluate(), allocator);
+    edge.AddMember("n", n.evaluate(), allocator);
     return edge;
   }
 

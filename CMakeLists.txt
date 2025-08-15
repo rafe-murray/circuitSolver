@@ -12,8 +12,8 @@ option(COMPILE_TESTS "Compile a test executable" ON) # TODO: change default when
 # tests
 add_library(circuitSolver STATIC)
 target_sources(
-  circuitSolver PRIVATE src/circuitGraph.cpp src/math/expression.cpp
-                        src/components/edge.cpp)
+  circuitSolver PRIVATE src/circuitGraph.cpp src/expression.cpp
+                        src/expressionNode.cpp src/components/edge.cpp)
 
 target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 

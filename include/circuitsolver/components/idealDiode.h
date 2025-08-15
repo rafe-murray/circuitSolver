@@ -1,7 +1,7 @@
 #ifndef IDEALDIODE_H
 #define IDEALDIODE_H
 
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 

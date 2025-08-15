@@ -1,6 +1,6 @@
 #ifndef CURRENT_SOURCE_H
 #define CURRENT_SOURCE_H
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 #include <alloca.h>

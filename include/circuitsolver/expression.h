@@ -7,6 +7,17 @@
 #include <iostream>
 
 class ExpressionCostFunction;
+class Expression;
+
+namespace std {
+
+/**
+ * Exponentiates an expression
+ *
+ * @return an Expression representing e^this
+ */
+Expression exp(Expression arg);
+} // namespace std
 
 /**
  * Represents an arithmetic expression that can be built with variables of
@@ -43,7 +54,7 @@ public:
    * @param rhs - the expression to add to this one
    * @return a new Expression that represents this + rhs
    */
-  Expression operator+(const Expression& rhs) const;
+  Expression operator+(Expression rhs) const;
 
   /**
    * Subtracts two expressions
@@ -51,7 +62,7 @@ public:
    * @param rhs - the expression to subtract from this one
    * @return a new Expression that represents this - rhs
    */
-  Expression operator-(const Expression& rhs) const;
+  Expression operator-(Expression rhs) const;
 
   /**
    * Multiplies two expressions
@@ -59,7 +70,7 @@ public:
    * @param rhs - the expression to multiply by this one
    * @return a new Expression that represents this * rhs
    */
-  Expression operator*(const Expression& rhs) const;
+  Expression operator*(Expression rhs) const;
 
   /**
    * Divides two expressions
@@ -67,7 +78,7 @@ public:
    * @param rhs - the expression to divide this one by
    * @return a new Expression that represents this / rhs
    */
-  Expression operator/(const Expression& rhs) const;
+  Expression operator/(Expression rhs) const;
 
   /**
    * Negates an expression
@@ -77,16 +88,18 @@ public:
 
   Expression& operator=(double rhs);
 
+  Expression& operator+=(const Expression& rhs);
+  Expression& operator-=(const Expression& rhs);
+
   // TODO: add docs for these methods
-  Condition operator<(const Expression& rhs) const;
-  Condition operator<=(const Expression& rhs) const;
-  Condition operator>(const Expression& rhs) const;
-  Condition operator>=(const Expression& rhs) const;
-  Condition operator!=(const Expression& rhs) const;
-  Condition equals(const Expression& rhs) const;
-  static Expression makeConditional(Condition condition,
-                                    const Expression& valIfTrue,
-                                    const Expression& valIfFalse);
+  Condition operator<(Expression rhs) const;
+  Condition operator<=(Expression rhs) const;
+  Condition operator>(Expression rhs) const;
+  Condition operator>=(Expression rhs) const;
+  Condition operator!=(Expression rhs) const;
+  Condition equals(Expression rhs) const;
+  static Expression makeConditional(Condition condition, Expression valIfTrue,
+                                    Expression valIfFalse);
 
   /**
    * Checks if two Expressions are equal
@@ -94,6 +107,7 @@ public:
    * @return true if equal, otherwise false
    */
   bool operator==(const Expression& rhs) const;
+  bool operator==(double rhs) const;
 
   /**
    * Checks if this expression is a constant value
@@ -104,13 +118,6 @@ public:
   bool isConstant() const;
 
   /**
-   * Exponentiates an expression
-   *
-   * @return an Expression representing e^this
-   */
-  static Expression exp(const Expression& arg);
-
-  /**
    * Gets the unknowns this Expression depends on
    *
    * @return a vector of double* where each entry points to the value of one of
@@ -118,9 +125,11 @@ public:
    */
   std::unordered_set<const double*> getUnknowns() const;
 
+  std::vector<double*> getMutableUnknowns();
+
   int getNumUnknowns() const;
 
-  ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor> getCostFunction();
+  ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>* getCostFunction();
 
   /**
    * Evaluates the Expression, replacing unknowns with 0
@@ -129,9 +138,24 @@ public:
    */
   double evaluate() const;
 
-  double evaluate(double const* parameters, const ExpressionMap& map) const;
+  double evaluate(double const* parameters) const;
 
   double* getPtrToUnknown();
+
+  /**
+   * If `this` represents a single unknown, changes that unknown to now have the
+   * known quantity `value`. Otherwise discards all information represented by
+   * `this`, making it represent a single known quantity: `value`.
+   *
+   * @param value the value to set `this` to
+   */
+  void setValue(double value);
+
+  void setValues(double const* values);
+
+  void markKnown();
+
+  void addToProblem(ceres::Problem& problem);
 
 private:
   /**
@@ -143,5 +167,9 @@ private:
   Expression(ExpressionNodePtr root);
   ExpressionNodePtr root;
   friend std::ostream& operator<<(std::ostream& out, const Expression& e);
+  friend Expression std::exp(Expression arg);
 };
+
+ceres::Solver::Options getDefaultOptions();
+
 #endif

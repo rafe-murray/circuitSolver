@@ -1,6 +1,6 @@
 #ifndef EDGE_H
 #define EDGE_H
-#include "../math/expression.h"
+#include "../expression.h"
 #include "vertex.h"
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>

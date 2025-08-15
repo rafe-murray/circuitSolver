@@ -3,7 +3,7 @@
 
 #include "components/edge.h"
 #include "components/vertex.h"
-#include "math/expression.h"
+#include "expression.h"
 #include <memory>
 #include <unordered_map>
 
@@ -12,17 +12,20 @@
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
 
+typedef std::shared_ptr<Edge> EdgePtr;
+
 class CircuitGraph {
 public:
   Expression getErrorExpression();
-  void solveCircuit();
+  ceres::Solver::Summary solveCircuit();
 
   /**
    * Creates a new graph instance
    */
   CircuitGraph()
       : adjacencyList(
-            unordered_map<Vertex, unordered_map<Vertex, shared_ptr<Edge>>>()) {}
+            std::unordered_map<Vertex, std::unordered_map<Vertex, EdgePtr>>()) {
+  }
 
   /**
    * Adds a vertex to the graph
@@ -43,14 +46,14 @@ public:
    * @param e - the edge to add
    * @return true if the edge was not part of the graph before and now it is
    */
-  bool addEdge(shared_ptr<Edge> e);
+  bool addEdge(EdgePtr e);
 
   /**
    * Removes an edge from the graph
    * @param e - the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(shared_ptr<Edge> e);
+  bool removeEdge(EdgePtr e);
 
   /**
    * Removes an edge from the graph
@@ -66,19 +69,19 @@ public:
    * @param v - the vertex which the edges are incident on
    * @return a vector containing all incident edges
    */
-  vector<shared_ptr<Edge>> getIncident(const Vertex& v);
+  std::vector<EdgePtr> getIncident(const Vertex& v);
 
   /**
    * Gets all vertices in the graph
    * @return a vector containing all the vertices in the graph
    */
-  vector<Vertex> getVertices() const;
+  std::vector<Vertex> getVertices() const;
 
-  vector<shared_ptr<Edge>> getEdges() const;
+  std::vector<EdgePtr> getEdges() const;
 
   // pre: the circuit is solved
-  string toJson() const;
-  static CircuitGraph* fromJson(const string& json);
+  std::string toJson() const;
+  static CircuitGraph* fromJson(const std::string& json);
 
 private:
   /**
@@ -105,7 +108,7 @@ private:
    * @param id the id of the `Edge`
    * @throws std::out_of_range if no `Edge` with `id` is a member of `this`
    */
-  shared_ptr<Edge> getEdge(int id);
+  EdgePtr getEdge(int id);
 
   /**
    * Get the reference node for the graph
@@ -115,17 +118,17 @@ private:
   /**
    * An adjacency list representation of the graph
    */
-  unordered_map<Vertex, unordered_map<Vertex, shared_ptr<Edge>>> adjacencyList;
+  std::unordered_map<Vertex, std::unordered_map<Vertex, EdgePtr>> adjacencyList;
 
   /**
    * Map of vertex id to vertex
    */
-  unordered_map<int, Vertex> vertices;
+  std::unordered_map<int, Vertex> vertices;
 
   /**
    * Map of edge id to edge
    */
-  unordered_map<int, shared_ptr<Edge>> edges;
+  std::unordered_map<int, EdgePtr> edges;
 };
 
 #endif // !CIRCUIT_GRAPH_H

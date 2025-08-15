@@ -1,6 +1,6 @@
 #ifndef VERTEX_H
 #define VERTEX_H
-#include "../math/expression.h"
+#include "../expression.h"
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
@@ -17,7 +17,7 @@ public:
   rapidjson::Value toJson(rapidjson::MemoryPoolAllocator<>& allocator) const {
     rapidjson::Value vertex(rapidjson::kObjectType);
     vertex.AddMember("id", id, allocator);
-    vertex.AddMember("voltage", voltage.getValue(), allocator);
+    vertex.AddMember("voltage", voltage.evaluate(), allocator);
     return vertex;
   }
 

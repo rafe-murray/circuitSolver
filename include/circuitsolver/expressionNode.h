@@ -1,7 +1,6 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
-#include <cmath>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
@@ -16,6 +15,12 @@ class VariableNode;
 typedef std::unordered_map<const double*, size_t> ExpressionMap;
 typedef std::shared_ptr<ExpressionNode> ExpressionNodePtr;
 
+namespace expressionNode {
+template <typename T>
+T evaluate(ExpressionNodePtr root, T const* parameters,
+           const ExpressionMap& map);
+}
+
 /**
  * A single node in the AST of an `Expression`
  */
@@ -26,13 +31,21 @@ struct ExpressionNode {
   virtual ~ExpressionNode() {}
 
   /**
-   * Stores pointers to all unknown values in the AST with `this` as a root in
-   * `unknowns`
+   * Stores const pointers to all unknown values in the AST with `this` as a
+   * root in `unknowns`
    * @param unknowns a set of unknown values to add the unknowns in this AST to.
    * Unknowns in this AST may or may not be already present already;
    */
   virtual void
   getUnknowns(std::unordered_set<const double*>& unknowns) const = 0;
+
+  /**
+   * Stores pointers to all unknown values in the AST with `this` as a root in
+   * `unknowns`
+   * @param unknowns a set of unknown values to add the unknowns in this AST to.
+   * Unknowns in this AST may or may not be already present already;
+   */
+  virtual void getUnknowns(std::unordered_set<double*>& unknowns) = 0;
 
   // TODO: move all of these to friend declarations with implementations in the
   // source file That way it will actually print - currently it is a node on the
@@ -42,7 +55,9 @@ struct ExpressionNode {
    * @param out the stream to print to
    * @return `out`
    */
-  virtual std::ostream& operator<<(std::ostream& out) const = 0;
+  virtual std::ostream& serialize(std::ostream& out) const = 0;
+
+  virtual void markKnown() = 0;
 };
 
 /**
@@ -75,13 +90,17 @@ struct BinaryOpNode : ExpressionNode {
                            const ExpressionMap& map) const {
     switch (op) {
     case BinaryOp::MUL:
-      return evaluate(lhs, parameters, map) * evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) *
+             expressionNode::evaluate(rhs, parameters, map);
     case BinaryOp::DIV:
-      return evaluate(lhs, parameters, map) / evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) /
+             expressionNode::evaluate(rhs, parameters, map);
     case BinaryOp::ADD:
-      return evaluate(lhs, parameters, map) + evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) +
+             expressionNode::evaluate(rhs, parameters, map);
     case BinaryOp::SUB:
-      return evaluate(lhs, parameters, map) - evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) -
+             expressionNode::evaluate(rhs, parameters, map);
     }
   }
 
@@ -93,7 +112,17 @@ struct BinaryOpNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  std::ostream& operator<<(std::ostream& out) const override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  /**
+   * @inheritdoc
+   */
+  std::ostream& serialize(std::ostream& out) const override;
+
+  /**
+   * @inheritdoc
+   */
+  void markKnown() override;
 
   /**
    * The left hand side of the operation
@@ -143,17 +172,23 @@ struct Condition {
   bool evaluate(T const* parameters, const ExpressionMap& map) const {
     switch (op) {
     case BooleanBinaryOp::EQ:
-      return evaluate(lhs, parameters, map) == evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) ==
+             expressionNode::evaluate(rhs, parameters, map);
     case BooleanBinaryOp::GEQ:
-      return evaluate(lhs, parameters, map) >= evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) >=
+             expressionNode::evaluate(rhs, parameters, map);
     case BooleanBinaryOp::LEQ:
-      return evaluate(lhs, parameters, map) <= evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) <=
+             expressionNode::evaluate(rhs, parameters, map);
     case BooleanBinaryOp::LT:
-      return evaluate(lhs, parameters, map) < evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) <
+             expressionNode::evaluate(rhs, parameters, map);
     case BooleanBinaryOp::GT:
-      return evaluate(lhs, parameters, map) > evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) >
+             expressionNode::evaluate(rhs, parameters, map);
     case BooleanBinaryOp::NEQ:
-      return evaluate(lhs, parameters, map) != evaluate(rhs, parameters, map);
+      return expressionNode::evaluate(lhs, parameters, map) !=
+             expressionNode::evaluate(rhs, parameters, map);
     }
   }
 
@@ -166,11 +201,18 @@ struct Condition {
   void getUnknowns(std::unordered_set<const double*>& unknowns) const;
 
   /**
+   * @inheritdoc
+   */
+  void getUnknowns(std::unordered_set<double*>& unknowns);
+
+  /**
    * Prints the node to `out`
    * @param out the stream to print to
    * @return `out`
    */
-  std::ostream& operator<<(std::ostream& out) const;
+  std::ostream& serialize(std::ostream& out) const;
+
+  void markKnown();
 
   /**
    * The left hand side of the operation
@@ -212,9 +254,9 @@ struct TernaryOpNode : ExpressionNode {
   T evaluateImplementation(T const* parameters,
                            const ExpressionMap& map) const {
     if (condition->evaluate(parameters, map)) {
-      return evaluate(valIfTrue, parameters, map);
+      return expressionNode::evaluate(valIfTrue, parameters, map);
     } else {
-      return evaluate(valIfFalse, parameters, map);
+      return expressionNode::evaluate(valIfFalse, parameters, map);
     }
   }
 
@@ -226,12 +268,22 @@ struct TernaryOpNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  std::ostream& operator<<(std::ostream& out) const override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  /**
+   * @inheritdoc
+   */
+  std::ostream& serialize(std::ostream& out) const override;
 
   /**
    * The condition used to determine which expression to evaluate
    */
   std::shared_ptr<Condition> condition;
+
+  /**
+   * @inheritdoc
+   */
+  void markKnown() override;
 
   /**
    * The expression to evaluate if `condition` is true
@@ -273,9 +325,9 @@ struct UnaryOpNode : ExpressionNode {
                            const ExpressionMap& map) const {
     switch (op) {
     case UnaryOp::EXP:
-      return std::exp(evaluate(operand, parameters, map));
+      return exp(expressionNode::evaluate(operand, parameters, map));
     case UnaryOp::NEG:
-      return -(evaluate(operand, parameters, map));
+      return -(expressionNode::evaluate(operand, parameters, map));
     }
   }
 
@@ -287,7 +339,17 @@ struct UnaryOpNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  std::ostream& operator<<(std::ostream& out) const override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  /**
+   * @inheritdoc
+   */
+  std::ostream& serialize(std::ostream& out) const override;
+
+  /**
+   * @inheritdoc
+   */
+  void markKnown() override;
 
   /**
    * The operand for the operation
@@ -340,7 +402,17 @@ struct VariableNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  std::ostream& operator<<(std::ostream& out) const override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  /**
+   * @inheritdoc
+   */
+  std::ostream& serialize(std::ostream& out) const override;
+
+  /**
+   * @inheritdoc
+   */
+  void markKnown() override;
 
   /**
    * The value of this node
@@ -352,6 +424,8 @@ struct VariableNode : ExpressionNode {
    */
   bool known;
 };
+
+namespace expressionNode {
 
 /**
  * Evaluates the AST with `root` as a root.
@@ -365,18 +439,25 @@ struct VariableNode : ExpressionNode {
 template <typename T>
 T evaluate(ExpressionNodePtr root, T const* parameters,
            const ExpressionMap& map) {
-  ExpressionNode* ptr = root.get();
-  if (auto node = dynamic_cast<const VariableNode*>(ptr)) {
-    node->evaluateImplementation(parameters, map);
+  if (std::shared_ptr<VariableNode> node =
+          std::dynamic_pointer_cast<VariableNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
   }
-  if (auto node = dynamic_cast<const BinaryOpNode*>(ptr)) {
-    node->evaluateImplementation(parameters, map);
+  if (std::shared_ptr<BinaryOpNode> node =
+          std::dynamic_pointer_cast<BinaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
   }
-  if (auto node = dynamic_cast<const UnaryOpNode*>(ptr)) {
-    node->evaluateImplementation(parameters, map);
+  if (std::shared_ptr<UnaryOpNode> node =
+          std::dynamic_pointer_cast<UnaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
   }
-  if (auto node = dynamic_cast<const TernaryOpNode*>(ptr)) {
-    node->evaluateImplementation(parameters, map);
+  if (std::shared_ptr<TernaryOpNode> node =
+          std::dynamic_pointer_cast<TernaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
   }
+  return T();
 }
+} // namespace expressionNode
+
+std::ostream& operator<<(std::ostream& out, ExpressionNodePtr node);
 #endif

@@ -1,6 +1,6 @@
 #ifndef RESISTOR_H
 #define RESISTOR_H
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 #include <alloca.h>
@@ -22,7 +22,7 @@ public:
   toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "resistor", allocator);
-    edge.AddMember("resistance", resistance.getValue(), allocator);
+    edge.AddMember("resistance", resistance.evaluate(), allocator);
     return edge;
   }
 };

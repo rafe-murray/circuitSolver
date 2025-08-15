@@ -1,7 +1,7 @@
 #ifndef ZENER_DIODE_H
 #define ZENER_DIODE_H
 
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 #include <rapidjson/document.h>
@@ -21,8 +21,8 @@ public:
   toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "zenerDiode", allocator);
-    edge.AddMember("voltage", voltage.getValue(), allocator);
-    edge.AddMember("resistance", resistance.getValue(), allocator);
+    edge.AddMember("voltage", voltage.evaluate(), allocator);
+    edge.AddMember("resistance", resistance.evaluate(), allocator);
     return edge;
   }
 

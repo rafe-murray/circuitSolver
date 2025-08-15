@@ -31,7 +31,7 @@ Edge::getCommonJson(rapidjson::MemoryPoolAllocator<>& allocator) const {
   edge.AddMember("id", id, allocator);
   edge.AddMember("from", v1.getId(), allocator);
   edge.AddMember("to", v2.getId(), allocator);
-  edge.AddMember("current", getCurrent().getValue(), allocator);
+  edge.AddMember("current", getCurrent().evaluate(), allocator);
   return edge;
 }
 

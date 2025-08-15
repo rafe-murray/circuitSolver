@@ -4,8 +4,7 @@
 #include "circuitsolver/components/resistor.h"
 #include "circuitsolver/components/vertex.h"
 #include "circuitsolver/components/voltageSource.h"
-#include "circuitsolver/math/expression.h"
-#include "circuitsolver/math/expressionCostFunction.h"
+#include "circuitsolver/expression.h"
 #include <memory>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -17,71 +16,55 @@
 #include <stdexcept>
 #include <vector>
 
+// TODO: reorganize this file
 Expression CircuitGraph::getErrorExpression() {
-  Expression error(0.0);
+  Expression error = 0;
   for (Vertex node : getVertices()) {
     Expression netCurrent = getNodeCurrents(node);
-    error = error + netCurrent * netCurrent;
+    error += netCurrent * netCurrent;
   }
-  for (shared_ptr<Edge> edge : getEdges()) {
+  for (EdgePtr edge : getEdges()) {
     Expression constraint = edge->getConstraint();
-    error = error + constraint * constraint;
+    error += constraint * constraint;
   }
   return error;
 }
 
-void CircuitGraph::solveCircuit() {
+ceres::Solver::Summary CircuitGraph::solveCircuit() {
   ceres::Problem problem;
-  cout << "Current expressions: " << endl;
   for (Vertex node : getVertices()) {
     if (node.getVoltage().isConstant())
       continue;
     Expression netCurrent = getNodeCurrents(node);
-    vector<double*> unknowns = netCurrent.getUnknownVals();
-    ceres::CostFunction* costFunction = netCurrent.getCostFunction();
-    problem.AddResidualBlock(costFunction, nullptr, unknowns);
-    cout << netCurrent << endl;
+    netCurrent.addToProblem(problem);
   }
-  cout << "Constraint expressions: " << endl;
-  for (shared_ptr<Edge> edge : getEdges()) {
+  for (EdgePtr edge : getEdges()) {
     Expression constraint = edge->getConstraint();
-    vector<double*> unknowns = constraint.getUnknownVals();
-    ceres::CostFunction* costFunction = constraint.getCostFunction();
-    problem.AddResidualBlock(costFunction, nullptr, unknowns);
-    cout << constraint << endl;
+    constraint.addToProblem(problem);
   }
-  ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_QR;
-  options.minimizer_type = ceres::TRUST_REGION;
-  /*options.use_nonmonotonic_steps = true;*/
-  options.logging_type = ceres::SILENT;
-  /*options.minimizer_progress_to_stdout = true;*/
-  /*options.function_tolerance = 0;*/
-  /*options.gradient_tolerance = 0;*/
-  /*options.parameter_tolerance = 0;*/
-  /*options.max_num_iterations = INT_MAX;*/
+  ceres::Solver::Options options = getDefaultOptions();
   ceres::Solver::Summary summary;
-  Solve(options, &problem, &summary);
-  cout << summary.FullReport() << endl;
+  ceres::Solve(options, &problem, &summary);
+  return summary;
 }
 Expression CircuitGraph::getNodeCurrents(Vertex node) {
-  Expression nodeCurrents(0.0);
-  for (shared_ptr<Edge> branch : getIncident(node)) {
+  Expression nodeCurrents = 0;
+  for (EdgePtr branch : getIncident(node)) {
     Expression current = branch->getCurrent();
     if (branch->getV1() == node) {
-      nodeCurrents = nodeCurrents - current;
+      nodeCurrents -= current;
     } else {
-      nodeCurrents = nodeCurrents + current;
+      nodeCurrents += current;
     }
   }
   return nodeCurrents;
 }
 Vertex CircuitGraph::getVertex(int id) { return vertices.at(id); }
-shared_ptr<Edge> CircuitGraph::getEdge(int id) { return edges.at(id); }
+EdgePtr CircuitGraph::getEdge(int id) { return edges.at(id); }
 bool CircuitGraph::addVertex(const Vertex& v) {
   // Only add the vertex if it doesn't already exist
   if (adjacencyList.count(v) == 0) {
-    adjacencyList[v] = unordered_map<Vertex, shared_ptr<Edge>>();
+    adjacencyList[v] = std::unordered_map<Vertex, EdgePtr>();
     vertices[v.getId()] = v;
     return true;
   }
@@ -103,7 +86,7 @@ bool CircuitGraph::removeVertex(const Vertex& v) {
   return true;
 }
 
-bool CircuitGraph::addEdge(shared_ptr<Edge> e) {
+bool CircuitGraph::addEdge(EdgePtr e) {
   Vertex v1 = e->getV1();
   Vertex v2 = e->getV2();
 
@@ -124,7 +107,7 @@ bool CircuitGraph::addEdge(shared_ptr<Edge> e) {
 
 // NOTE: this is probably slightly less efficient since we have to fetch the
 // Edge again, but it is easier to maintain
-bool CircuitGraph::removeEdge(shared_ptr<Edge> e) {
+bool CircuitGraph::removeEdge(EdgePtr e) {
   return removeEdge(e->getV1(), e->getV2());
 }
 
@@ -139,11 +122,11 @@ bool CircuitGraph::removeEdge(const Vertex& v1, const Vertex& v2) {
   return false;
 }
 
-vector<shared_ptr<Edge>> CircuitGraph::getIncident(const Vertex& v) {
-  vector<shared_ptr<Edge>> edges;
+std::vector<EdgePtr> CircuitGraph::getIncident(const Vertex& v) {
+  std::vector<EdgePtr> edges;
   auto it1 = adjacencyList.find(v);
   if (it1 != adjacencyList.end()) {
-    unordered_map<Vertex, shared_ptr<Edge>> edgeMap = it1->second;
+    std::unordered_map<Vertex, EdgePtr> edgeMap = it1->second;
     for (auto it2 = edgeMap.begin(); it2 != edgeMap.end(); it2++) {
       edges.push_back(it2->second);
     }
@@ -151,8 +134,8 @@ vector<shared_ptr<Edge>> CircuitGraph::getIncident(const Vertex& v) {
   return edges;
 }
 
-vector<Vertex> CircuitGraph::getVertices() const {
-  vector<Vertex> vertexList;
+std::vector<Vertex> CircuitGraph::getVertices() const {
+  std::vector<Vertex> vertexList;
   vertexList.reserve(adjacencyList.size());
   for (auto el : vertices) {
     vertexList.push_back(el.second);
@@ -160,8 +143,8 @@ vector<Vertex> CircuitGraph::getVertices() const {
   return vertexList;
 }
 
-vector<shared_ptr<Edge>> CircuitGraph::getEdges() const {
-  vector<shared_ptr<Edge>> edgeList;
+std::vector<EdgePtr> CircuitGraph::getEdges() const {
+  std::vector<EdgePtr> edgeList;
   edgeList.reserve(edges.size());
   for (auto el : edges) {
     edgeList.push_back(el.second);
@@ -169,7 +152,7 @@ vector<shared_ptr<Edge>> CircuitGraph::getEdges() const {
   return edgeList;
 }
 
-CircuitGraph* CircuitGraph::fromJson(const string& json) {
+CircuitGraph* CircuitGraph::fromJson(const std::string& json) {
   // Read the schema from a file
   FILE* fp = fopen("circuitGraphSchema.json", "rb");
 
@@ -180,27 +163,27 @@ CircuitGraph* CircuitGraph::fromJson(const string& json) {
   sd.ParseStream(is);
   fclose(fp);
   if (sd.HasParseError()) {
-    throw runtime_error("Invalid JSON schema");
+    throw std::runtime_error("Invalid JSON schema");
   }
   rapidjson::SchemaDocument schema(sd);
 
   rapidjson::Document doc;
   doc.Parse(json.c_str());
   if (doc.HasParseError()) {
-    throw invalid_argument("Invalid JSON syntax for graph");
+    throw std::invalid_argument("Invalid JSON syntax for graph");
   }
 
   rapidjson::SchemaValidator validator(schema);
   if (!doc.Accept(validator)) {
     rapidjson::StringBuffer sb;
     validator.GetInvalidSchemaPointer().StringifyUriFragment(sb);
-    string errorMessage =
-        (string) "Invalid schema: " + sb.GetString() + "\n" +
+    std::string errorMessage =
+        (std::string) "Invalid schema: " + sb.GetString() + "\n" +
         "Invalid keyword: " + validator.GetInvalidSchemaKeyword() + "\n";
     sb.Clear();
     validator.GetInvalidDocumentPointer().StringifyUriFragment(sb);
-    errorMessage += (string) "Invalid document: " + sb.GetString() + "\n";
-    throw invalid_argument(errorMessage);
+    errorMessage += (std::string) "Invalid document: " + sb.GetString() + "\n";
+    throw std::invalid_argument(errorMessage);
   }
   // Since we have validated against the schema we don't need additional
   // validation NOTE: this assumes the schema is strict and up-to-date
@@ -222,46 +205,46 @@ CircuitGraph* CircuitGraph::fromJson(const string& json) {
     int id = edges[i]["id"].GetInt();
     Vertex from = cg->getVertex(edges[i]["from"].GetInt());
     Vertex to = cg->getVertex(edges[i]["to"].GetInt());
-    string type = edges[i]["type"].GetString();
+    std::string type = edges[i]["type"].GetString();
     if (type == "voltageSource") {
       auto voltage = edges[i].FindMember("voltage");
       if (voltage != edges[i].MemberEnd()) {
-        auto vs = make_shared<VoltageSource>(id, from, to,
-                                             voltage->value.GetDouble());
+        auto vs = std::make_shared<VoltageSource>(id, from, to,
+                                                  voltage->value.GetDouble());
         cg->addEdge(vs);
       } else {
-        auto vs = make_shared<VoltageSource>(id, from, to);
+        auto vs = std::make_shared<VoltageSource>(id, from, to);
         cg->addEdge(vs);
       }
     } else if (type == "currentSource") {
       auto current = edges[i].FindMember("current");
       if (current != edges[i].MemberEnd()) {
-        auto cs = make_shared<CurrentSource>(id, from, to,
-                                             current->value.GetDouble());
+        auto cs = std::make_shared<CurrentSource>(id, from, to,
+                                                  current->value.GetDouble());
         cg->addEdge(cs);
       } else {
-        auto cs = make_shared<CurrentSource>(id, from, to);
+        auto cs = std::make_shared<CurrentSource>(id, from, to);
         cg->addEdge(cs);
       }
     } else if (type == "resistor") {
       auto resistance = edges[i].FindMember("resistance");
       if (resistance != edges[i].MemberEnd()) {
-        auto cs = make_shared<CurrentSource>(id, from, to,
-                                             resistance->value.GetDouble());
+        auto cs = std::make_shared<CurrentSource>(
+            id, from, to, resistance->value.GetDouble());
         cg->addEdge(cs);
       } else {
-        auto cs = make_shared<CurrentSource>(id, from, to);
+        auto cs = std::make_shared<CurrentSource>(id, from, to);
         cg->addEdge(cs);
       }
     } else {
-      throw invalid_argument("Invalid branch type: " + type);
+      throw std::invalid_argument("Invalid branch type: " + type);
     }
     // add the edges to the graph
   }
   return cg;
 }
 
-string CircuitGraph::toJson() const {
+std::string CircuitGraph::toJson() const {
   rapidjson::Document doc;
   doc.SetObject();
   auto& allocator = doc.GetAllocator();
@@ -270,7 +253,7 @@ string CircuitGraph::toJson() const {
     vertexList.PushBack(vertex.toJson(allocator), allocator);
   }
   rapidjson::Value edgeList(rapidjson::kArrayType);
-  for (shared_ptr<Edge> edge : getEdges()) {
+  for (EdgePtr edge : getEdges()) {
     edgeList.PushBack(edge->toJson(allocator), allocator);
   }
   doc.AddMember("vertices", vertexList, allocator);

@@ -1,6 +1,6 @@
 #ifndef VOLTAGE_SOURCE_H
 #define VOLTAGE_SOURCE_H
-#include "../math/expression.h"
+#include "../expression.h"
 #include "edge.h"
 #include "vertex.h"
 #include <rapidjson/allocators.h>
@@ -23,7 +23,7 @@ public:
   toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "voltageSource", allocator);
-    edge.AddMember("voltage", voltage.getValue(), allocator);
+    edge.AddMember("voltage", voltage.evaluate(), allocator);
     return edge;
   }
 };
