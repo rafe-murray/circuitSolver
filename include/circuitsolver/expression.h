@@ -1,10 +1,12 @@
 #ifndef EXPRESSION_H
 #define EXPRESSION_H
 
+#include <ceres/ceres.h>
+
+#include <iostream>
+
 #include "expressionCostFunctor.h"
 #include "expressionNode.h"
-#include <ceres/ceres.h>
-#include <iostream>
 
 class Expression;
 
@@ -16,7 +18,7 @@ namespace std {
  * @return an Expression representing e^this
  */
 Expression exp(Expression arg);
-} // namespace std
+}  // namespace std
 
 /**
  * Represents an arithmetic expression that can be built with variables of
@@ -31,7 +33,7 @@ Expression exp(Expression arg);
  * TODO: support operators between int/double and Expression
  */
 class Expression {
-public:
+ public:
   /*
    * Creates an expression that consists of a single unknown value
    */
@@ -156,7 +158,7 @@ public:
 
   void addToProblem(ceres::Problem& problem);
 
-private:
+ private:
   /**
    * Obtain a mapping of double* to array indices for function arguments.
    * Since the unknowns are stored in a tree ADT we need a way to translate

@@ -43,23 +43,20 @@ struct ExpressionNode {
   /**
    * Stores const pointers to all unknown values in the AST with `this` as a
    * root in `unknowns`
-   * @param unknowns a set of unknown values to add the unknowns in this AST to.
-   * Unknowns in this AST may or may not be already present already;
+   * @param unknowns a set of unknown values to add the unknowns in this AST
+   * to. Unknowns in this AST may or may not be already present already;
    */
-  virtual void
-  getUnknowns(std::unordered_set<const double*>& unknowns) const = 0;
+  virtual void getUnknowns(
+      std::unordered_set<const double*>& unknowns) const = 0;
 
   /**
    * Stores pointers to all unknown values in the AST with `this` as a root in
    * `unknowns`
-   * @param unknowns a set of unknown values to add the unknowns in this AST to.
-   * Unknowns in this AST may or may not be already present already;
+   * @param unknowns a set of unknown values to add the unknowns in this AST
+   * to. Unknowns in this AST may or may not be already present already;
    */
   virtual void getUnknowns(std::unordered_set<double*>& unknowns) = 0;
 
-  // TODO: move all of these to friend declarations with implementations in the
-  // source file That way it will actually print - currently it is a node on the
-  // lhs
   /**
    * Prints the node to `out`
    * @param out the stream to print to
@@ -79,7 +76,6 @@ enum class BinaryOp { MUL, DIV, ADD, SUB };
  * A Binary operation node in the AST
  */
 struct BinaryOpNode : ExpressionNode {
-
   /**
    * Creates a `BinaryOpNode`
    * @param lhs the left hand side of the operation
@@ -99,18 +95,18 @@ struct BinaryOpNode : ExpressionNode {
   T evaluateImplementation(T const* parameters,
                            const ExpressionMap& map) const {
     switch (op) {
-    case BinaryOp::MUL:
-      return expressionNode::evaluate(lhs, parameters, map) *
-             expressionNode::evaluate(rhs, parameters, map);
-    case BinaryOp::DIV:
-      return expressionNode::evaluate(lhs, parameters, map) /
-             expressionNode::evaluate(rhs, parameters, map);
-    case BinaryOp::ADD:
-      return expressionNode::evaluate(lhs, parameters, map) +
-             expressionNode::evaluate(rhs, parameters, map);
-    case BinaryOp::SUB:
-      return expressionNode::evaluate(lhs, parameters, map) -
-             expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::MUL:
+        return expressionNode::evaluate(lhs, parameters, map) *
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::DIV:
+        return expressionNode::evaluate(lhs, parameters, map) /
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::ADD:
+        return expressionNode::evaluate(lhs, parameters, map) +
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::SUB:
+        return expressionNode::evaluate(lhs, parameters, map) -
+               expressionNode::evaluate(rhs, parameters, map);
     }
   }
 
@@ -160,7 +156,6 @@ enum class BooleanBinaryOp { LT, LEQ, EQ, NEQ, GEQ, GT };
  * Note that all other nodes return `double` values
  */
 struct Condition {
-
   /**
    * Creates a `Condition`
    * @param lhs the left hand side of the operation
@@ -181,32 +176,32 @@ struct Condition {
   template <typename T>
   bool evaluate(T const* parameters, const ExpressionMap& map) const {
     switch (op) {
-    case BooleanBinaryOp::EQ:
-      return expressionNode::evaluate(lhs, parameters, map) ==
-             expressionNode::evaluate(rhs, parameters, map);
-    case BooleanBinaryOp::GEQ:
-      return expressionNode::evaluate(lhs, parameters, map) >=
-             expressionNode::evaluate(rhs, parameters, map);
-    case BooleanBinaryOp::LEQ:
-      return expressionNode::evaluate(lhs, parameters, map) <=
-             expressionNode::evaluate(rhs, parameters, map);
-    case BooleanBinaryOp::LT:
-      return expressionNode::evaluate(lhs, parameters, map) <
-             expressionNode::evaluate(rhs, parameters, map);
-    case BooleanBinaryOp::GT:
-      return expressionNode::evaluate(lhs, parameters, map) >
-             expressionNode::evaluate(rhs, parameters, map);
-    case BooleanBinaryOp::NEQ:
-      return expressionNode::evaluate(lhs, parameters, map) !=
-             expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::EQ:
+        return expressionNode::evaluate(lhs, parameters, map) ==
+               expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::GEQ:
+        return expressionNode::evaluate(lhs, parameters, map) >=
+               expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::LEQ:
+        return expressionNode::evaluate(lhs, parameters, map) <=
+               expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::LT:
+        return expressionNode::evaluate(lhs, parameters, map) <
+               expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::GT:
+        return expressionNode::evaluate(lhs, parameters, map) >
+               expressionNode::evaluate(rhs, parameters, map);
+      case BooleanBinaryOp::NEQ:
+        return expressionNode::evaluate(lhs, parameters, map) !=
+               expressionNode::evaluate(rhs, parameters, map);
     }
   }
 
   /**
    * Stores pointers to all unknown values in the AST with `this` as a root in
    * `unknowns`
-   * @param unknowns a set of unknown values to add the unknowns in this AST to.
-   * Unknowns in this AST may or may not be already present already;
+   * @param unknowns a set of unknown values to add the unknowns in this AST
+   * to. Unknowns in this AST may or may not be already present already;
    */
   void getUnknowns(std::unordered_set<const double*>& unknowns) const;
 
@@ -315,7 +310,6 @@ enum class UnaryOp { EXP, NEG };
  * A Unary operation node in the AST
  */
 struct UnaryOpNode : ExpressionNode {
-
   /**
    * Creates a `UnaryOpNode`
    * @param operand the operand for the operation
@@ -334,10 +328,10 @@ struct UnaryOpNode : ExpressionNode {
   T evaluateImplementation(T const* parameters,
                            const ExpressionMap& map) const {
     switch (op) {
-    case UnaryOp::EXP:
-      return exp(expressionNode::evaluate(operand, parameters, map));
-    case UnaryOp::NEG:
-      return -(expressionNode::evaluate(operand, parameters, map));
+      case UnaryOp::EXP:
+        return exp(expressionNode::evaluate(operand, parameters, map));
+      case UnaryOp::NEG:
+        return -(expressionNode::evaluate(operand, parameters, map));
     }
   }
 
@@ -467,7 +461,7 @@ T evaluate(ExpressionNodePtr root, T const* parameters,
   }
   return T();
 }
-} // namespace expressionNode
+}  // namespace expressionNode
 
 std::ostream& operator<<(std::ostream& out, ExpressionNodePtr node);
 #endif

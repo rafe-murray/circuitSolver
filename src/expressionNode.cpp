@@ -1,4 +1,5 @@
 #include "circuitsolver/expressionNode.h"
+
 #include <unordered_set>
 
 BinaryOpNode::BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
@@ -60,13 +61,11 @@ void UnaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
 
 void VariableNode::getUnknowns(
     std::unordered_set<const double*>& unknowns) const {
-  if (!known)
-    unknowns.insert(&value);
+  if (!known) unknowns.insert(&value);
 }
 
 void VariableNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  if (!known)
-    unknowns.insert(&value);
+  if (!known) unknowns.insert(&value);
 }
 
 void BinaryOpNode::markKnown() {
@@ -92,18 +91,18 @@ void VariableNode::markKnown() { known = true; }
 std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
   out << "(" << lhs;
   switch (op) {
-  case BinaryOp::MUL:
-    out << " * ";
-    break;
-  case BinaryOp::DIV:
-    out << " / ";
-    break;
-  case BinaryOp::ADD:
-    out << " + ";
-    break;
-  case BinaryOp::SUB:
-    out << " - ";
-    break;
+    case BinaryOp::MUL:
+      out << " * ";
+      break;
+    case BinaryOp::DIV:
+      out << " / ";
+      break;
+    case BinaryOp::ADD:
+      out << " + ";
+      break;
+    case BinaryOp::SUB:
+      out << " - ";
+      break;
   }
   out << rhs << ")";
   return out;
@@ -112,24 +111,24 @@ std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
 std::ostream& Condition::serialize(std::ostream& out) const {
   out << "(" << lhs;
   switch (op) {
-  case BooleanBinaryOp::EQ:
-    out << "==";
-    break;
-  case BooleanBinaryOp::GEQ:
-    out << ">=";
-    break;
-  case BooleanBinaryOp::LEQ:
-    out << "<=";
-    break;
-  case BooleanBinaryOp::GT:
-    out << ">";
-    break;
-  case BooleanBinaryOp::LT:
-    out << "<";
-    break;
-  case BooleanBinaryOp::NEQ:
-    out << "!=";
-    break;
+    case BooleanBinaryOp::EQ:
+      out << "==";
+      break;
+    case BooleanBinaryOp::GEQ:
+      out << ">=";
+      break;
+    case BooleanBinaryOp::LEQ:
+      out << "<=";
+      break;
+    case BooleanBinaryOp::GT:
+      out << ">";
+      break;
+    case BooleanBinaryOp::LT:
+      out << "<";
+      break;
+    case BooleanBinaryOp::NEQ:
+      out << "!=";
+      break;
   }
   out << rhs << ")";
   return out;
@@ -143,12 +142,12 @@ std::ostream& TernaryOpNode::serialize(std::ostream& out) const {
 std::ostream& UnaryOpNode::serialize(std::ostream& out) const {
   out << "(";
   switch (op) {
-  case UnaryOp::EXP:
-    out << "e^";
-    break;
-  case UnaryOp::NEG:
-    out << "-";
-    break;
+    case UnaryOp::EXP:
+      out << "e^";
+      break;
+    case UnaryOp::NEG:
+      out << "-";
+      break;
   }
   out << operand;
   return out;

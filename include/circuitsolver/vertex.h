@@ -1,12 +1,14 @@
 #ifndef VERTEX_H
 #define VERTEX_H
-#include "expression.h"
+
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
 
+#include "expression.h"
+
 class Vertex {
-public:
+ public:
   Vertex(int id, double voltage) : id(id), voltage(voltage) {}
   Vertex(int id) : id(id) {}
   // For maps
@@ -21,18 +23,19 @@ public:
     return vertex;
   }
 
-private:
+ private:
   int id;
   Expression voltage;
   friend class Edge;
 };
 
 namespace std {
-template <> struct hash<Vertex> {
+template <>
+struct hash<Vertex> {
   size_t operator()(const Vertex& b) const {
     hash<int> intHash;
     return intHash(b.getId());
   }
 };
-} // namespace std
+}  // namespace std
 #endif

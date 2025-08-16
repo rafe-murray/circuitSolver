@@ -1,8 +1,5 @@
 #include "circuitsolver/circuitGraph.h"
-#include "circuitsolver/edge.h"
-#include "circuitsolver/expression.h"
-#include "circuitsolver/vertex.h"
-#include <memory>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/rapidjson.h>
@@ -10,8 +7,14 @@
 #include <rapidjson/schema.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+
+#include <memory>
 #include <stdexcept>
 #include <vector>
+
+#include "circuitsolver/edge.h"
+#include "circuitsolver/expression.h"
+#include "circuitsolver/vertex.h"
 
 // TODO: reorganize this file
 Expression CircuitGraph::getErrorExpression() {
@@ -30,8 +33,7 @@ Expression CircuitGraph::getErrorExpression() {
 ceres::Solver::Summary CircuitGraph::solveCircuit() {
   ceres::Problem problem;
   for (Vertex node : getVertices()) {
-    if (node.getVoltage().isConstant())
-      continue;
+    if (node.getVoltage().isConstant()) continue;
     Expression netCurrent = getNodeCurrents(node);
     netCurrent.addToProblem(problem);
   }
@@ -69,8 +71,7 @@ bool CircuitGraph::addVertex(const Vertex& v) {
 }
 
 bool CircuitGraph::removeVertex(const Vertex& v) {
-  if (adjacencyList.count(v) == 0)
-    return false;
+  if (adjacencyList.count(v) == 0) return false;
 
   // Remove the vertex from all adjacency lists
   for (auto it = adjacencyList.begin(); it != adjacencyList.end(); it++) {
@@ -88,12 +89,10 @@ bool CircuitGraph::addEdge(EdgePtr e) {
   Vertex v2 = e->getV2();
 
   // If either vertex is not present return false
-  if (!adjacencyList.count(v1) || !adjacencyList.count(v2))
-    return false;
+  if (!adjacencyList.count(v1) || !adjacencyList.count(v2)) return false;
 
   // If the edge already exists, return false
-  if (adjacencyList[v1].count(v2) > 0)
-    return false;
+  if (adjacencyList[v1].count(v2) > 0) return false;
 
   // Add the edge in both directions
   adjacencyList[v1][v2] = e;

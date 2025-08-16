@@ -14,7 +14,7 @@ add_library(circuitSolver STATIC)
 target_sources(
   circuitSolver
   PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
-          src/components/edge.cpp circuitGraph.proto)
+          src/edge.cpp circuitGraphMessage.proto)
 
 target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 

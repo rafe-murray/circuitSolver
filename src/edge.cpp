@@ -1,8 +1,10 @@
 #include "circuitsolver/edge.h"
-#include "circuitsolver/vertex.h"
+
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
+
+#include "circuitsolver/vertex.h"
 
 Edge::~Edge() {}
 // TODO: fix passing by reference; want v1 and v2 to point to the original
@@ -25,8 +27,8 @@ Expression Edge::getConstraint() const { return Expression(0.0); }
 bool Edge::operator==(const Edge& rhs) const { return id == rhs.id; }
 // Edge& operator=(const Edge& other);
 
-rapidjson::Value
-Edge::getCommonJson(rapidjson::MemoryPoolAllocator<>& allocator) const {
+rapidjson::Value Edge::getCommonJson(
+    rapidjson::MemoryPoolAllocator<>& allocator) const {
   rapidjson::Value edge(rapidjson::kObjectType);
   edge.AddMember("id", id, allocator);
   edge.AddMember("from", v1.getId(), allocator);
@@ -36,10 +38,11 @@ Edge::getCommonJson(rapidjson::MemoryPoolAllocator<>& allocator) const {
 }
 
 namespace std {
-template <> struct hash<Edge> {
+template <>
+struct hash<Edge> {
   size_t operator()(const Edge& b) const {
     hash<int> intHash;
     return intHash(b.getId());
   }
 };
-} // namespace std
+}  // namespace std

@@ -4,7 +4,7 @@
 #include "expressionNode.h"
 
 class ExpressionCostFunctor {
-public:
+ public:
   ~ExpressionCostFunctor() {}
   ExpressionCostFunctor(ExpressionNodePtr expressionNode,
                         const ExpressionMap& map)
@@ -15,9 +15,9 @@ public:
     return true;
   }
 
-private:
+ private:
   ExpressionNodePtr expressionNode;
   ExpressionMap map;
 };
 
-#endif // !EXPRESSION_COST_FUNCTOR_H
+#endif  // !EXPRESSION_COST_FUNCTOR_H

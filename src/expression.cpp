@@ -1,10 +1,12 @@
 #include "circuitsolver/expression.h"
-#include "circuitsolver/expressionCostFunctor.h"
-#include "circuitsolver/expressionNode.h"
+
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+
+#include "circuitsolver/expressionCostFunctor.h"
+#include "circuitsolver/expressionNode.h"
 
 using namespace std;
 
@@ -50,8 +52,7 @@ Expression Expression::operator-(Expression rhs) const {
 
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
-    if (u && u->known)
-      return Expression(-u->value);
+    if (u && u->known) return Expression(-u->value);
     return -Expression(std::move(rhs.root));
   }
 
@@ -156,8 +157,9 @@ Expression& Expression::operator=(double rhs) {
     v->value = rhs;
     v->known = true;
   } else
-    throw invalid_argument("Attempting to assign to an Expression that is "
-                           "dependent on multiple unknowns");
+    throw invalid_argument(
+        "Attempting to assign to an Expression that is "
+        "dependent on multiple unknowns");
   return *this;
 }
 
@@ -284,8 +286,8 @@ ceres::Solver::Options getDefaultOptions() {
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_type = ceres::TRUST_REGION;
   options.function_tolerance = 0;
-  options.gradient_tolerance = 0;  // 1e-6
-  options.parameter_tolerance = 0; // 1e-6
+  options.gradient_tolerance = 0;   // 1e-6
+  options.parameter_tolerance = 0;  // 1e-6
   options.max_num_iterations = INT_MAX;
   // options.min_trust_region_radius = 1e-64;
   // NOTE: this parameter is VERY important - results in ~1500x better

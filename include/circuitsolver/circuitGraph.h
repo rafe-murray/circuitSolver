@@ -1,11 +1,12 @@
 #ifndef CIRCUIT_GRAPH_H
 #define CIRCUIT_GRAPH_H
 
+#include <memory>
+#include <unordered_map>
+
 #include "edge.h"
 #include "expression.h"
 #include "vertex.h"
-#include <memory>
-#include <unordered_map>
 
 // TODO: add error handling for:
 //  - Cases where there are too few equations for the number of unknowns
@@ -24,7 +25,7 @@
 
 typedef std::shared_ptr<Edge> EdgePtr;
 class CircuitGraph {
-public:
+ public:
   Expression getErrorExpression();
   ceres::Solver::Summary solveCircuit();
 
@@ -92,7 +93,7 @@ public:
   std::string toJson() const;
   static CircuitGraph* fromJson(const std::string& json);
 
-private:
+ private:
   /**
    * Get the sum of the currents going into/out of a node
    * @param node - the node to get the currents for
@@ -140,4 +141,4 @@ private:
   std::unordered_map<int, EdgePtr> edges;
 };
 
-#endif // !CIRCUIT_GRAPH_H
+#endif  // !CIRCUIT_GRAPH_H

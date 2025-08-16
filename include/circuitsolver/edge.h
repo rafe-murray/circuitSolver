@@ -1,13 +1,15 @@
 #ifndef EDGE_H
 #define EDGE_H
-#include "expression.h"
-#include "vertex.h"
+
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
 
+#include "expression.h"
+#include "vertex.h"
+
 class Edge {
-public:
+ public:
   virtual ~Edge();
   // TODO: fix passing by reference; want v1 and v2 to point to the original
   // locations in memory!
@@ -27,25 +29,25 @@ public:
   virtual Expression getConstraint() const;
   bool operator==(const Edge& rhs) const;
   // Edge& operator=(const Edge& other);
-  virtual rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const = 0;
+  virtual rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const = 0;
 
-protected:
+ protected:
   // The voltage of one of the branch's nodes, in Volts
   Vertex v1;
   // The voltage of the other node, in Volts
   Vertex v2;
 
-  rapidjson::Value
-  getCommonJson(rapidjson::MemoryPoolAllocator<>& allocator) const;
+  rapidjson::Value getCommonJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const;
 
-private:
+ private:
   // Identifier for the branch, should be unique for the graph
   int id;
 };
 
 class CurrentSource : public Edge {
-public:
+ public:
   ~CurrentSource() {}
   CurrentSource(int id, const Vertex& v1, const Vertex& v2,
                 const Expression& current)
@@ -59,8 +61,8 @@ public:
   Expression getConstraint() const override {
     return v1.getVoltage() + voltage - v2.getVoltage();
   }
-  rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
+  rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "currentSource", allocator);
     return edge;
@@ -68,16 +70,16 @@ public:
 };
 
 class IdealDiode : public Edge {
-public:
+ public:
   ~IdealDiode() {}
   IdealDiode(int id, const Vertex& v1, const Vertex& v2,
              const Expression& voltage, const Expression& current)
       : Edge(id, v1, v2), voltage(voltage), current(current) {}
 
   Expression getCurrent() {
-    return Expression::makeConditional((v1.getVoltage() - v2.getVoltage()) <
-                                           Expression(0.0),
-                                       Expression(0.0), current);
+    return Expression::makeConditional(
+        (v1.getVoltage() - v2.getVoltage()) < Expression(0.0), Expression(0.0),
+        current);
   }
   Expression constraint() {
     return Expression::makeConditional(
@@ -85,13 +87,13 @@ public:
         v1.getVoltage() - v2.getVoltage() + voltage);
   }
 
-private:
+ private:
   Expression voltage;
   Expression current;
 };
 
 class RealDiode : public Edge {
-public:
+ public:
   ~RealDiode() {}
   RealDiode(int id, const Vertex& v1, const Vertex& v2)
       : Edge(id, v1, v2), i0(), vt(), n() {}
@@ -102,8 +104,8 @@ public:
     return i0 * std::exp((v1.getVoltage() - v2.getVoltage()) / (n * vt));
   }
 
-  rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
+  rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "realDiode", allocator);
     edge.AddMember("i0", i0.evaluate(), allocator);
@@ -112,14 +114,14 @@ public:
     return edge;
   }
 
-private:
+ private:
   Expression i0;
   Expression vt;
   Expression n;
 };
 
 class Resistor : public Edge {
-public:
+ public:
   ~Resistor() {}
   Resistor(int id, const Vertex& v1, const Vertex& v2,
            const Expression& resistance)
@@ -130,8 +132,8 @@ public:
     return (v1.getVoltage() - v2.getVoltage()) / resistance;
   }
 
-  rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
+  rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "resistor", allocator);
     edge.AddMember("resistance", resistance.evaluate(), allocator);
@@ -140,7 +142,7 @@ public:
 };
 
 class VoltageSource : public Edge {
-public:
+ public:
   ~VoltageSource() {}
   VoltageSource(int id, const Vertex& v1, const Vertex& v2,
                 const Expression& voltage)
@@ -154,8 +156,8 @@ public:
   Expression getConstraint() const override {
     return v1.getVoltage() + voltage - v2.getVoltage();
   }
-  rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
+  rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "voltageSource", allocator);
     edge.AddMember("voltage", voltage.evaluate(), allocator);
@@ -165,7 +167,7 @@ public:
 
 // TODO: keep the information from constructor args
 class ZenerDiode : public Edge {
-public:
+ public:
   ~ZenerDiode() {}
   ZenerDiode(int id, const Vertex& v1, const Vertex& v2, const Expression& vzt,
              const Expression& rzt, const Expression& izt)
@@ -175,8 +177,8 @@ public:
     return (v1.getVoltage() - v2.getVoltage() + voltage) / resistance;
   }
 
-  rapidjson::Value
-  toJson(rapidjson::MemoryPoolAllocator<>& allocator) const override {
+  rapidjson::Value toJson(
+      rapidjson::MemoryPoolAllocator<>& allocator) const override {
     rapidjson::Value edge = getCommonJson(allocator);
     edge.AddMember("type", "zenerDiode", allocator);
     edge.AddMember("voltage", voltage.evaluate(), allocator);
@@ -184,7 +186,7 @@ public:
     return edge;
   }
 
-private:
+ private:
   Expression voltage;
   Expression resistance;
 };

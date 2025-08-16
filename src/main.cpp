@@ -1,11 +1,9 @@
-#include "circuitsolver/circuitGraph.h"
-#include "circuitsolver/components/edge.h"
-#include "circuitsolver/components/realDiode.h"
-#include "circuitsolver/components/resistor.h"
-#include "circuitsolver/components/vertex.h"
-#include "circuitsolver/components/voltageSource.h"
-#include "circuitsolver/expression.h"
 #include <iostream>
+
+#include "circuitsolver/circuitGraph.h"
+#include "circuitsolver/edge.h"
+#include "circuitsolver/expression.h"
+#include "circuitsolver/vertex.h"
 bool testEquals(double expected, double actual) {
   double rtol = 1e-4;
   if (fabs(expected - actual) / fabs(expected) < rtol) {
@@ -80,8 +78,7 @@ bool testRealDiodes() {
   err |= !testEquals(8.595, v1.getVoltage().evaluate());
   err |= !testEquals(8.006, v2.getVoltage().evaluate());
   err |= !testEquals(337.2e-6, d->getCurrent().evaluate());
-  if (!err)
-    std::cout << "Test Passed!" << std::endl;
+  if (!err) std::cout << "Test Passed!" << std::endl;
   return err;
 }
 bool testIdealDiodes() { return false; }
