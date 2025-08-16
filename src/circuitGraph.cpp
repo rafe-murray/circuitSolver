@@ -1,10 +1,7 @@
 #include "circuitsolver/circuitGraph.h"
-#include "circuitsolver/components/currentSource.h"
-#include "circuitsolver/components/edge.h"
-#include "circuitsolver/components/resistor.h"
-#include "circuitsolver/components/vertex.h"
-#include "circuitsolver/components/voltageSource.h"
+#include "circuitsolver/edge.h"
 #include "circuitsolver/expression.h"
+#include "circuitsolver/vertex.h"
 #include <memory>
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>

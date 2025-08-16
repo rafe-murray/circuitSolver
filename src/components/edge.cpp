@@ -1,5 +1,5 @@
-#include "circuitsolver/components/edge.h"
-#include "circuitsolver/components/vertex.h"
+#include "circuitsolver/edge.h"
+#include "circuitsolver/vertex.h"
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
@@ -43,4 +43,3 @@ template <> struct hash<Edge> {
   }
 };
 } // namespace std
-// namespace std
