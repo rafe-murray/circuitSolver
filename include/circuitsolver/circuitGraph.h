@@ -1,9 +1,9 @@
 #ifndef CIRCUIT_GRAPH_H
 #define CIRCUIT_GRAPH_H
 
-#include "components/edge.h"
-#include "components/vertex.h"
+#include "edge.h"
 #include "expression.h"
+#include "vertex.h"
 #include <memory>
 #include <unordered_map>
 
@@ -11,9 +11,18 @@
 //  - Cases where there are too few equations for the number of unknowns
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
+//  TODO: update this
+//  Ideas:
+//    - use vector<vector<int>> for adjacencyList (vertex -> edge) since we have
+//    control over ids and can make them *very* dense
+//    - make ids unsigned
+//    - Keep two unordered_maps for Vertex and Edge lookup
+//    - Store the vertices for an edge as ids
+//    - Make Edge a wrapper for the polymorphic branch types -> easier
+//    serialization
+//      - Use std::variant() with a list of all the types
 
 typedef std::shared_ptr<Edge> EdgePtr;
-
 class CircuitGraph {
 public:
   Expression getErrorExpression();

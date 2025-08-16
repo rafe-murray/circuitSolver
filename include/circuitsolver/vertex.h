@@ -1,6 +1,6 @@
 #ifndef VERTEX_H
 #define VERTEX_H
-#include "../expression.h"
+#include "expression.h"
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>

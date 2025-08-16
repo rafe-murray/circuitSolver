@@ -12,6 +12,16 @@ class TernaryOpNode;
 class UnaryOpNode;
 class VariableNode;
 
+/*
+ * NOTE: if this class needs to have improved performance, we can do the
+ * following:
+ *  - Make all std::shared_ptr std::unique_ptr or raw pointers with a recursive
+ *    destructor for ExpressionNodes
+ *  - Switch double value in VariableNodes to std::shared_ptr<double> value
+ *  - That way we have many fewer reference counted pointers using atomic
+ *    operations while preserving the desired behaviour for unknowns
+ */
+
 typedef std::unordered_map<const double*, size_t> ExpressionMap;
 typedef std::shared_ptr<ExpressionNode> ExpressionNodePtr;
 
