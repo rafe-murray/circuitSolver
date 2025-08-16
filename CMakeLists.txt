@@ -5,15 +5,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For clangd support
 
 project(circuitSolver)
 
-option(COMPILE_TESTS "Compile a test executable" ON) # TODO: change default when
-# ready for release
+# TODO: change default when ready for release
+option(COMPILE_TESTS "Compile a test executable" ON)
 
 # Add the source code as a library so it is exposed to both main executable and
 # tests
 add_library(circuitSolver STATIC)
 target_sources(
-  circuitSolver PRIVATE src/circuitGraph.cpp src/expression.cpp
-                        src/expressionNode.cpp src/components/edge.cpp)
+  circuitSolver
+  PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
+          src/components/edge.cpp circuitGraph.proto)
 
 target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
@@ -25,7 +26,18 @@ find_package(RapidJSON CONFIG REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
 
-target_link_libraries(circuitSolver PUBLIC PkgConfig::Pistache Ceres::ceres)
+find_package(Protobuf CONFIG REQUIRED)
+
+# Generate protobuf code
+if(Protobuf_FOUND)
+  protobuf_generate(TARGET circuitSolver)
+endif()
+
+# generated protobuf headers will be in current (build) directory
+set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+
+target_link_libraries(circuitSolver PUBLIC PkgConfig::Pistache Ceres::ceres
+                                           protobuf::libprotobuf)
 
 # Compile the main executable
 add_executable(solver src/main.cpp)
