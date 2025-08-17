@@ -1,6 +1,8 @@
-#include "circuitsolver/expression.h"
 #include <gtest/gtest.h>
+
 #include <iostream>
+
+#include "src/expression.h"
 
 // NOTE: falls back to absolute tolerance if expected == 0.0
 testing::AssertionResult WithinRelativeTolerance(double expected, double actual,

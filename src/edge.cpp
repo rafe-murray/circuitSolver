@@ -1,10 +1,10 @@
-#include "circuitsolver/edge.h"
+#include "edge.h"
 
 #include <rapidjson/allocators.h>
 #include <rapidjson/document.h>
 #include <rapidjson/rapidjson.h>
 
-#include "circuitsolver/vertex.h"
+#include "vertex.h"
 
 Edge::~Edge() {}
 // TODO: fix passing by reference; want v1 and v2 to point to the original

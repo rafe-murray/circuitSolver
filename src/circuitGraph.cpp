@@ -1,4 +1,4 @@
-#include "circuitsolver/circuitGraph.h"
+#include "circuitGraph.h"
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
@@ -12,9 +12,9 @@
 #include <stdexcept>
 #include <vector>
 
-#include "circuitsolver/edge.h"
-#include "circuitsolver/expression.h"
-#include "circuitsolver/vertex.h"
+#include "edge.h"
+#include "expression.h"
+#include "vertex.h"
 
 // TODO: reorganize this file
 Expression CircuitGraph::getErrorExpression() {

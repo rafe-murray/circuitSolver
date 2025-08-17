@@ -1,12 +1,12 @@
-#include "circuitsolver/expression.h"
+#include "expression.h"
 
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
 
-#include "circuitsolver/expressionCostFunctor.h"
-#include "circuitsolver/expressionNode.h"
+#include "expressionCostFunctor.h"
+#include "expressionNode.h"
 
 using namespace std;
 

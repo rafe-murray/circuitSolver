@@ -16,15 +16,15 @@ target_sources(
   PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
           src/edge.cpp circuitGraphMessage.proto)
 
-target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
+# target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # Add external libraries
 find_package(Ceres REQUIRED)
 
 find_package(RapidJSON CONFIG REQUIRED)
 
-find_package(PkgConfig)
-pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
+# find_package(PkgConfig) pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET
+# libpistache)
 
 find_package(Protobuf CONFIG REQUIRED)
 
@@ -35,9 +35,8 @@ endif()
 
 # generated protobuf headers will be in current (build) directory
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
-
-target_link_libraries(circuitSolver PUBLIC PkgConfig::Pistache Ceres::ceres
-                                           protobuf::libprotobuf)
+# PkgConfig::Pistache
+target_link_libraries(circuitSolver PUBLIC Ceres::ceres protobuf::libprotobuf)
 
 # Compile the main executable
 add_executable(solver src/main.cpp)

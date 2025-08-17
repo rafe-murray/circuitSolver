@@ -22,6 +22,7 @@
 //    - Make Edge a wrapper for the polymorphic branch types -> easier
 //    serialization
 //      - Use std::variant() with a list of all the types
+//      - parse from protobuf
 
 typedef std::shared_ptr<Edge> EdgePtr;
 class CircuitGraph {

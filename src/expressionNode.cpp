@@ -1,4 +1,4 @@
-#include "circuitsolver/expressionNode.h"
+#include "expressionNode.h"
 
 #include <unordered_set>
 

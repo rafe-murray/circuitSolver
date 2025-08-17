@@ -1,9 +1,9 @@
 #include <iostream>
 
-#include "circuitsolver/circuitGraph.h"
-#include "circuitsolver/edge.h"
-#include "circuitsolver/expression.h"
-#include "circuitsolver/vertex.h"
+#include "circuitGraph.h"
+#include "edge.h"
+#include "expression.h"
+#include "vertex.h"
 bool testEquals(double expected, double actual) {
   double rtol = 1e-4;
   if (fabs(expected - actual) / fabs(expected) < rtol) {
