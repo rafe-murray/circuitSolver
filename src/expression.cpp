@@ -293,5 +293,6 @@ ceres::Solver::Options getDefaultOptions() {
   // NOTE: this parameter is VERY important - results in ~1500x better
   // performance
   options.use_nonmonotonic_steps = true;
+  options.max_consecutive_nonmonotonic_steps = 10;
   return options;
 }

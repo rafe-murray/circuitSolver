@@ -27,8 +27,7 @@ class CurrentSource : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
   CurrentSource(const Vertex& from, const Vertex& to,
-                const Expression& current);
-  CurrentSource(const Vertex& from, const Vertex& to);
+                const Expression& current = {});
   Expression getCurrent() const override;
   Expression getConstraint() const override;
   void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
@@ -41,8 +40,8 @@ class CurrentSource : public Branch {
 class IdealDiode : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
-  IdealDiode(const Vertex& from, const Vertex& to, const Expression& voltage,
-             const Expression& current);
+  IdealDiode(const Vertex& from, const Vertex& to,
+             const Expression& voltage = {}, const Expression& current = {});
 
   Expression getCurrent() const override;
   Expression getConstraint() const override;
@@ -56,9 +55,8 @@ class IdealDiode : public Branch {
 class RealDiode : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
-  RealDiode(const Vertex& from, const Vertex& to);
-  RealDiode(const Vertex& from, const Vertex& to, Expression i0, Expression n,
-            Expression vt);
+  RealDiode(const Vertex& from, const Vertex& to, Expression i0 = {},
+            Expression n = {}, Expression vt = {});
   Expression getCurrent() const override;
   void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
 
@@ -71,7 +69,8 @@ class RealDiode : public Branch {
 class Resistor : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
-  Resistor(const Vertex& from, const Vertex& to, const Expression& resistance);
+  Resistor(const Vertex& from, const Vertex& to,
+           const Expression& resistance = {});
   // The resistance of the resistor in the branch, in Ohms
   Expression resistance;
   Expression getCurrent() const override;
@@ -83,8 +82,7 @@ class VoltageSource : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
   VoltageSource(const Vertex& from, const Vertex& to,
-                const Expression& voltage);
-  VoltageSource(const Vertex& from, const Vertex& to);
+                const Expression& voltage = {});
   // The voltage gain from the from to to, in Volts
   Expression voltage;
   Expression current;
@@ -96,8 +94,8 @@ class VoltageSource : public Branch {
 class ZenerDiode : public Branch {
  public:
   std::unique_ptr<Branch> copy() const override;
-  ZenerDiode(const Vertex& from, const Vertex& to, const Expression& izt,
-             const Expression& rzt, const Expression& vzt);
+  ZenerDiode(const Vertex& from, const Vertex& to, const Expression& izt = {},
+             const Expression& rzt = {}, const Expression& vzt = {});
 
   Expression getCurrent() const override;
 

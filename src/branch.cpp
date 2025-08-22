@@ -20,8 +20,6 @@ std::unique_ptr<Branch> CurrentSource::copy() const {
 CurrentSource::CurrentSource(const Vertex& from, const Vertex& to,
                              const Expression& current)
     : current(current), Branch(from, to) {}
-CurrentSource::CurrentSource(const Vertex& from, const Vertex& to)
-    : CurrentSource(from, to, Expression()) {}
 Expression CurrentSource::getCurrent() const { return current; };
 Expression CurrentSource::getConstraint() const {
   return from.getVoltage() + voltage - to.getVoltage();
@@ -59,8 +57,6 @@ void IdealDiode::toProto(
 std::unique_ptr<Branch> RealDiode::copy() const {
   return std::make_unique<RealDiode>(*this);
 }
-RealDiode::RealDiode(const Vertex& from, const Vertex& to)
-    : Branch(from, to), i0(), vt(), n() {}
 RealDiode::RealDiode(const Vertex& from, const Vertex& to, Expression i0,
                      Expression n, Expression vt)
     : Branch(from, to), i0(i0), vt(vt), n(n) {}
@@ -97,8 +93,6 @@ std::unique_ptr<Branch> VoltageSource::copy() const {
 VoltageSource::VoltageSource(const Vertex& from, const Vertex& to,
                              const Expression& voltage)
     : voltage(voltage), Branch(from, to) {}
-VoltageSource::VoltageSource(const Vertex& from, const Vertex& to)
-    : VoltageSource(from, to, Expression()) {}
 // The voltage gain from the from to to, in Volts
 Expression VoltageSource::getCurrent() const { return current; };
 Expression VoltageSource::getConstraint() const {

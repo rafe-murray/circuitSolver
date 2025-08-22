@@ -44,10 +44,14 @@ void Condition::getUnknowns(std::unordered_set<double*>& unknowns) {
 void TernaryOpNode::getUnknowns(
     std::unordered_set<const double*>& unknowns) const {
   condition->getUnknowns(unknowns);
+  valIfTrue->getUnknowns(unknowns);
+  valIfFalse->getUnknowns(unknowns);
 }
 
 void TernaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
   condition->getUnknowns(unknowns);
+  valIfTrue->getUnknowns(unknowns);
+  valIfFalse->getUnknowns(unknowns);
 }
 
 void UnaryOpNode::getUnknowns(
