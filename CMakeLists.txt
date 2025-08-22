@@ -14,7 +14,7 @@ add_library(circuitSolver STATIC)
 target_sources(
   circuitSolver
   PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
-          src/edge.cpp circuitGraphMessage.proto)
+          src/branch.cpp src/edge.cpp circuitGraphMessage.proto)
 
 # target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
@@ -58,7 +58,8 @@ if(COMPILE_TESTS)
   # configuration for the tests
   enable_testing()
 
-  add_executable(circuitSolverTests test/math.cpp)
+  add_executable(circuitSolverTests test/math.cpp test/circuit.cpp
+                                    test/utils.cpp)
   target_link_libraries(circuitSolverTests GTest::gtest_main circuitSolver)
 
   include(GoogleTest)

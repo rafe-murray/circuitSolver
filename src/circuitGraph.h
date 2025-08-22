@@ -2,8 +2,8 @@
 #define CIRCUIT_GRAPH_H
 
 #include <memory>
-#include <unordered_map>
 
+#include "circuitGraphMessage.pb.h"
 #include "edge.h"
 #include "expression.h"
 #include "vertex.h"
@@ -24,7 +24,6 @@
 //      - Use std::variant() with a list of all the types
 //      - parse from protobuf
 
-typedef std::shared_ptr<Edge> EdgePtr;
 class CircuitGraph {
  public:
   Expression getErrorExpression();
@@ -33,10 +32,7 @@ class CircuitGraph {
   /**
    * Creates a new graph instance
    */
-  CircuitGraph()
-      : adjacencyList(
-            std::unordered_map<Vertex, std::unordered_map<Vertex, EdgePtr>>()) {
-  }
+  CircuitGraph() : adjacencyList(std::vector<std::vector<unsigned>>()) {}
 
   /**
    * Adds a vertex to the graph
@@ -44,6 +40,8 @@ class CircuitGraph {
    * @return true on successful insertion
    */
   bool addVertex(const Vertex& v);
+
+  bool hasVertex(const Vertex& v);
 
   /**
    * Removes a vertex from the graph
@@ -57,14 +55,18 @@ class CircuitGraph {
    * @param e - the edge to add
    * @return true if the edge was not part of the graph before and now it is
    */
-  bool addEdge(EdgePtr e);
+  bool addEdge(std::unique_ptr<Edge> e);
+
+  bool addEdge(const Edge& e) { return addEdge(std::make_unique<Edge>(e)); };
+
+  bool hasEdge(const Edge& e);
 
   /**
    * Removes an edge from the graph
    * @param e - the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(EdgePtr e);
+  bool removeEdge(const Edge& e);
 
   /**
    * Removes an edge from the graph
@@ -80,7 +82,7 @@ class CircuitGraph {
    * @param v - the vertex which the edges are incident on
    * @return a vector containing all incident edges
    */
-  std::vector<EdgePtr> getIncident(const Vertex& v);
+  std::vector<Edge> getIncident(const Vertex& v);
 
   /**
    * Gets all vertices in the graph
@@ -88,11 +90,11 @@ class CircuitGraph {
    */
   std::vector<Vertex> getVertices() const;
 
-  std::vector<EdgePtr> getEdges() const;
-
+  std::vector<Edge> getEdges() const;
   // pre: the circuit is solved
-  std::string toJson() const;
-  static CircuitGraph* fromJson(const std::string& json);
+  circuitsolver::CircuitGraphMessage toProto() const;
+  static std::optional<std::unique_ptr<CircuitGraph>> fromProto(
+      const circuitsolver::CircuitGraphMessage& proto);
 
  private:
   /**
@@ -119,27 +121,22 @@ class CircuitGraph {
    * @param id the id of the `Edge`
    * @throws std::out_of_range if no `Edge` with `id` is a member of `this`
    */
-  EdgePtr getEdge(int id);
+  Edge& getEdge(int id);
 
   /**
-   * Get the reference node for the graph
+   * An adjacency list representation of the graph using vertex id -> edge id
    */
-  Expression getRef();
-
-  /**
-   * An adjacency list representation of the graph
-   */
-  std::unordered_map<Vertex, std::unordered_map<Vertex, EdgePtr>> adjacencyList;
+  std::vector<std::vector<unsigned>> adjacencyList;
 
   /**
    * Map of vertex id to vertex
    */
-  std::unordered_map<int, Vertex> vertices;
+  std::vector<std::unique_ptr<Vertex>> vertices;
 
   /**
    * Map of edge id to edge
    */
-  std::unordered_map<int, EdgePtr> edges;
+  std::vector<std::unique_ptr<Edge>> edges;
 };
 
 #endif  // !CIRCUIT_GRAPH_H

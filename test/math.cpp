@@ -1,26 +1,7 @@
 #include <gtest/gtest.h>
 
-#include <iostream>
-
 #include "src/expression.h"
-
-// NOTE: falls back to absolute tolerance if expected == 0.0
-testing::AssertionResult WithinRelativeTolerance(double expected, double actual,
-                                                 double tol) {
-  bool succeeded;
-  if (expected == 0) {
-    succeeded = fabs(expected - actual) <= tol;
-  } else {
-    succeeded = fabs(expected - actual) / fabs(expected) <= tol;
-  }
-  if (succeeded) {
-    return testing::AssertionSuccess();
-  } else {
-    return testing::AssertionFailure()
-           << "Expected " << expected << " but got " << actual
-           << " which was not within the relative tolerance of " << tol;
-  }
-}
+#include "utils.h"
 
 TEST(MathTest, BasicEquality) {
   Expression zero = 0;
@@ -64,9 +45,9 @@ TEST(MathTest, CeresOptimization) {
   ceres::Solve(options, &problem, &summary);
   ASSERT_TRUE(summary.IsSolutionUsable());
   z.markKnown();
-  EXPECT_TRUE(WithinRelativeTolerance(0, z.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(2, x.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(3, y.evaluate(), 1e-4));
+  EXPECT_TRUE(IsWithinRelativeTolerance(0, z.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(2, x.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(3, y.evaluate()));
 }
 
 TEST(MathTest, CeresOptimizationLarge) {
@@ -85,11 +66,11 @@ TEST(MathTest, CeresOptimizationLarge) {
   a.markKnown();
   b.markKnown();
   c.markKnown();
-  EXPECT_TRUE(WithinRelativeTolerance(0, a.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(0, b.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(0, c.evaluate(), 1e-4));
+  EXPECT_TRUE(IsWithinRelativeTolerance(0, a.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(0, b.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(0, c.evaluate()));
 
-  EXPECT_TRUE(WithinRelativeTolerance(-3.58771, x.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(-2.40797, y.evaluate(), 1e-4));
-  EXPECT_TRUE(WithinRelativeTolerance(1, z.evaluate(), 1e-4));
+  EXPECT_TRUE(IsWithinRelativeTolerance(-3.58771, x.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(-2.40797, y.evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(1, z.evaluate()));
 }
