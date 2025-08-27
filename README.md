@@ -28,8 +28,8 @@ brew install eigen
 # SuiteSparse
 brew install suite-sparse
 
-# RapidJSON
-brew install rapidjson
+# Protoc (compiler for protobufs)
+brew install protoc
 
 # Pistache
 brew install pistache
