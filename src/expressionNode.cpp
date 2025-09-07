@@ -115,24 +115,24 @@ std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
 std::ostream& Condition::serialize(std::ostream& out) const {
   out << "(" << lhs;
   switch (op) {
-    case BooleanBinaryOp::EQ:
-      out << "==";
-      break;
-    case BooleanBinaryOp::GEQ:
-      out << ">=";
-      break;
-    case BooleanBinaryOp::LEQ:
-      out << "<=";
-      break;
+    // case BooleanBinaryOp::EQ:
+    //   out << "==";
+    //   break;
+    // case BooleanBinaryOp::GEQ:
+    //   out << ">=";
+    //   break;
+    // case BooleanBinaryOp::LEQ:
+    //   out << "<=";
+    //   break;
     case BooleanBinaryOp::GT:
       out << ">";
       break;
     case BooleanBinaryOp::LT:
       out << "<";
       break;
-    case BooleanBinaryOp::NEQ:
-      out << "!=";
-      break;
+      // case BooleanBinaryOp::NEQ:
+      //   out << "!=";
+      //   break;
   }
   out << rhs << ")";
   return out;

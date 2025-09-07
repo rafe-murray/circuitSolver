@@ -1,5 +1,7 @@
+#include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
 
+#include "circuitGraphMessage.pb.h"
 #include "src/branch.h"
 #include "src/circuitGraph.h"
 #include "utils.h"
@@ -90,6 +92,35 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 1800, d.getCurrent().evaluate()));
 }
 
-TEST(CircuitTest, BasicCircuitFromProtobuf) {}
+TEST(CircuitTest, BasicCircuitFromProtobuf) {
+  auto cgm = GetMessageFromJsonFile("001-unsolved.json");
+  auto cgOptional = CircuitGraph::fromProto(cgm);
+  ASSERT_TRUE(cgOptional.has_value());
+  auto cg = cgOptional->get();
+  ASSERT_EQ(cg, cgExpected);
+}
+
+TEST(CircuitTest, BasicCircuitToProtobuf) {
+  CircuitGraph cg;
+  Vertex ref(0, 0);
+  Vertex v1(1);
+  Vertex v2(2);
+  Edge vs = Edge(0, VoltageSource(ref, v1, 5));
+  Edge r1 = Edge(1, Resistor(v1, v2, 2));
+  Edge r2 = Edge(2, Resistor(v2, ref, 3));
+  EXPECT_TRUE(cg.addVertex(ref));
+  EXPECT_TRUE(cg.addVertex(v1));
+  EXPECT_TRUE(cg.addVertex(v2));
+  EXPECT_TRUE(cg.addEdge(vs));
+  EXPECT_TRUE(cg.addEdge(r1));
+  EXPECT_TRUE(cg.addEdge(r2));
+  cg.solveCircuit();
+  auto buffer = cg.toProto();
+  std::string output;
+  absl::Status status =
+      google::protobuf::json::MessageToJsonString(buffer, &output);
+  ASSERT_TRUE(status.ok());
+  std::cout << output << std::endl;
+}
 
 TEST(CircuitTest, LargeCircuit) {}

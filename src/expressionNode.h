@@ -1,6 +1,7 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
@@ -149,7 +150,7 @@ struct BinaryOpNode : ExpressionNode {
 /**
  * Types of binary operations that return booleans
  */
-enum class BooleanBinaryOp { LT, LEQ, EQ, NEQ, GEQ, GT };
+enum class BooleanBinaryOp { LT, GT };
 
 /**
  * A Binary operation node in the AST that return a boolean value.
@@ -165,35 +166,51 @@ struct Condition {
   Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BooleanBinaryOp op);
 
   /**
-   * Evaluates the AST with `this` as a root.
+   * Evaluates the AST with `this` as a root. This uses a custom implementation
+   * of a [smoothstep](https://en.wikipedia.org/wiki/Smoothstep) function to
+   * approximate a step function in a way that is differentiable. This allows
+   * the solver (`ceres`) to more consistently determine the correct solution.
+   *
    * Note that this is templated so that `ceres` can do automatic
    * differentiation
    * @param parameters an array of values to be used for the unknowns
    * @param map a mapping from pointers to the unknown values to the index of
    * the corresponding value to use in `parameters`
-   * @return the value of the AST with `this` as a root
+   * @return a curve between 0 and 1 centered around
+   * lhs->evaluate()==rhs->evaluate() such that it goes to 0 when the condition
+   * is false and it goes to 1 when the condition is true
    */
   template <typename T>
-  bool evaluate(T const* parameters, const ExpressionMap& map) const {
-    switch (op) {
-      case BooleanBinaryOp::EQ:
-        return expressionNode::evaluate(lhs, parameters, map) ==
-               expressionNode::evaluate(rhs, parameters, map);
-      case BooleanBinaryOp::GEQ:
-        return expressionNode::evaluate(lhs, parameters, map) >=
-               expressionNode::evaluate(rhs, parameters, map);
-      case BooleanBinaryOp::LEQ:
-        return expressionNode::evaluate(lhs, parameters, map) <=
-               expressionNode::evaluate(rhs, parameters, map);
-      case BooleanBinaryOp::LT:
-        return expressionNode::evaluate(lhs, parameters, map) <
-               expressionNode::evaluate(rhs, parameters, map);
-      case BooleanBinaryOp::GT:
-        return expressionNode::evaluate(lhs, parameters, map) >
-               expressionNode::evaluate(rhs, parameters, map);
-      case BooleanBinaryOp::NEQ:
-        return expressionNode::evaluate(lhs, parameters, map) !=
-               expressionNode::evaluate(rhs, parameters, map);
+  T evaluate(T const* parameters, const ExpressionMap& map) const {
+    // TODO: add GEQ and LEQ
+    T proximity;
+    if (op == BooleanBinaryOp::GT) {
+      auto lhsValue = expressionNode::evaluate(lhs, parameters, map);
+      auto rhsValue = expressionNode::evaluate(rhs, parameters, map);
+      // std::cout << expressionNode::evaluate(lhs, parameters, map);
+      // std::cout << expressionNode::evaluate(rhs, parameters, map);
+      proximity = expressionNode::evaluate(lhs, parameters, map) -
+                  expressionNode::evaluate(rhs, parameters, map);
+      std::cout << "Expected a value of: "
+                << (expressionNode::evaluate(lhs, parameters, map) >
+                    expressionNode::evaluate(rhs, parameters, map))
+                << ", but got a valute of: " << proximity << std::endl;
+    } else if (op == BooleanBinaryOp::LT) {
+      proximity = expressionNode::evaluate(rhs, parameters, map) -
+                  expressionNode::evaluate(lhs, parameters, map);
+      std::cout << "Expected a value of: "
+                << (expressionNode::evaluate(lhs, parameters, map) <
+                    expressionNode::evaluate(rhs, parameters, map))
+                << ", but got a valute of: " << proximity << std::endl;
+    }
+    if (proximity <= 0.0) {
+      return T(0);
+    } else if (proximity >= tolerance) {
+      return T(1);
+    } else {
+      T normalizedProximity = proximity / tolerance;
+      return normalizedProximity * normalizedProximity *
+             (3.0 - 2.0 * normalizedProximity);
     }
   }
 
@@ -233,6 +250,9 @@ struct Condition {
    * The type of operation
    */
   BooleanBinaryOp op;
+
+ private:
+  const double tolerance = 1e-9;
 };
 
 /**
@@ -258,11 +278,11 @@ struct TernaryOpNode : ExpressionNode {
   template <typename T>
   T evaluateImplementation(T const* parameters,
                            const ExpressionMap& map) const {
-    if (condition->evaluate(parameters, map)) {
-      return expressionNode::evaluate(valIfTrue, parameters, map);
-    } else {
-      return expressionNode::evaluate(valIfFalse, parameters, map);
-    }
+    T conditionSmoothStep = condition->evaluate(parameters, map);
+    return conditionSmoothStep *
+               expressionNode::evaluate(valIfTrue, parameters, map) +
+           conditionSmoothStep *
+               (1.0 - expressionNode::evaluate(valIfFalse, parameters, map));
   }
 
   /**

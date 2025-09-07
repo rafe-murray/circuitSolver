@@ -95,6 +95,17 @@ class CircuitGraph {
   circuitsolver::CircuitGraphMessage toProto() const;
   static std::optional<std::unique_ptr<CircuitGraph>> fromProto(
       const circuitsolver::CircuitGraphMessage& proto);
+  /**
+   * Compares two CircuitGraphs for equality.
+   *
+   * Two graphs, g1 and g2, are considered equal if
+   * - For each vertex v in g1, there exists a vertex u in g2 with the same id
+   * such that if v is known then u is known and has the same value; if v is not
+   * known then u is not known either.
+   * - For each Edge e in g1, there exists an edge f in g2 with the same id that
+   * goes between vertices with the same ids and is of the same Branch type.
+   */
+  bool operator==(const CircuitGraph& other) const;
 
  private:
   /**

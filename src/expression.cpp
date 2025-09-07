@@ -151,6 +151,10 @@ bool Expression::operator==(double rhs) const {
   return evaluate() == rhs;
 }
 
+bool Expression::operator!=(const Expression& rhs) const {
+  return !(*this == rhs);
+}
+
 Expression& Expression::operator=(double rhs) {
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
   if (v) {
@@ -177,21 +181,21 @@ Condition Expression::operator<(Expression rhs) const {
   return Condition(root, std::move(rhs.root), BooleanBinaryOp::LT);
 }
 
-Condition Expression::operator<=(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::LEQ);
-}
+// Condition Expression::operator<=(Expression rhs) const {
+//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::LEQ);
+// }
 Condition Expression::operator>(Expression rhs) const {
   return Condition(root, std::move(rhs.root), BooleanBinaryOp::GT);
 }
-Condition Expression::operator>=(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::GEQ);
-}
-Condition Expression::operator!=(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
-}
-Condition Expression::equals(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::EQ);
-}
+// Condition Expression::operator>=(Expression rhs) const {
+//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::GEQ);
+// }
+// Condition Expression::operator!=(Expression rhs) const {
+//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
+// }
+// Condition Expression::equals(Expression rhs) const {
+//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::EQ);
+// }
 Expression Expression::makeConditional(Condition condition,
                                        Expression valIfTrue,
                                        Expression valIfFalse) {

@@ -94,11 +94,11 @@ class Expression {
 
   // TODO: add docs for these methods
   Condition operator<(Expression rhs) const;
-  Condition operator<=(Expression rhs) const;
+  // Condition operator<=(Expression rhs) const;
   Condition operator>(Expression rhs) const;
-  Condition operator>=(Expression rhs) const;
-  Condition operator!=(Expression rhs) const;
-  Condition equals(Expression rhs) const;
+  // Condition operator>=(Expression rhs) const;
+  // Condition operator!=(Expression rhs) const;
+  // Condition equals(Expression rhs) const;
   static Expression makeConditional(Condition condition, Expression valIfTrue,
                                     Expression valIfFalse);
 
@@ -109,6 +109,7 @@ class Expression {
    */
   bool operator==(const Expression& rhs) const;
   bool operator==(double rhs) const;
+  bool operator!=(const Expression& rhs) const;
 
   /**
    * Checks if this expression is a constant value

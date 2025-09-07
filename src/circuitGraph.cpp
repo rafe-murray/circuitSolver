@@ -147,6 +147,40 @@ std::vector<Edge> CircuitGraph::getEdges() const {
   return edgeList;
 }
 
+bool CircuitGraph::operator==(const CircuitGraph& other) const {
+  // TODO: fixme
+  for (auto& v : vertices) {
+    if (v->getId() >= other.vertices.size()) return false;
+    auto& u = other.vertices[v->getId()];
+    if (v->getVoltage().isConstant() != u->getVoltage().isConstant()) {
+      return false;
+    }
+    if (v->getVoltage().isConstant() && v->getVoltage() != u->getVoltage()) {
+      return false;
+    }
+  }
+  for (auto& e : edges) {
+    if (e->getId() >= other.edges.size()) return false;
+    auto& f = other.edges[e->getId()];
+    if (e->getFrom().getId() != f->getFrom().getId()) {
+      return false;
+    }
+    if (e->getTo().getId() != f->getTo().getId()) {
+      return false;
+    }
+    // HACK: using existing logic to convert to protobuf messages to determine
+    // edge type rather than creating an overloaded function
+    auto eMsg = new circuitsolver::CircuitGraphMessage::Edge();
+    e->toProto(eMsg);
+    auto fMsg = new circuitsolver::CircuitGraphMessage::Edge();
+    f->toProto(fMsg);
+    if (eMsg->specificBranch_case() != fMsg->specificBranch_case()) {
+      return false;
+    }
+  }
+  return false;
+}
+
 circuitsolver::CircuitGraphMessage CircuitGraph::toProto() const {
   circuitsolver::CircuitGraphMessage proto;
   for (auto& vertex : getVertices()) {
