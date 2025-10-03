@@ -3,14 +3,16 @@
 #include <absl/status/status.h>
 #include <google/protobuf/util/json_util.h>
 
-#include <exception>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include <streambuf>
 
 #include "circuitGraphMessage.pb.h"
+
+#ifndef TEST_DATA_DIR
+#define TEST_DATA_DIR "../test"
+#endif
 
 testing::AssertionResult IsWithinRelativeTolerance(double expected,
                                                    double actual, double tol) {
@@ -32,27 +34,14 @@ testing::AssertionResult IsWithinRelativeTolerance(double expected,
 circuitsolver::CircuitGraphMessage GetMessageFromJsonFile(
     const char* filename) {
   circuitsolver::CircuitGraphMessage cgm;
-  FILE* infile = fopen("001-unsolved.json", "r");
-  std::string jsonMessage;
-  char* buf;
-  size_t len;
-  do {
-    buf = fgetln(infile, &len);
-    jsonMessage.append(buf, len);
-  } while (buf != nullptr);
-  if (!feof(infile)) {
-    std::ostringstream buf;
-    buf << "Finished reading lines from " << filename
-        << " but did not reach EOF";
-    throw std::runtime_error(buf.str());
-  };
-  if (ferror(infile)) {
-    std::ostringstream buf;
-    buf << "Encountered an error while reading " << filename;
-    throw std::runtime_error(buf.str());
-  }
+  std::filesystem::path filePath =
+      std::filesystem::path(TEST_DATA_DIR) / filename;
+  std::ifstream ifs(filePath);
+
+  std::string content((std::istreambuf_iterator<char>(ifs)),
+                      std::istreambuf_iterator<char>());
   absl::Status status =
-      google::protobuf::json::JsonStringToMessage(jsonMessage, &cgm);
+      google::protobuf::json::JsonStringToMessage(content, &cgm);
   if (!status.ok()) {
     std::ostringstream buf;
     buf << "Could not convert JSON string to protobuf message";

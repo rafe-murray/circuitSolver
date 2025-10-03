@@ -1,5 +1,7 @@
 #include "circuitGraph.h"
 
+#include <google/protobuf/util/json_util.h>
+
 #include <memory>
 #include <vector>
 
@@ -178,7 +180,7 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
       return false;
     }
   }
-  return false;
+  return true;
 }
 
 circuitsolver::CircuitGraphMessage CircuitGraph::toProto() const {
@@ -212,4 +214,11 @@ std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
     }
   }
   return cg;
+}
+
+std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg) {
+  std::string output;
+  (void)google::protobuf::json::MessageToJsonString(cg.toProto(), &output);
+  out << output << std::endl;
+  return out;
 }

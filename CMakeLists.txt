@@ -62,6 +62,10 @@ if(COMPILE_TESTS)
                                     test/utils.cpp)
   target_link_libraries(circuitSolverTests GTest::gtest_main circuitSolver)
 
+  # Add a compiler macro for test data file directory
+  set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/test/data")
+  target_compile_definitions(circuitSolverTests
+                             PRIVATE TEST_DATA_DIR="${TEST_DATA_DIR}")
   include(GoogleTest)
   gtest_discover_tests(circuitSolverTests)
 endif()

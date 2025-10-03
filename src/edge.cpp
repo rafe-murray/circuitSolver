@@ -81,6 +81,7 @@ std::optional<Edge> Edge::fromProto(
         vt = proto.realdiode().vt();
       }
       newBranch = std::make_unique<RealDiode>(from, to, i0, n, vt);
+      break;
     }
     case circuitsolver::CircuitGraphMessage::Edge::kResistor: {
       Expression resistance;
@@ -88,6 +89,7 @@ std::optional<Edge> Edge::fromProto(
         resistance = proto.resistor().resistance();
       }
       newBranch = std::make_unique<Resistor>(from, to, resistance);
+      break;
     }
     case circuitsolver::CircuitGraphMessage::Edge::kVoltageSource: {
       Expression voltage;
@@ -95,6 +97,7 @@ std::optional<Edge> Edge::fromProto(
         voltage = proto.voltagesource().voltage();
       }
       newBranch = std::make_unique<VoltageSource>(from, to, voltage);
+      break;
     }
     case circuitsolver::CircuitGraphMessage::Edge::kZenerDiode: {
       Expression izt, rzt, vzt;
@@ -108,6 +111,7 @@ std::optional<Edge> Edge::fromProto(
         vzt = proto.zenerdiode().vzt();
       }
       newBranch = std::make_unique<ZenerDiode>(from, to, izt, rzt, vzt);
+      break;
     }
     case circuitsolver::CircuitGraphMessage::Edge::SPECIFICBRANCH_NOT_SET:
       return std::nullopt;

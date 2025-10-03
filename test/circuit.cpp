@@ -93,11 +93,18 @@ TEST(CircuitTest, IdealDiode) {
 }
 
 TEST(CircuitTest, BasicCircuitFromProtobuf) {
-  auto cgm = GetMessageFromJsonFile("001-unsolved.json");
-  auto cgOptional = CircuitGraph::fromProto(cgm);
-  ASSERT_TRUE(cgOptional.has_value());
-  auto cg = cgOptional->get();
-  ASSERT_EQ(cg, cgExpected);
+  auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");
+  auto cgOptionalUnsolved = CircuitGraph::fromProto(cgmUnsolved);
+  ASSERT_TRUE(cgOptionalUnsolved.has_value());
+  auto cgUnsolved = cgOptionalUnsolved->get();
+  auto summary = cgUnsolved->solveCircuit();
+  ASSERT_TRUE(summary.IsSolutionUsable());
+
+  auto cgmSolved = GetMessageFromJsonFile("001-solved.json");
+  auto cgOptionalSolved = CircuitGraph::fromProto(cgmSolved);
+  ASSERT_TRUE(cgOptionalSolved.has_value());
+  auto cgSolved = cgOptionalSolved->get();
+  ASSERT_EQ(*cgUnsolved, *cgSolved);
 }
 
 TEST(CircuitTest, BasicCircuitToProtobuf) {
@@ -120,7 +127,7 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   absl::Status status =
       google::protobuf::json::MessageToJsonString(buffer, &output);
   ASSERT_TRUE(status.ok());
-  std::cout << output << std::endl;
+  // std::cout << output << std::endl;
 }
 
 TEST(CircuitTest, LargeCircuit) {}

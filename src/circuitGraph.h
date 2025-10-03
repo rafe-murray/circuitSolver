@@ -2,10 +2,12 @@
 #define CIRCUIT_GRAPH_H
 
 #include <memory>
+#include <ostream>
 
 #include "circuitGraphMessage.pb.h"
 #include "edge.h"
 #include "expression.h"
+#include "src/expressionNode.h"
 #include "vertex.h"
 
 // TODO: add error handling for:
@@ -149,5 +151,7 @@ class CircuitGraph {
    */
   std::vector<std::unique_ptr<Edge>> edges;
 };
+
+std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg);
 
 #endif  // !CIRCUIT_GRAPH_H
