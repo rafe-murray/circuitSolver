@@ -194,8 +194,10 @@ std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
   return out;
 }
 
-std::ostream& Condition::serialize(std::ostream& out) const {
-  out << "(" << val << (includeZero ? " >= " : " > ") << "0)";
+std::ostream& operator<<(std::ostream& out,
+                         std::shared_ptr<Condition> condition) {
+  out << "(" << condition->val << (condition->includeZero ? " >= " : " > ")
+      << "0)";
   return out;
 }
 
@@ -222,7 +224,7 @@ std::ostream& VariableNode::serialize(std::ostream& out) const {
   if (known) {
     out << value;
   } else {
-    out << this;
+    out << &value;
   }
   return out;
 }

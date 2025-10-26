@@ -94,9 +94,9 @@ class Expression {
 
   // TODO: add docs for these methods
   Condition operator<(Expression rhs) const;
-  // Condition operator<=(Expression rhs) const;
+  Condition operator<=(Expression rhs) const;
   Condition operator>(Expression rhs) const;
-  // Condition operator>=(Expression rhs) const;
+  Condition operator>=(Expression rhs) const;
   // Condition operator!=(Expression rhs) const;
   // Condition equals(Expression rhs) const;
   static Expression makeConditional(Condition condition, Expression valIfTrue,

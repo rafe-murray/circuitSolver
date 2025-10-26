@@ -6,6 +6,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <unordered_set>
 #include <vector>
 
 #include "circuitGraphMessage.pb.h"
@@ -29,20 +30,12 @@ Expression CircuitGraph::getErrorExpression() {
 
 // TODO: ensure that ternaryOpNodes will always add an expression that equates
 // the basis with a valid expression as its constraint method
-ceres::Solver::Summary CircuitGraph::solvePartition(
+partitionSolution CircuitGraph::solvePartition(
     const std::vector<double*>& basis, const std::vector<bool>& isHigh) {
   ceres::Problem problem;
-  std::vector<Expression> expressions;
-  for (Vertex& node : getVertices()) {
-    if (node.getVoltage().isConstant()) continue;
-    Expression netCurrent = getNodeCurrents(node);
-    netCurrent.addToProblem(problem);
-    expressions.push_back(netCurrent);
-  }
-  for (Edge& edge : getEdges()) {
-    Expression constraint = edge.getConstraint();
-    constraint.addToProblem(problem);
-    expressions.push_back(constraint);
+  std::vector<Expression> expressions = getExpressions();
+  for (auto expression : expressions) {
+    expression.addToProblem(problem);
   }
   assert(basis.size() == isHigh.size());
   for (size_t i = 0; i < basis.size(); i++) {
@@ -55,19 +48,40 @@ ceres::Solver::Summary CircuitGraph::solvePartition(
   ceres::Solver::Options options = getDefaultOptions();
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
+  std::vector<std::vector<double>> allParameters;
   for (auto& expression : expressions) {
-    expression.markKnown();
+    auto unknowns = expression.getMutableUnknowns();
+    std::vector<double> parameters;
+    for (auto unknown : unknowns) {
+      parameters.push_back(*unknown);
+    }
+    allParameters.push_back(parameters);
   }
-  return summary;
+  partitionSolution solution{summary, expressions, allParameters};
+  return solution;
 }
+
+/**
+ * At start we have:
+ * - The unknowns, as an array of double*'s
+ * - We can get the values by dereferencing the pointers
+ * We need:
+ * - The actual values of the unknowns
+ * - A way to set the values of the unknowns from this array
+ */
 
 // TODO: fix case of no discontinuities
 ceres::Solver::Summary CircuitGraph::solveCircuit() {
   std::vector<double*> basis = getDiscontinuities();
   int basisSize = basis.size();
-  int numPartitions = 1 << basisSize;
-  std::vector<ceres::Solver::Summary> solutions(numPartitions);
-  std::vector<std::vector<bool>> isHigh(numPartitions);
+  int numPartitions;
+  if (basisSize > 0) {
+    numPartitions = 1 << basisSize;
+  } else {
+    numPartitions = 1;
+  }
+  std::vector<partitionSolution> solutions(numPartitions);
+  std::vector<std::vector<bool>> isHigh;
   for (int i = 0; i < numPartitions; i++) {
     isHigh.push_back(std::vector<bool>(basisSize));
     for (int j = 0; j < basisSize; j++) {
@@ -78,18 +92,42 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
   double minError = std::numeric_limits<double>::max();
   int bestIndex = -1;
   for (int i = 0; i < solutions.size(); i++) {
-    if (!solutions[i].IsSolutionUsable()) {
+    if (!solutions[i].summary.IsSolutionUsable()) {
       continue;
     }
-    if (solutions[i].final_cost < minError) {
-      minError = solutions[i].final_cost;
+    if (solutions[i].summary.final_cost < minError) {
+      minError = solutions[i].summary.final_cost;
       bestIndex = i;
     }
   }
   if (bestIndex == -1) {
     throw std::runtime_error("No solution found\n");  // TODO: fail gracefully
   }
-  return solutions[bestIndex];
+  partitionSolution solution = solutions[bestIndex];
+  assert(solution.expressions.size() == solution.parameters.size());
+  for (int i = 0; i < solution.expressions.size(); i++) {
+    auto unknowns = solution.expressions[i].getMutableUnknowns();
+    auto parameters = solution.parameters[i];
+    for (int j = 0; j < unknowns.size(); j++) {
+      *(unknowns[j]) = parameters[j];
+    }
+    solution.expressions[i].markKnown();
+  }
+  return solutions[bestIndex].summary;
+}
+
+std::vector<Expression> CircuitGraph::getExpressions() {
+  std::vector<Expression> expressions;
+  for (Vertex& node : getVertices()) {
+    if (node.getVoltage().isConstant()) continue;
+    Expression netCurrent = getNodeCurrents(node);
+    expressions.push_back(netCurrent);
+  }
+  for (Edge& edge : getEdges()) {
+    Expression constraint = edge.getConstraint();
+    expressions.push_back(constraint);
+  }
+  return expressions;
 }
 
 Expression CircuitGraph::getNodeCurrents(Vertex node) {
@@ -265,8 +303,16 @@ std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
   return cg;
 }
 std::vector<double*> CircuitGraph::getDiscontinuities() {
-  // TODO: implement this function
-  return std::vector<double*>();
+  std::unordered_set<double*> discontinuities;
+  auto expressions = getExpressions();
+  for (auto expression : expressions) {
+    discontinuities.merge(expression.getDiscontinuities());
+  }
+  std::vector<double*> discontinuitiesVector;
+  for (auto el : discontinuities) {
+    discontinuitiesVector.push_back(el);
+  }
+  return discontinuitiesVector;
 }
 
 std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg) {

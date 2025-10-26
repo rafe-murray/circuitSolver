@@ -50,6 +50,8 @@ class IdealDiode : public Branch {
  private:
   Expression voltage;
   Expression current;
+  Expression constraint;
+  Expression conditionalCurrent;
 };
 
 class RealDiode : public Branch {

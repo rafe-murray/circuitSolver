@@ -1,5 +1,6 @@
 #include "expression.h"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <unordered_set>
@@ -138,7 +139,6 @@ bool Expression::operator==(const Expression& rhs) const {
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(rhs.root);
   // TODO: why has this been implemented this way?
   if (u && v && u->known && v->known) {
-    /*cout << "Expressions had same value of " << u->value << endl;*/
     return u->value == v->value;
   }
   return root == rhs.root;
@@ -181,15 +181,15 @@ Condition Expression::operator<(Expression rhs) const {
   return Condition(root, std::move(rhs.root), BooleanBinaryOp::LT);
 }
 
-// Condition Expression::operator<=(Expression rhs) const {
-//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::LEQ);
-// }
+Condition Expression::operator<=(Expression rhs) const {
+  return Condition(root, std::move(rhs.root), BooleanBinaryOp::LEQ);
+}
 Condition Expression::operator>(Expression rhs) const {
   return Condition(root, std::move(rhs.root), BooleanBinaryOp::GT);
 }
-// Condition Expression::operator>=(Expression rhs) const {
-//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::GEQ);
-// }
+Condition Expression::operator>=(Expression rhs) const {
+  return Condition(root, std::move(rhs.root), BooleanBinaryOp::GEQ);
+}
 // Condition Expression::operator!=(Expression rhs) const {
 //   return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
 // }
@@ -248,7 +248,7 @@ ExpressionMap Expression::getMap() const {
   ExpressionMap map;
   unsigned i = 0;
   for (auto unknown : getUnknowns()) {
-    (map)[unknown] = i;
+    map[unknown] = i;
     i++;
   }
   return map;
@@ -300,7 +300,7 @@ double* Expression::getPtrToUnknown() {
 void Expression::markKnown() { root->markKnown(); }
 
 std::ostream& operator<<(std::ostream& out, const Expression& e) {
-  out << e.root;
+  out << "(" << e.root.get() << ")" << e.root;
   return out;
 }
 

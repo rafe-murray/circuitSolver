@@ -23,13 +23,13 @@ struct VariableNode;
  *    operations while preserving the desired behaviour for unknowns
  */
 
-typedef std::unordered_map<const double *, size_t> ExpressionMap;
+typedef std::unordered_map<const double*, size_t> ExpressionMap;
 typedef std::shared_ptr<ExpressionNode> ExpressionNodePtr;
 
 namespace expressionNode {
 template <typename T>
-T evaluate(ExpressionNodePtr root, T const *parameters,
-           const ExpressionMap &map);
+T evaluate(ExpressionNodePtr root, T const* parameters,
+           const ExpressionMap& map);
 }
 
 /**
@@ -48,7 +48,7 @@ struct ExpressionNode {
    * to. Unknowns in this AST may or may not be already present already;
    */
   virtual void getUnknowns(
-      std::unordered_set<const double *> &unknowns) const = 0;
+      std::unordered_set<const double*>& unknowns) const = 0;
 
   /**
    * Stores pointers to all unknown values in the AST with `this` as a root in
@@ -56,19 +56,19 @@ struct ExpressionNode {
    * @param unknowns a set of unknown values to add the unknowns in this AST
    * to. Unknowns in this AST may or may not be already present already;
    */
-  virtual void getUnknowns(std::unordered_set<double *> &unknowns) = 0;
+  virtual void getUnknowns(std::unordered_set<double*>& unknowns) = 0;
 
   /**
    * Prints the node to `out`
    * @param out the stream to print to
    * @return `out`
    */
-  virtual std::ostream &serialize(std::ostream &out) const = 0;
+  virtual std::ostream& serialize(std::ostream& out) const = 0;
 
   virtual void markKnown() = 0;
   virtual void getDiscontinuities(
-      std::unordered_set<double *> &discontinuities) = 0;
-  virtual void getDiscontinuityError(std::vector<ExpressionNodePtr> &error) = 0;
+      std::unordered_set<double*>& discontinuities) = 0;
+  virtual void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) = 0;
 };
 
 /**
@@ -96,8 +96,8 @@ struct BinaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const *parameters,
-                           const ExpressionMap &map) const {
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
     switch (op) {
       case BinaryOp::MUL:
         return expressionNode::evaluate(lhs, parameters, map) *
@@ -117,17 +117,17 @@ struct BinaryOpNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<const double *> &unknowns) const override;
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<double *> &unknowns) override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   /**
    * @inheritdoc
    */
-  std::ostream &serialize(std::ostream &out) const override;
+  std::ostream& serialize(std::ostream& out) const override;
 
   /**
    * @inheritdoc
@@ -135,9 +135,9 @@ struct BinaryOpNode : ExpressionNode {
   void markKnown() override;
 
   void getDiscontinuities(
-      std::unordered_set<double *> &discontinuities) override;
+      std::unordered_set<double*>& discontinuities) override;
 
-  void getDiscontinuityError(std::vector<ExpressionNodePtr> &error) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
   /**
    * The left hand side of the operation
    */
@@ -188,7 +188,7 @@ struct Condition {
    * is false and it goes to 1 when the condition is true
    */
   template <typename T>
-  bool evaluate(T const *parameters, const ExpressionMap &map) const {
+  bool evaluate(T const* parameters, const ExpressionMap& map) const {
     if (includeZero) {
       return expressionNode::evaluate(val, parameters, map) >= 0;
     } else {
@@ -204,23 +204,23 @@ struct Condition {
    * @param unknowns a set of unknown values to add the unknowns in this AST
    * to. Unknowns in this AST may or may not be already present already;
    */
-  void getUnknowns(std::unordered_set<const double *> &unknowns) const;
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<double *> &unknowns);
+  void getUnknowns(std::unordered_set<double*>& unknowns);
 
   /**
    * Prints the node to `out`
    * @param out the stream to print to
    * @return `out`
    */
-  std::ostream &serialize(std::ostream &out) const;
+  std::ostream& serialize(std::ostream& out) const;
 
   void markKnown();
-  void getDiscontinuities(std::unordered_set<double *> &discontinuities);
-  void getDiscontinuityError(std::vector<ExpressionNodePtr> &error);
+  void getDiscontinuities(std::unordered_set<double*>& discontinuities);
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error);
 
   /**
    * Value of the condition. The condition is true if this is greater than zero
@@ -260,30 +260,27 @@ struct TernaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const *parameters,
-                           const ExpressionMap &map) const {
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
     return condition->evaluate(parameters, map)
                ? expressionNode::evaluate(valIfTrue, parameters, map)
                : expressionNode::evaluate(valIfFalse, parameters, map);
   }
 
-  // TODO: implement
-  double *getConstraint();
+  /**
+   * @inheritdoc
+   */
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<const double *> &unknowns) const override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<double *> &unknowns) override;
-
-  /**
-   * @inheritdoc
-   */
-  std::ostream &serialize(std::ostream &out) const override;
+  std::ostream& serialize(std::ostream& out) const override;
 
   /**
    * The condition used to determine which expression to evaluate
@@ -296,8 +293,8 @@ struct TernaryOpNode : ExpressionNode {
   void markKnown() override;
 
   void getDiscontinuities(
-      std::unordered_set<double *> &discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr> &error) override;
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
   /**
    * The expression to evaluate if `condition` is true
    */
@@ -333,8 +330,8 @@ struct UnaryOpNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const *parameters,
-                           const ExpressionMap &map) const {
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
     switch (op) {
       case UnaryOp::EXP:
         return exp(expressionNode::evaluate(operand, parameters, map));
@@ -346,17 +343,17 @@ struct UnaryOpNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<const double *> &unknowns) const override;
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<double *> &unknowns) override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   /**
    * @inheritdoc
    */
-  std::ostream &serialize(std::ostream &out) const override;
+  std::ostream& serialize(std::ostream& out) const override;
 
   /**
    * @inheritdoc
@@ -364,8 +361,8 @@ struct UnaryOpNode : ExpressionNode {
   void markKnown() override;
 
   void getDiscontinuities(
-      std::unordered_set<double *> &discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr> &error) override;
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
   /**
    * The operand for the operation
    */
@@ -400,8 +397,8 @@ struct VariableNode : ExpressionNode {
    * @return the value of the AST with `this` as a root
    */
   template <typename T>
-  T evaluateImplementation(T const *parameters,
-                           const ExpressionMap &map) const {
+  T evaluateImplementation(T const* parameters,
+                           const ExpressionMap& map) const {
     if (known) {
       return T(value);
     } else {
@@ -412,17 +409,17 @@ struct VariableNode : ExpressionNode {
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<const double *> &unknowns) const override;
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   /**
    * @inheritdoc
    */
-  void getUnknowns(std::unordered_set<double *> &unknowns) override;
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   /**
    * @inheritdoc
    */
-  std::ostream &serialize(std::ostream &out) const override;
+  std::ostream& serialize(std::ostream& out) const override;
 
   /**
    * @inheritdoc
@@ -430,8 +427,8 @@ struct VariableNode : ExpressionNode {
   void markKnown() override;
 
   void getDiscontinuities(
-      std::unordered_set<double *> &discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr> &error) override;
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
   /**
    * The value of this node
    */
@@ -455,8 +452,8 @@ namespace expressionNode {
  * @return the value of the AST with `root` as a root
  */
 template <typename T>
-T evaluate(ExpressionNodePtr root, T const *parameters,
-           const ExpressionMap &map) {
+T evaluate(ExpressionNodePtr root, T const* parameters,
+           const ExpressionMap& map) {
   if (std::shared_ptr<VariableNode> node =
           std::dynamic_pointer_cast<VariableNode>(root)) {
     return node->evaluateImplementation(parameters, map);
@@ -477,5 +474,5 @@ T evaluate(ExpressionNodePtr root, T const *parameters,
 }
 }  // namespace expressionNode
 
-std::ostream &operator<<(std::ostream &out, ExpressionNodePtr node);
+std::ostream& operator<<(std::ostream& out, ExpressionNodePtr node);
 #endif

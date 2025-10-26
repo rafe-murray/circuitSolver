@@ -35,17 +35,17 @@ std::unique_ptr<Branch> IdealDiode::copy() const {
 }
 IdealDiode::IdealDiode(const Vertex& from, const Vertex& to,
                        const Expression& voltage, const Expression& current)
-    : Branch(from, to), voltage(voltage), current(current) {}
-Expression IdealDiode::getCurrent() const {
-  return Expression::makeConditional(
-      (from.getVoltage() - to.getVoltage()) < Expression(0.0), Expression(0.0),
-      current);
-}
-Expression IdealDiode::getConstraint() const {
-  return Expression::makeConditional(
-      current > Expression(0.0), from.getVoltage() - to.getVoltage(),
-      from.getVoltage() - to.getVoltage() + voltage);
-}
+    : Branch(from, to),
+      voltage(voltage),
+      current(current),
+      constraint(Expression::makeConditional(
+          current > Expression(0.0), from.getVoltage() - to.getVoltage(),
+          from.getVoltage() - to.getVoltage() + voltage)),
+      conditionalCurrent(Expression::makeConditional(
+          (from.getVoltage() - to.getVoltage()) < Expression(0.0),
+          Expression(0.0), current)) {}
+Expression IdealDiode::getCurrent() const { return conditionalCurrent; }
+Expression IdealDiode::getConstraint() const { return constraint; }
 void IdealDiode::toProto(
     circuitsolver::CircuitGraphMessage::Edge* proto) const {
   Branch::toProto(proto);

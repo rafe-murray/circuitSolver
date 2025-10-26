@@ -14,6 +14,12 @@
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
 
+struct partitionSolution {
+  ceres::Solver::Summary summary;
+  std::vector<Expression> expressions;
+  std::vector<std::vector<double>> parameters;
+};
+
 class CircuitGraph {
  public:
   ceres::Solver::Summary solveCircuit();
@@ -96,8 +102,8 @@ class CircuitGraph {
    */
   bool operator==(const CircuitGraph& other) const;
 
-  ceres::Solver::Summary solvePartition(const std::vector<double*>& basis,
-                                        const std::vector<bool>& isHigh);
+  partitionSolution solvePartition(const std::vector<double*>& basis,
+                                   const std::vector<bool>& isHigh);
 
  private:
   Expression getErrorExpression();
@@ -111,6 +117,8 @@ class CircuitGraph {
    * @pre node is in this.graph
    */
   Expression getNodeCurrents(Vertex node);
+
+  std::vector<Expression> getExpressions();
 
   /**
    * Get the `Vertex` corresponding to `id`
