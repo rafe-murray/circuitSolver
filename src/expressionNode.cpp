@@ -27,6 +27,7 @@ Condition::Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
       includeZero = false;
       break;
   }
+  constraint = std::make_shared<VariableNode>();
 }
 
 TernaryOpNode::TernaryOpNode(std::shared_ptr<Condition> condition,
