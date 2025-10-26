@@ -127,6 +127,10 @@ class Expression {
    */
   std::unordered_set<const double*> getUnknowns() const;
 
+  std::unordered_set<double*> getDiscontinuities();
+
+  std::vector<Expression> getDiscontinuityErrors();
+
   std::vector<double*> getMutableUnknowns();
 
   int getNumUnknowns() const;

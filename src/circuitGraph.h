@@ -7,28 +7,15 @@
 #include "circuitGraphMessage.pb.h"
 #include "edge.h"
 #include "expression.h"
-#include "src/expressionNode.h"
 #include "vertex.h"
 
 // TODO: add error handling for:
 //  - Cases where there are too few equations for the number of unknowns
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
-//  TODO: update this
-//  Ideas:
-//    - use vector<vector<int>> for adjacencyList (vertex -> edge) since we have
-//    control over ids and can make them *very* dense
-//    - make ids unsigned
-//    - Keep two unordered_maps for Vertex and Edge lookup
-//    - Store the vertices for an edge as ids
-//    - Make Edge a wrapper for the polymorphic branch types -> easier
-//    serialization
-//      - Use std::variant() with a list of all the types
-//      - parse from protobuf
 
 class CircuitGraph {
  public:
-  Expression getErrorExpression();
   ceres::Solver::Summary solveCircuit();
 
   /**
@@ -109,7 +96,12 @@ class CircuitGraph {
    */
   bool operator==(const CircuitGraph& other) const;
 
+  ceres::Solver::Summary solvePartition(const std::vector<double*>& basis,
+                                        const std::vector<bool>& isHigh);
+
  private:
+  Expression getErrorExpression();
+  std::vector<double*> getDiscontinuities();
   /**
    * Get the sum of the currents going into/out of a node
    * @param node - the node to get the currents for

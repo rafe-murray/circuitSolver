@@ -138,7 +138,7 @@ bool Expression::operator==(const Expression& rhs) const {
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(rhs.root);
   // TODO: why has this been implemented this way?
   if (u && v && u->known && v->known) {
-    /*cout << "Exressions had same value of " << u->value << endl;*/
+    /*cout << "Expressions had same value of " << u->value << endl;*/
     return u->value == v->value;
   }
   return root == rhs.root;
@@ -216,7 +216,7 @@ std::unordered_set<const double*> Expression::getUnknowns() const {
 }
 
 std::vector<double*> Expression::getMutableUnknowns() {
-  unordered_set<double*> unknownSet;
+  std::unordered_set<double*> unknownSet;
   root->getUnknowns(unknownSet);
   std::vector<double*> unknowns;
   unknowns.reserve(unknownSet.size());
@@ -224,6 +224,22 @@ std::vector<double*> Expression::getMutableUnknowns() {
     unknowns.push_back(unknown);
   }
   return unknowns;
+}
+
+std::unordered_set<double*> Expression::getDiscontinuities() {
+  std::unordered_set<double*> discontinuities;
+  root->getDiscontinuities(discontinuities);
+  return discontinuities;
+}
+
+std::vector<Expression> Expression::getDiscontinuityErrors() {
+  std::vector<ExpressionNodePtr> errors;
+  std::vector<Expression> errorExpressions;
+  root->getDiscontinuityError(errors);
+  for (auto error : errors) {
+    errorExpressions.push_back(Expression(error));
+  }
+  return errorExpressions;
 }
 
 int Expression::getNumUnknowns() const { return getUnknowns().size(); }
@@ -251,6 +267,10 @@ void Expression::addToProblem(ceres::Problem& problem) {
   auto unknowns = getMutableUnknowns();
   for (int i = 0; i < unknowns.size(); i++) {
     costFunction->AddParameterBlock(1);
+  }
+  auto discontinuityErrors = getDiscontinuityErrors();
+  for (auto error : discontinuityErrors) {
+    error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
   problem.AddResidualBlock(costFunction, nullptr, unknowns);

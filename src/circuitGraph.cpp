@@ -2,7 +2,10 @@
 
 #include <google/protobuf/util/json_util.h>
 
+#include <cassert>
+#include <limits>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include "circuitGraphMessage.pb.h"
@@ -24,7 +27,10 @@ Expression CircuitGraph::getErrorExpression() {
   return error;
 }
 
-ceres::Solver::Summary CircuitGraph::solveCircuit() {
+// TODO: ensure that ternaryOpNodes will always add an expression that equates
+// the basis with a valid expression as its constraint method
+ceres::Solver::Summary CircuitGraph::solvePartition(
+    const std::vector<double*>& basis, const std::vector<bool>& isHigh) {
   ceres::Problem problem;
   std::vector<Expression> expressions;
   for (Vertex& node : getVertices()) {
@@ -38,6 +44,14 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
     constraint.addToProblem(problem);
     expressions.push_back(constraint);
   }
+  assert(basis.size() == isHigh.size());
+  for (size_t i = 0; i < basis.size(); i++) {
+    if (isHigh[i]) {
+      problem.SetParameterLowerBound(basis[i], 0, 0);
+    } else {
+      problem.SetParameterUpperBound(basis[i], 0, 0);
+    }
+  }
   ceres::Solver::Options options = getDefaultOptions();
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
@@ -46,6 +60,38 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
   }
   return summary;
 }
+
+// TODO: fix case of no discontinuities
+ceres::Solver::Summary CircuitGraph::solveCircuit() {
+  std::vector<double*> basis = getDiscontinuities();
+  int basisSize = basis.size();
+  int numPartitions = 1 << basisSize;
+  std::vector<ceres::Solver::Summary> solutions(numPartitions);
+  std::vector<std::vector<bool>> isHigh(numPartitions);
+  for (int i = 0; i < numPartitions; i++) {
+    isHigh.push_back(std::vector<bool>(basisSize));
+    for (int j = 0; j < basisSize; j++) {
+      isHigh[i][j] = (i >> j) & 1;
+    }
+    solutions[i] = solvePartition(basis, isHigh[i]);
+  }
+  double minError = std::numeric_limits<double>::max();
+  int bestIndex = -1;
+  for (int i = 0; i < solutions.size(); i++) {
+    if (!solutions[i].IsSolutionUsable()) {
+      continue;
+    }
+    if (solutions[i].final_cost < minError) {
+      minError = solutions[i].final_cost;
+      bestIndex = i;
+    }
+  }
+  if (bestIndex == -1) {
+    throw std::runtime_error("No solution found\n");  // TODO: fail gracefully
+  }
+  return solutions[bestIndex];
+}
+
 Expression CircuitGraph::getNodeCurrents(Vertex node) {
   Expression nodeCurrents = 0;
   for (Edge& branch : getIncident(node)) {
@@ -58,14 +104,17 @@ Expression CircuitGraph::getNodeCurrents(Vertex node) {
   }
   return nodeCurrents;
 }
+
 Vertex CircuitGraph::getVertex(int id) { return *vertices.at(id); }
 Edge& CircuitGraph::getEdge(int id) { return *edges.at(id); }
 bool CircuitGraph::hasVertex(const Vertex& v) {
   return vertices.size() > v.getId() && vertices[v.getId()] != nullptr;
 }
+
 bool CircuitGraph::hasEdge(const Edge& e) {
   return edges.size() > e.getId() && edges[e.getId()] != nullptr;
 }
+
 bool CircuitGraph::addVertex(const Vertex& v) {
   // Only add the vertex if it doesn't already exist
   if (!hasVertex(v)) {
@@ -214,6 +263,10 @@ std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
     }
   }
   return cg;
+}
+std::vector<double*> CircuitGraph::getDiscontinuities() {
+  // TODO: implement this function
+  return std::vector<double*>();
 }
 
 std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg) {
