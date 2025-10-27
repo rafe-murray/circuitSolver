@@ -13,6 +13,12 @@ void Branch::toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const {
   proto->set_toid(to.getId());
   proto->set_current(this->getCurrent().evaluate());
 }
+void Branch::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                     const double* parameters) const {
+  proto->set_fromid(from.getId());
+  proto->set_toid(to.getId());
+  proto->set_current(this->getCurrent().evaluate(parameters));
+}
 
 std::unique_ptr<Branch> CurrentSource::copy() const {
   return std::make_unique<CurrentSource>(*this);
@@ -28,6 +34,11 @@ void CurrentSource::toProto(
     circuitsolver::CircuitGraphMessage::Edge* proto) const {
   Branch::toProto(proto);
   proto->mutable_currentsource()->set_voltage(voltage.evaluate());
+}
+void CurrentSource::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                            const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  proto->mutable_currentsource()->set_voltage(voltage.evaluate(parameters));
 }
 
 std::unique_ptr<Branch> IdealDiode::copy() const {
@@ -51,6 +62,11 @@ void IdealDiode::toProto(
   Branch::toProto(proto);
   proto->mutable_idealdiode()->set_voltage(voltage.evaluate());
 }
+void IdealDiode::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                         const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  proto->mutable_idealdiode()->set_voltage(voltage.evaluate(parameters));
+}
 
 // TODO: change
 
@@ -70,6 +86,14 @@ void RealDiode::toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const {
   protoRealDiode->set_vt(vt.evaluate());
   protoRealDiode->set_n(n.evaluate());
 }
+void RealDiode::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                        const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  auto protoRealDiode = proto->mutable_realdiode();
+  protoRealDiode->set_i0(i0.evaluate(parameters));
+  protoRealDiode->set_vt(vt.evaluate(parameters));
+  protoRealDiode->set_n(n.evaluate(parameters));
+}
 
 std::unique_ptr<Branch> Resistor::copy() const {
   return std::make_unique<Resistor>(*this);
@@ -85,6 +109,11 @@ Expression Resistor::getCurrent() const {
 void Resistor::toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const {
   Branch::toProto(proto);
   proto->mutable_resistor()->set_resistance(resistance.evaluate());
+}
+void Resistor::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                       const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  proto->mutable_resistor()->set_resistance(resistance.evaluate(parameters));
 }
 
 std::unique_ptr<Branch> VoltageSource::copy() const {
@@ -103,7 +132,11 @@ void VoltageSource::toProto(
   Branch::toProto(proto);
   proto->mutable_voltagesource()->set_voltage(voltage.evaluate());
 }
-
+void VoltageSource::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                            const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  proto->mutable_voltagesource()->set_voltage(voltage.evaluate(parameters));
+}
 std::unique_ptr<Branch> ZenerDiode::copy() const {
   return std::make_unique<ZenerDiode>(*this);
 }
@@ -123,4 +156,12 @@ void ZenerDiode::toProto(
   protoZenerDiode->set_izt(izt.evaluate());
   protoZenerDiode->set_rzt(rzt.evaluate());
   protoZenerDiode->set_vzt(vzt.evaluate());
+}
+void ZenerDiode::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                         const double* parameters) const {
+  Branch::toProto(proto, parameters);
+  auto protoZenerDiode = proto->mutable_zenerdiode();
+  protoZenerDiode->set_izt(izt.evaluate(parameters));
+  protoZenerDiode->set_rzt(rzt.evaluate(parameters));
+  protoZenerDiode->set_vzt(vzt.evaluate(parameters));
 }

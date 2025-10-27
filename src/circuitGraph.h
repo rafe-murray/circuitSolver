@@ -88,6 +88,7 @@ class CircuitGraph {
   std::vector<Edge> getEdges() const;
   // pre: the circuit is solved
   circuitsolver::CircuitGraphMessage toProto() const;
+  circuitsolver::CircuitGraphMessage toProto(const double* parameters) const;
   static std::optional<std::unique_ptr<CircuitGraph>> fromProto(
       const circuitsolver::CircuitGraphMessage& proto);
   /**
@@ -104,10 +105,13 @@ class CircuitGraph {
 
   partitionSolution solvePartition(const std::vector<double*>& basis,
                                    const std::vector<bool>& isHigh);
+  void print(std::ostream& out, const CircuitGraph& cg,
+             std::unordered_set<const double*> parameters);
 
  private:
-  Expression getErrorExpression();
   std::vector<double*> getDiscontinuities();
+  void resetUnknowns();
+  std::unordered_set<const double*> getUnknowns();
   /**
    * Get the sum of the currents going into/out of a node
    * @param node - the node to get the currents for

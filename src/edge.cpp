@@ -40,6 +40,10 @@ bool Edge::operator==(const Edge& rhs) const { return id == rhs.id; }
 void Edge::toProto(circuitsolver::CircuitGraphMessage::Edge* proto) {
   return branch->toProto(proto);
 }
+void Edge::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+                   const double* parameters) {
+  return branch->toProto(proto, parameters);
+}
 std::optional<Edge> Edge::fromProto(
     circuitsolver::CircuitGraphMessage::Edge proto,
     const std::vector<std::unique_ptr<Vertex>>& vertices) {

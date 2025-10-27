@@ -173,10 +173,7 @@ struct Condition {
   Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BooleanBinaryOp op);
 
   /**
-   * Evaluates the AST with `this` as a root. This uses a custom implementation
-   * of a [smoothstep](https://en.wikipedia.org/wiki/Smoothstep) function to
-   * approximate a step function in a way that is differentiable. This allows
-   * the solver (`ceres`) to more consistently determine the correct solution.
+   * Evaluates the AST with `this` as a root.
    *
    * Note that this is templated so that `ceres` can do automatic
    * differentiation

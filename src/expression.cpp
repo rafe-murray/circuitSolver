@@ -9,7 +9,19 @@
 #include "expressionCostFunctor.h"
 #include "expressionNode.h"
 
+// TODO: remove this
 using namespace std;
+
+// TODO: add a scaling factor for each Expression
+// - This way parameters can on the order of 1, which ceres expects
+// - Still have accurate calculations
+// - Apply the scaling factor when evaluating the Expression given a list of
+// `double` parameters
+// - We'd apply this manually given what type of answer we expect:
+//  - 0.001 for resistors
+//  - 1000 for currents
+//  - 1 for voltages
+//  - 1 by default
 
 Expression::Expression() : Expression(make_shared<VariableNode>()) {}
 
@@ -273,7 +285,7 @@ void Expression::addToProblem(ceres::Problem& problem) {
     error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
-  problem.AddResidualBlock(costFunction, nullptr, unknowns);
+  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), unknowns);
 }
 
 double Expression::evaluate() const {
@@ -309,6 +321,7 @@ ceres::Solver::Options getDefaultOptions() {
 
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_type = ceres::TRUST_REGION;
+  options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
   options.function_tolerance = 0;
   options.gradient_tolerance = 0;   // 1e-6
   options.parameter_tolerance = 0;  // 1e-6

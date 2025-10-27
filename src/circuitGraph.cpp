@@ -5,6 +5,7 @@
 #include <cassert>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
@@ -15,23 +16,13 @@
 #include "vertex.h"
 
 // TODO: reorganize this file
-Expression CircuitGraph::getErrorExpression() {
-  Expression error = 0;
-  for (Vertex& node : getVertices()) {
-    Expression netCurrent = getNodeCurrents(node);
-    error += netCurrent * netCurrent;
-  }
-  for (Edge& edge : getEdges()) {
-    Expression constraint = edge.getConstraint();
-    error += constraint * constraint;
-  }
-  return error;
-}
 
 // TODO: ensure that ternaryOpNodes will always add an expression that equates
 // the basis with a valid expression as its constraint method
 partitionSolution CircuitGraph::solvePartition(
     const std::vector<double*>& basis, const std::vector<bool>& isHigh) {
+  // std::cout << "Starting state:";
+  // print(std::cout, *this, getUnknowns());
   ceres::Problem problem;
   std::vector<Expression> expressions = getExpressions();
   for (auto expression : expressions) {
@@ -40,15 +31,21 @@ partitionSolution CircuitGraph::solvePartition(
   assert(basis.size() == isHigh.size());
   for (size_t i = 0; i < basis.size(); i++) {
     if (isHigh[i]) {
+      // std::cout << "Setting lower limit on " << basis[i] << " to 0"
+      //           << std::endl;
       problem.SetParameterLowerBound(basis[i], 0, 0);
     } else {
+      // std::cout << "Setting upper limit on " << basis[i] << " to 0"
+      //           << std::endl;
       problem.SetParameterUpperBound(basis[i], 0, 0);
     }
   }
+  // std::cout << std::endl;
   ceres::Solver::Options options = getDefaultOptions();
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::vector<std::vector<double>> allParameters;
+  std::unordered_set<const double*> allUnknowns;
   for (auto& expression : expressions) {
     auto unknowns = expression.getMutableUnknowns();
     std::vector<double> parameters;
@@ -56,7 +53,11 @@ partitionSolution CircuitGraph::solvePartition(
       parameters.push_back(*unknown);
     }
     allParameters.push_back(parameters);
+    auto constUnknowns = expression.getUnknowns();
+    allUnknowns.merge(constUnknowns);
   }
+  // std::cout << "Cost: " << summary.final_cost << summary.message <<
+  // std::endl; print(std::cout, *this, allUnknowns);
   partitionSolution solution{summary, expressions, allParameters};
   return solution;
 }
@@ -88,6 +89,7 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
       isHigh[i][j] = (i >> j) & 1;
     }
     solutions[i] = solvePartition(basis, isHigh[i]);
+    resetUnknowns();
   }
   double minError = std::numeric_limits<double>::max();
   int bestIndex = -1;
@@ -114,6 +116,28 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
     solution.expressions[i].markKnown();
   }
   return solutions[bestIndex].summary;
+}
+void CircuitGraph::resetUnknowns() {
+  auto expressions = getExpressions();
+  for (auto expression : expressions) {
+    auto unknowns = expression.getMutableUnknowns();
+    for (auto unknown : unknowns) {
+      *unknown = 1;
+    }
+  }
+  auto discontinuities = getDiscontinuities();
+  for (auto discontinuity : discontinuities) {
+    *discontinuity = 1;
+  }
+}
+
+std::unordered_set<const double*> CircuitGraph::getUnknowns() {
+  std::unordered_set<const double*> unknowns;
+  auto expressions = getExpressions();
+  for (auto expression : expressions) {
+    unknowns.merge(expression.getUnknowns());
+  }
+  return unknowns;
 }
 
 std::vector<Expression> CircuitGraph::getExpressions() {
@@ -282,6 +306,19 @@ circuitsolver::CircuitGraphMessage CircuitGraph::toProto() const {
   }
   return proto;
 }
+circuitsolver::CircuitGraphMessage CircuitGraph::toProto(
+    const double* parameters) const {
+  circuitsolver::CircuitGraphMessage proto;
+  for (auto& vertex : getVertices()) {
+    auto protoVertices = proto.add_vertices();
+    vertex.toProto(protoVertices, parameters);
+  }
+  for (auto& edge : getEdges()) {
+    auto protoEdge = proto.add_edges();
+    edge.toProto(protoEdge, parameters);
+  }
+  return proto;
+}
 std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
     const circuitsolver::CircuitGraphMessage& proto) {
   auto cg = std::make_unique<CircuitGraph>();
@@ -320,4 +357,19 @@ std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg) {
   (void)google::protobuf::json::MessageToJsonString(cg.toProto(), &output);
   out << output << std::endl;
   return out;
+}
+
+void CircuitGraph::print(std::ostream& out, const CircuitGraph& cg,
+                         std::unordered_set<const double*> parameters) {
+  size_t parameterSize = parameters.size();
+  double* paramArray = new double[parameterSize];
+  int i = 0;
+  for (auto parameter : parameters) {
+    paramArray[i] = *parameter;
+    i++;
+  }
+  std::string output;
+  (void)google::protobuf::json::MessageToJsonString(cg.toProto(paramArray),
+                                                    &output);
+  out << output << std::endl;
 }

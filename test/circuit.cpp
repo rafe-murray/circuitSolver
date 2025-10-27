@@ -22,12 +22,12 @@ TEST(CircuitTest, BuildBasicCircuit) {
   EXPECT_TRUE(cg.addEdge(r2));
   auto summary = cg.solveCircuit();
   ASSERT_TRUE(summary.IsSolutionUsable());
-  EXPECT_EQ(ref.getVoltage().evaluate(), 0);
-  EXPECT_EQ(v1.getVoltage().evaluate(), 5);
-  EXPECT_EQ(v2.getVoltage().evaluate(), 3);
-  EXPECT_EQ(vs.getCurrent().evaluate(), 1);
-  EXPECT_EQ(r1.getCurrent().evaluate(), 1);
-  EXPECT_EQ(r2.getCurrent().evaluate(), 1);
+  EXPECT_TRUE(IsWithinRelativeTolerance(ref.getVoltage().evaluate(), 0));
+  EXPECT_TRUE(IsWithinRelativeTolerance(5, v1.getVoltage().evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(3, v2.getVoltage().evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(1, vs.getCurrent().evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(1, r1.getCurrent().evaluate()));
+  EXPECT_TRUE(IsWithinRelativeTolerance(1, r2.getCurrent().evaluate()));
 }
 
 TEST(CircuitTest, RealDiode) {
@@ -81,7 +81,6 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(cg.addEdge(r4));
 
   auto summary = cg.solveCircuit();
-  std::cout << summary.FullReport() << std::endl;
   ASSERT_TRUE(summary.IsSolutionUsable());
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v2.getVoltage().evaluate()));

@@ -34,6 +34,8 @@ class Edge {
   Expression getConstraint() const;
   bool operator==(const Edge& rhs) const;
   void toProto(circuitsolver::CircuitGraphMessage::Edge* proto);
+  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
+               const double* parameters);
   static std::optional<Edge> fromProto(
       circuitsolver::CircuitGraphMessage::Edge proto,
       const std::vector<std::unique_ptr<Vertex>>& vertices);

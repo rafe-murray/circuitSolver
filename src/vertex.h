@@ -17,6 +17,11 @@ class Vertex {
     proto->set_id(id);
     proto->set_voltage(voltage.evaluate());
   }
+  void toProto(circuitsolver::CircuitGraphMessage::Vertex* proto,
+               const double* parameters) {
+    proto->set_id(id);
+    proto->set_voltage(voltage.evaluate(parameters));
+  }
   static std::optional<Vertex> fromProto(
       circuitsolver::CircuitGraphMessage::Vertex proto) {
     if (!proto.has_id()) {
