@@ -20,8 +20,8 @@ bool processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
   circuitGraph->solveCircuit();
   circuitsolver::CircuitGraphMessage output = circuitGraph->toProto();
   *outputLength = output.ByteSizeLong();
-  *outputBuffer = malloc(*outputLength);
+  *outputBuffer = operator new(*outputLength);
   return output.SerializeToArray(*outputBuffer, *outputLength);
 }
 
-void freeGraph(void* graph) { free(graph); }
+void destroyGraph(void* graph) { operator delete(graph); }

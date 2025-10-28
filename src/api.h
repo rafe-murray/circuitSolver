@@ -7,4 +7,4 @@ bool processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
                   size_t* outputLength);
 
 EXPORT
-void freeGraph(void* graph);
+void destroyGraph(void* graph);
