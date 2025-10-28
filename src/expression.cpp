@@ -322,10 +322,10 @@ ceres::Solver::Options getDefaultOptions() {
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_type = ceres::TRUST_REGION;
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-  options.function_tolerance = 0;
+  options.function_tolerance = 1e-6;
   options.gradient_tolerance = 0;   // 1e-6
   options.parameter_tolerance = 0;  // 1e-6
-  options.max_num_iterations = INT_MAX;
+  options.max_num_iterations = 1000;
   // options.min_trust_region_radius = 1e-64;
   // NOTE: this parameter is VERY important - results in ~1500x better
   // performance

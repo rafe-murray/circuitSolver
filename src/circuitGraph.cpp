@@ -3,9 +3,12 @@
 #include <google/protobuf/util/json_util.h>
 
 #include <cassert>
+#include <cstdio>
+#include <iostream>
 #include <limits>
 #include <memory>
 #include <ostream>
+#include <random>
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
@@ -106,6 +109,20 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
     throw std::runtime_error("No solution found\n");  // TODO: fail gracefully
   }
   partitionSolution solution = solutions[bestIndex];
+  if (solution.summary.message.find("Gradient tolerance") ==
+          std::string::npos &&
+      solution.summary.final_cost > 1e-15) {
+    if (solveAttempts < maxSolveAttempts) {
+      solveAttempts++;
+      resetUnknowns();
+      return solveCircuit();
+    } else {
+      char error[100];
+      snprintf(error, sizeof(error), "No solution found: %s\n",
+               solution.summary.message.c_str());
+      throw std::runtime_error(error);
+    }
+  }
   assert(solution.expressions.size() == solution.parameters.size());
   for (int i = 0; i < solution.expressions.size(); i++) {
     auto unknowns = solution.expressions[i].getMutableUnknowns();
@@ -117,17 +134,22 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
   }
   return solutions[bestIndex].summary;
 }
+
 void CircuitGraph::resetUnknowns() {
+  std::random_device rd;
+  std::default_random_engine rng(rd());
+  std::normal_distribution<> distrib(0.0, 2.0);
+
   auto expressions = getExpressions();
   for (auto expression : expressions) {
     auto unknowns = expression.getMutableUnknowns();
     for (auto unknown : unknowns) {
-      *unknown = 1;
+      *unknown = distrib(rng);
     }
   }
   auto discontinuities = getDiscontinuities();
   for (auto discontinuity : discontinuities) {
-    *discontinuity = 1;
+    *discontinuity = distrib(rng);
   }
 }
 

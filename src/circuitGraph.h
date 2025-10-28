@@ -154,6 +154,9 @@ class CircuitGraph {
    * Map of edge id to edge
    */
   std::vector<std::unique_ptr<Edge>> edges;
+
+  int solveAttempts = 0;
+  const int maxSolveAttempts = 100;  // High but bounded
 };
 
 std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg);
