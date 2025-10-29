@@ -2,12 +2,13 @@
 
 #include <cstddef>
 #include <memory>
+#include <string_view>
 
 #include "circuitGraph.h"
 #include "circuitGraphMessage.pb.h"
 
-bool processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
-                  size_t* outputLength) {
+int processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
+                 size_t* outputLength) {
   circuitsolver::CircuitGraphMessage message;
   message.ParseFromArray(inputBuffer, inputLength);
   std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
@@ -21,7 +22,25 @@ bool processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
   circuitsolver::CircuitGraphMessage output = circuitGraph->toProto();
   *outputLength = output.ByteSizeLong();
   *outputBuffer = operator new(*outputLength);
-  return output.SerializeToArray(*outputBuffer, *outputLength);
+  output.SerializeToArray(*outputBuffer, *outputLength);
+  return 0;
 }
 
-void destroyGraph(void* graph) { operator delete(graph); }
+int destroyGraph(void* graph) {
+  operator delete(graph);
+  return 0;
+}
+const char* getErrorMessage(int errorNumber) {
+  const std::unordered_map<int, const char*> errorMessages = {
+      {CIRCUITSOLVER_ERROR_INVALID_INPUT, "Invalid input"},
+      {CIRCUITSOLVER_ERROR_NO_SOLUTION, "No solution"},
+      {CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION, "Failed serialization"},
+      {CIRCUITSOLVER_ERROR_BAD_ALLOC, "Bad allocation"},
+  };
+  auto it = errorMessages.find(errorNumber);
+  if (it != errorMessages.end()) {
+    return it->second;
+  } else {
+    return "Unknown error";
+  }
+}
