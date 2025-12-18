@@ -9,13 +9,13 @@
 #include <memory>
 #include <ostream>
 #include <random>
-#include <stdexcept>
 #include <unordered_set>
 #include <vector>
 
-#include "circuitGraphMessage.pb.h"
 #include "edge.h"
 #include "expression.h"
+#include "proto.h"
+#include "uuid.h"
 #include "vertex.h"
 
 // TODO: reorganize this file
@@ -75,7 +75,7 @@ partitionSolution CircuitGraph::solvePartition(
  */
 
 // TODO: fix case of no discontinuities
-ceres::Solver::Summary CircuitGraph::solveCircuit() {
+bool CircuitGraph::solveCircuit() {
   std::vector<double*> basis = getDiscontinuities();
   int basisSize = basis.size();
   int numPartitions;
@@ -106,7 +106,8 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
     }
   }
   if (bestIndex == -1) {
-    throw std::runtime_error("No solution found\n");  // TODO: fail gracefully
+    // None of the solutions were usable
+    return false;
   }
   partitionSolution solution = solutions[bestIndex];
   if (solution.summary.message.find("Gradient tolerance") ==
@@ -117,10 +118,8 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
       resetUnknowns();
       return solveCircuit();
     } else {
-      char error[100];
-      snprintf(error, sizeof(error), "No solution found: %s\n",
-               solution.summary.message.c_str());
-      throw std::runtime_error(error);
+      // Exceeded max solve attempts
+      return false;
     }
   }
   assert(solution.expressions.size() == solution.parameters.size());
@@ -132,7 +131,7 @@ ceres::Solver::Summary CircuitGraph::solveCircuit() {
     }
     solution.expressions[i].markKnown();
   }
-  return solutions[bestIndex].summary;
+  return true;
 }
 
 void CircuitGraph::resetUnknowns() {
@@ -189,38 +188,37 @@ Expression CircuitGraph::getNodeCurrents(Vertex node) {
   return nodeCurrents;
 }
 
-Vertex CircuitGraph::getVertex(int id) { return *vertices.at(id); }
-Edge& CircuitGraph::getEdge(int id) { return *edges.at(id); }
+// Vertex CircuitGraph::getVertex(int id) { return *vertices.at(id); }
+// Edge& CircuitGraph::getEdge(int id) { return *edges.at(id); }
 bool CircuitGraph::hasVertex(const Vertex& v) {
-  return vertices.size() > v.getId() && vertices[v.getId()] != nullptr;
+  return vertices.find(v.getId()) != vertices.end();
 }
 
 bool CircuitGraph::hasEdge(const Edge& e) {
-  return edges.size() > e.getId() && edges[e.getId()] != nullptr;
+  return edges.find(e.getId()) != edges.end();
 }
 
 bool CircuitGraph::addVertex(const Vertex& v) {
   // Only add the vertex if it doesn't already exist
   if (!hasVertex(v)) {
-    adjacencyList.insert(adjacencyList.begin() + v.getId(),
-                         std::vector<unsigned>());
-    vertices.insert(vertices.begin() + v.getId(), std::make_unique<Vertex>(v));
+    adjacencyList[v.getId()] = std::vector<uuids::uuid>();
+    vertices[v.getId()] = std::make_unique<Vertex>(v);
     return true;
   }
   return false;
 }
 
 // TODO: remove this method
-bool CircuitGraph::removeVertex(const Vertex& v) {
-  if (!hasVertex(v)) return false;
-
-  // Remove from adjacencyList
-  adjacencyList[v.getId()] = std::vector<unsigned>();
-
-  // Remove the vertex itself
-  vertices[v.getId()] = nullptr;
-  return true;
-}
+// bool CircuitGraph::removeVertex(const Vertex& v) {
+//   if (!hasVertex(v)) return false;
+//
+//   // Remove from adjacencyList
+//   adjacencyList[v.getId()] = std::vector<unsigned>();
+//
+//   // Remove the vertex itself
+//   vertices[v.getId()] = nullptr;
+//   return true;
+// }
 
 bool CircuitGraph::addEdge(std::unique_ptr<Edge> e) {
   if (hasEdge(*e)) return false;
@@ -231,7 +229,7 @@ bool CircuitGraph::addEdge(std::unique_ptr<Edge> e) {
   // Add the edge in both directions
   adjacencyList[from.getId()].push_back(e->getId());
   adjacencyList[to.getId()].push_back(e->getId());
-  edges.insert(edges.begin() + e->getId(), std::move(e));
+  edges[e->getId()] = std::move(e);
   return true;
 }
 
@@ -268,7 +266,7 @@ std::vector<Vertex> CircuitGraph::getVertices() const {
   std::vector<Vertex> vertexList;
   vertexList.reserve(vertices.size());
   for (auto& vertex : vertices) {
-    vertexList.push_back(*vertex);
+    vertexList.push_back(*vertex.second);
   }
   return vertexList;
 }
@@ -277,16 +275,19 @@ std::vector<Edge> CircuitGraph::getEdges() const {
   std::vector<Edge> edgeList;
   edgeList.reserve(edges.size());
   for (auto& edge : edges) {
-    edgeList.push_back(*edge);
+    edgeList.push_back(*edge.second);
   }
   return edgeList;
 }
 
 bool CircuitGraph::operator==(const CircuitGraph& other) const {
   // TODO: fixme
-  for (auto& v : vertices) {
-    if (v->getId() >= other.vertices.size()) return false;
-    auto& u = other.vertices[v->getId()];
+  for (auto& entry : vertices) {
+    if (other.vertices.find(entry.first) == other.vertices.end()) {
+      return false;
+    }
+    auto& v = entry.second;
+    auto& u = other.vertices.at(entry.first);
     if (v->getVoltage().isConstant() != u->getVoltage().isConstant()) {
       return false;
     }
@@ -294,9 +295,12 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
       return false;
     }
   }
-  for (auto& e : edges) {
-    if (e->getId() >= other.edges.size()) return false;
-    auto& f = other.edges[e->getId()];
+  for (auto& entry : edges) {
+    if (other.edges.find(entry.first) == other.edges.end()) {
+      return false;
+    }
+    auto& e = entry.second;
+    auto& f = other.edges.at(entry.first);
     if (e->getFrom().getId() != f->getFrom().getId()) {
       return false;
     }
@@ -305,54 +309,62 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
     }
     // HACK: using existing logic to convert to protobuf messages to determine
     // edge type rather than creating an overloaded function
-    auto eMsg = new circuitsolver::CircuitGraphMessage::Edge();
+    auto eMsg = new proto::CircuitGraph::Edge();
     e->toProto(eMsg);
-    auto fMsg = new circuitsolver::CircuitGraphMessage::Edge();
+    auto fMsg = new proto::CircuitGraph::Edge();
     f->toProto(fMsg);
-    if (eMsg->specificBranch_case() != fMsg->specificBranch_case()) {
+    if (eMsg->specific_branch_case() != fMsg->specific_branch_case()) {
       return false;
     }
   }
   return true;
 }
 
-circuitsolver::CircuitGraphMessage CircuitGraph::toProto() const {
-  circuitsolver::CircuitGraphMessage proto;
+proto::CircuitGraph CircuitGraph::toProto() const {
+  proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
-    auto protoVertices = proto.add_vertices();
-    vertex.toProto(protoVertices);
+    const std::string vertexId = uuids::to_string(vertex.getId());
+    (*proto.mutable_vertices())[vertexId] = proto::Vertex();
+    auto protoVertex = &proto.mutable_vertices()->at(vertexId);
+    vertex.toProto(protoVertex);
   }
   for (auto& edge : getEdges()) {
-    auto protoEdge = proto.add_edges();
+    const std::string edgeId = uuids::to_string(edge.getId());
+    (*proto.mutable_edges())[edgeId] = proto::Edge();
+    auto protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge);
   }
   return proto;
 }
-circuitsolver::CircuitGraphMessage CircuitGraph::toProto(
-    const double* parameters) const {
-  circuitsolver::CircuitGraphMessage proto;
+proto::CircuitGraph CircuitGraph::toProto(const double* parameters) const {
+  proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
-    auto protoVertices = proto.add_vertices();
-    vertex.toProto(protoVertices, parameters);
+    const std::string vertexId = uuids::to_string(vertex.getId());
+    (*proto.mutable_vertices())[vertexId] = proto::Vertex();
+    auto protoVertex = &proto.mutable_vertices()->at(vertexId);
+    vertex.toProto(protoVertex, parameters);
   }
   for (auto& edge : getEdges()) {
-    auto protoEdge = proto.add_edges();
+    const std::string edgeId = uuids::to_string(edge.getId());
+    (*proto.mutable_edges())[edgeId] = proto::Edge();
+    auto protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge, parameters);
   }
   return proto;
 }
 std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
-    const circuitsolver::CircuitGraphMessage& proto) {
+    const proto::CircuitGraph& proto) {
   auto cg = std::make_unique<CircuitGraph>();
   for (auto protoVertex : proto.vertices()) {
-    if (auto vertex = Vertex::fromProto(protoVertex); vertex.has_value()) {
+    if (auto vertex = Vertex::fromProto(protoVertex.second);
+        vertex.has_value()) {
       cg->addVertex(vertex.value());
     } else {
       return std::nullopt;
     }
   }
   for (auto protoEdge : proto.edges()) {
-    if (auto edge = Edge::fromProto(protoEdge, cg->vertices);
+    if (auto edge = Edge::fromProto(protoEdge.second, cg->vertices);
         edge.has_value()) {
       cg->addEdge(std::make_unique<Edge>(std::move(edge.value())));
     } else {

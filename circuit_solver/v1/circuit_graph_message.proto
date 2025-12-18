@@ -1,0 +1,49 @@
+edition = "2023";
+package circuit_solver.v1;
+
+message CircuitGraphMessage {
+  map<string, Edge> edges = 1;
+  map<string, Vertex> vertices = 2;
+
+  message Edge {
+    string id = 1;
+    string from_id = 2;
+    string to_id = 3;
+    double current = 4; // Optional
+    oneof specific_branch {
+      CurrentSource current_source = 5;
+      IdealDiode ideal_diode = 6;
+      RealDiode real_diode = 7;
+      Resistor resistor = 8;
+      VoltageSource voltage_source = 9;
+      ZenerDiode zener_diode = 10;
+    }
+
+    message CurrentSource {
+      double voltage = 1; // Optional
+    }
+    message IdealDiode {
+      double voltage = 1; // Optional
+    }
+    message RealDiode {
+      double i0 = 1; // Optional
+      double vt = 2; // Optional
+      double n = 3; // Optional
+    }
+    message Resistor {
+      double resistance = 1; // Optional
+    }
+    message VoltageSource {
+      double voltage = 1; // Optional
+    }
+    message ZenerDiode {
+      double vzt = 1; // Optional
+      double rzt = 2; // Optional
+      double izt = 3; // Optional
+    }
+  }
+  message Vertex {
+    string id = 1;
+    double voltage = 2; // Optional
+  }
+}

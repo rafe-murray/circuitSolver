@@ -1,30 +1,38 @@
 #include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
+#include <uuid.h>
 
-#include "circuitGraphMessage.pb.h"
 #include "src/branch.h"
 #include "src/circuitGraph.h"
+#include "src/proto.h"
 #include "utils.h"
 
 TEST(CircuitTest, BuildBasicCircuit) {
   CircuitGraph cg;
-  Vertex ref(0, 0);
-  Vertex v1(1);
-  Vertex v2(2);
-  Edge vs = Edge(0, VoltageSource(ref, v1, 5));
-  Edge r1 = Edge(1, Resistor(v1, v2, 2));
-  Edge r2 = Edge(2, Resistor(v2, ref, 3));
+  auto gen = getUuidGenerator();
+  uuids::uuid vertexId0 = gen();
+  uuids::uuid vertexId1 = gen();
+  uuids::uuid vertexId2 = gen();
+  uuids::uuid edgeId0 = gen();
+  uuids::uuid edgeId1 = gen();
+  uuids::uuid edgeId2 = gen();
+  Vertex ref(vertexId0, 0);
+  Vertex v1(vertexId1);
+  Vertex v2(vertexId2);
+  Edge vs = Edge(edgeId0, VoltageSource(ref, v1, 5));
+  Edge r1 = Edge(edgeId1, Resistor(v1, v2, 2));
+  Edge r2 = Edge(edgeId2, Resistor(v2, ref, 3));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
   EXPECT_TRUE(cg.addEdge(vs));
   EXPECT_TRUE(cg.addEdge(r1));
   EXPECT_TRUE(cg.addEdge(r2));
-  auto summary = cg.solveCircuit();
-  ASSERT_TRUE(summary.IsSolutionUsable());
+  ASSERT_TRUE(cg.solveCircuit());
   EXPECT_TRUE(IsWithinRelativeTolerance(ref.getVoltage().evaluate(), 0));
   EXPECT_TRUE(IsWithinRelativeTolerance(5, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(3, v2.getVoltage().evaluate()));
+  // TODO: find out why this fails
   EXPECT_TRUE(IsWithinRelativeTolerance(1, vs.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1, r1.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1, r2.getCurrent().evaluate()));
@@ -32,15 +40,25 @@ TEST(CircuitTest, BuildBasicCircuit) {
 
 TEST(CircuitTest, RealDiode) {
   CircuitGraph cg;
-  Vertex ref(0, 0);
-  Vertex v1(1);
-  Vertex v2(2);
-  Vertex vcc(3, 15);
-  Edge d(0, RealDiode(v1, v2, 50e-12, 1.5, 25e-3));
-  Edge r1(1, Resistor(vcc, v1, 2000));
-  Edge r2(2, Resistor(vcc, v2, 3000));
-  Edge r3(3, Resistor(v1, ref, 3000));
-  Edge r4(4, Resistor(v2, ref, 3000));
+  auto gen = getUuidGenerator();
+  uuids::uuid vertexId0 = gen();
+  uuids::uuid vertexId1 = gen();
+  uuids::uuid vertexId2 = gen();
+  uuids::uuid vertexId3 = gen();
+  uuids::uuid edgeId0 = gen();
+  uuids::uuid edgeId1 = gen();
+  uuids::uuid edgeId2 = gen();
+  uuids::uuid edgeId3 = gen();
+  uuids::uuid edgeId4 = gen();
+  Vertex ref(vertexId0, 0);
+  Vertex v1(vertexId1);
+  Vertex v2(vertexId2);
+  Vertex vcc(vertexId3, 15);
+  Edge d(edgeId0, RealDiode(v1, v2, 50e-12, 1.5, 25e-3));
+  Edge r1(edgeId1, Resistor(vcc, v1, 2000));
+  Edge r2(edgeId2, Resistor(vcc, v2, 3000));
+  Edge r3(edgeId3, Resistor(v1, ref, 3000));
+  Edge r4(edgeId4, Resistor(v2, ref, 3000));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
@@ -52,23 +70,32 @@ TEST(CircuitTest, RealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  auto summary = cg.solveCircuit();
-  ASSERT_TRUE(summary.IsSolutionUsable());
+  ASSERT_TRUE(cg.solveCircuit());
   EXPECT_TRUE(IsWithinRelativeTolerance(8.595, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(8.006, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(337.17e-6, d.getCurrent().evaluate()));
 }
 TEST(CircuitTest, IdealDiode) {
   CircuitGraph cg;
-  Vertex ref(0, 0);
-  Vertex v1(1);
-  Vertex v2(2);
-  Vertex vcc(3, 15);
-  Edge d(0, IdealDiode(v1, v2, 0.7));
-  Edge r1(1, Resistor(vcc, v1, 2000));
-  Edge r2(2, Resistor(v1, ref, 3000));
-  Edge r3(3, Resistor(vcc, v2, 3000));
-  Edge r4(4, Resistor(v2, ref, 3000));
+  auto gen = getUuidGenerator();
+  uuids::uuid vertexId0 = gen();
+  uuids::uuid vertexId1 = gen();
+  uuids::uuid vertexId2 = gen();
+  uuids::uuid vertexId3 = gen();
+  uuids::uuid edgeId0 = gen();
+  uuids::uuid edgeId1 = gen();
+  uuids::uuid edgeId2 = gen();
+  uuids::uuid edgeId3 = gen();
+  uuids::uuid edgeId4 = gen();
+  Vertex ref(vertexId0, 0);
+  Vertex v1(vertexId1);
+  Vertex v2(vertexId2);
+  Vertex vcc(vertexId3, 15);
+  Edge d(edgeId0, IdealDiode(v1, v2, 0.7));
+  Edge r1(edgeId1, Resistor(vcc, v1, 2000));
+  Edge r2(edgeId2, Resistor(v1, ref, 3000));
+  Edge r3(edgeId3, Resistor(vcc, v2, 3000));
+  Edge r4(edgeId4, Resistor(v2, ref, 3000));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
@@ -80,8 +107,7 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  auto summary = cg.solveCircuit();
-  ASSERT_TRUE(summary.IsSolutionUsable());
+  ASSERT_TRUE(cg.solveCircuit());
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 300, r1.getCurrent().evaluate()));
@@ -91,13 +117,13 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 1800, d.getCurrent().evaluate()));
 }
 
+// TODO: update these files
 TEST(CircuitTest, BasicCircuitFromProtobuf) {
   auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");
   auto cgOptionalUnsolved = CircuitGraph::fromProto(cgmUnsolved);
   ASSERT_TRUE(cgOptionalUnsolved.has_value());
   auto cgUnsolved = cgOptionalUnsolved->get();
-  auto summary = cgUnsolved->solveCircuit();
-  ASSERT_TRUE(summary.IsSolutionUsable());
+  ASSERT_TRUE(cgUnsolved->solveCircuit());
 
   auto cgmSolved = GetMessageFromJsonFile("001-solved.json");
   auto cgOptionalSolved = CircuitGraph::fromProto(cgmSolved);
@@ -106,14 +132,22 @@ TEST(CircuitTest, BasicCircuitFromProtobuf) {
   ASSERT_EQ(*cgUnsolved, *cgSolved);
 }
 
+// TODO: mock the UUID generation for better consistency
 TEST(CircuitTest, BasicCircuitToProtobuf) {
   CircuitGraph cg;
-  Vertex ref(0, 0);
-  Vertex v1(1);
-  Vertex v2(2);
-  Edge vs = Edge(0, VoltageSource(ref, v1, 5));
-  Edge r1 = Edge(1, Resistor(v1, v2, 2));
-  Edge r2 = Edge(2, Resistor(v2, ref, 3));
+  auto gen = getUuidGenerator();
+  uuids::uuid vertexId0 = gen();
+  uuids::uuid vertexId1 = gen();
+  uuids::uuid vertexId2 = gen();
+  uuids::uuid edgeId0 = gen();
+  uuids::uuid edgeId1 = gen();
+  uuids::uuid edgeId2 = gen();
+  Vertex ref(vertexId0, 0);
+  Vertex v1(vertexId1);
+  Vertex v2(vertexId2);
+  Edge vs = Edge(edgeId0, VoltageSource(ref, v1, 5));
+  Edge r1 = Edge(edgeId1, Resistor(v1, v2, 2));
+  Edge r2 = Edge(edgeId2, Resistor(v2, ref, 3));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));

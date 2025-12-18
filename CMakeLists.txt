@@ -14,14 +14,14 @@ add_library(circuitSolver STATIC)
 target_sources(
   circuitSolver
   PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
-          src/branch.cpp src/edge.cpp circuitGraphMessage.proto)
+          src/branch.cpp src/edge.cpp ./circuit_solver/v1/circuit_graph_message.proto)
 
 # target_include_directories(circuitSolver PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 # Add external libraries
 find_package(Ceres REQUIRED)
 
-find_package(RapidJSON CONFIG REQUIRED)
+# find_package(RapidJSON CONFIG REQUIRED)
 
 # find_package(PkgConfig) pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET
 # libpistache)
@@ -29,21 +29,29 @@ find_package(RapidJSON CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 
 # Generate protobuf code
-if(Protobuf_FOUND)
-  protobuf_generate(TARGET circuitSolver)
-endif()
+protobuf_generate(TARGET circuitSolver)
 
 # generated protobuf headers will be in current (build) directory
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
-# PkgConfig::Pistache
-target_link_libraries(circuitSolver PUBLIC Ceres::ceres protobuf::libprotobuf)
+
+
+include(FetchContent)
+FetchContent_Declare(
+  stduuid
+  GIT_REPOSITORY https://github.com/mariusbancila/stduuid.git
+  GIT_TAG        v1.2.3
+)
+
+FetchContent_MakeAvailable(stduuid)
+
+# Link all of the external libraries
+target_link_libraries(circuitSolver PUBLIC Ceres::ceres protobuf::libprotobuf stduuid)
 
 # Compile the main executable
 add_executable(solver src/main.cpp)
 target_link_libraries(solver PRIVATE circuitSolver)
 
 if(COMPILE_TESTS)
-  include(FetchContent)
   FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git

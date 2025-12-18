@@ -3,10 +3,11 @@
 
 #include <memory>
 #include <ostream>
+#include <unordered_map>
 
-#include "circuitGraphMessage.pb.h"
 #include "edge.h"
 #include "expression.h"
+#include "proto.h"
 #include "vertex.h"
 
 // TODO: add error handling for:
@@ -22,12 +23,14 @@ struct partitionSolution {
 
 class CircuitGraph {
  public:
-  ceres::Solver::Summary solveCircuit();
+  bool solveCircuit();
 
   /**
    * Creates a new graph instance
    */
-  CircuitGraph() : adjacencyList(std::vector<std::vector<unsigned>>()) {}
+  CircuitGraph()
+      : adjacencyList(
+            std::unordered_map<uuids::uuid, std::vector<uuids::uuid>>()) {}
 
   /**
    * Adds a vertex to the graph
@@ -43,7 +46,7 @@ class CircuitGraph {
    * @param v - the vertex to remove
    * @return true if the vertex was part of the graph before and it is no longer
    */
-  bool removeVertex(const Vertex& v);
+  // bool removeVertex(const Vertex& v);
 
   /**
    * Adds an edge to the graph
@@ -87,10 +90,10 @@ class CircuitGraph {
 
   std::vector<Edge> getEdges() const;
   // pre: the circuit is solved
-  circuitsolver::CircuitGraphMessage toProto() const;
-  circuitsolver::CircuitGraphMessage toProto(const double* parameters) const;
+  proto::CircuitGraph toProto() const;
+  proto::CircuitGraph toProto(const double* parameters) const;
   static std::optional<std::unique_ptr<CircuitGraph>> fromProto(
-      const circuitsolver::CircuitGraphMessage& proto);
+      const proto::CircuitGraph& proto);
   /**
    * Compares two CircuitGraphs for equality.
    *
@@ -130,7 +133,7 @@ class CircuitGraph {
    * @param id the id of the `Vertex`
    * @throws std::out_of_range if no `Vertex` with `id` is a member of `this`
    */
-  Vertex getVertex(int id);
+  // Vertex getVertex(int id);
 
   /**
    * Get the `Edge` corresponding to `id`
@@ -138,22 +141,22 @@ class CircuitGraph {
    * @param id the id of the `Edge`
    * @throws std::out_of_range if no `Edge` with `id` is a member of `this`
    */
-  Edge& getEdge(int id);
+  // Edge& getEdge(int id);
 
   /**
    * An adjacency list representation of the graph using vertex id -> edge id
    */
-  std::vector<std::vector<unsigned>> adjacencyList;
+  std::unordered_map<uuids::uuid, std::vector<uuids::uuid>> adjacencyList;
 
   /**
    * Map of vertex id to vertex
    */
-  std::vector<std::unique_ptr<Vertex>> vertices;
+  VertexMap vertices;
 
   /**
    * Map of edge id to edge
    */
-  std::vector<std::unique_ptr<Edge>> edges;
+  EdgeMap edges;
 
   int solveAttempts = 0;
   const int maxSolveAttempts = 100;  // High but bounded
@@ -161,4 +164,4 @@ class CircuitGraph {
 
 std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg);
 
-#endif  // !CIRCUIT_GRAPH_H
+#endif  // CIRCUIT_GRAPH_H

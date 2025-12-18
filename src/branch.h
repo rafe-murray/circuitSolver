@@ -3,8 +3,8 @@
 
 #include <memory>
 
-#include "circuitGraphMessage.pb.h"
 #include "expression.h"
+#include "proto.h"
 #include "vertex.h"
 // TODO: move the definitions to the source file not the header!!
 class Branch {
@@ -16,9 +16,8 @@ class Branch {
   Vertex getTo();
   virtual Expression getCurrent() const = 0;
   virtual Expression getConstraint() const;
-  virtual void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const;
-  virtual void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-                       const double* parameters) const;
+  virtual void toProto(proto::Edge* proto) const;
+  virtual void toProto(proto::Edge* proto, const double* parameters) const;
 
  protected:
   const Vertex& from;
@@ -32,9 +31,8 @@ class CurrentSource : public Branch {
                 const Expression& current = {});
   Expression getCurrent() const override;
   Expression getConstraint() const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 
  private:
   // The voltage gain from the from to to, in Volts
@@ -49,9 +47,8 @@ class IdealDiode : public Branch {
 
   Expression getCurrent() const override;
   Expression getConstraint() const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 
  private:
   Expression voltage;
@@ -66,9 +63,8 @@ class RealDiode : public Branch {
   RealDiode(const Vertex& from, const Vertex& to, Expression i0 = {},
             Expression n = {}, Expression vt = {});
   Expression getCurrent() const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 
  private:
   Expression i0;
@@ -85,9 +81,8 @@ class Resistor : public Branch {
   Expression resistance;
   Expression getCurrent() const override;
 
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 };
 
 class VoltageSource : public Branch {
@@ -100,9 +95,8 @@ class VoltageSource : public Branch {
   Expression current;
   Expression getCurrent() const override;
   Expression getConstraint() const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 };
 
 class ZenerDiode : public Branch {
@@ -113,9 +107,8 @@ class ZenerDiode : public Branch {
 
   Expression getCurrent() const override;
 
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto) const override;
-  void toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-               const double* parameters) const override;
+  void toProto(proto::Edge* proto) const override;
+  void toProto(proto::Edge* proto, const double* parameters) const override;
 
  private:
   Expression izt, rzt, vzt;

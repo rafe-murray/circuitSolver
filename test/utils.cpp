@@ -8,11 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "circuitGraphMessage.pb.h"
-
-#ifndef TEST_DATA_DIR
-#define TEST_DATA_DIR "../test"
-#endif
+#include "src/proto.h"
 
 testing::AssertionResult IsWithinRelativeTolerance(double expected,
                                                    double actual, double tol) {
@@ -31,9 +27,8 @@ testing::AssertionResult IsWithinRelativeTolerance(double expected,
   }
 }
 
-circuitsolver::CircuitGraphMessage GetMessageFromJsonFile(
-    const char* filename) {
-  circuitsolver::CircuitGraphMessage cgm;
+proto::CircuitGraph GetMessageFromJsonFile(const char* filename) {
+  proto::CircuitGraph cgm;
   std::filesystem::path filePath =
       std::filesystem::path(TEST_DATA_DIR) / filename;
   std::ifstream ifs(filePath);
@@ -48,4 +43,14 @@ circuitsolver::CircuitGraphMessage GetMessageFromJsonFile(
     throw std::runtime_error(buf.str());
   }
   return cgm;
+}
+
+uuids::uuid_random_generator getUuidGenerator() {
+  std::random_device rd;
+  auto seed_data = std::array<int, std::mt19937::state_size>{};
+  std::generate(std::begin(seed_data), std::end(seed_data), std::ref(rd));
+  std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
+  std::mt19937 generator(seq);
+  uuids::uuid_random_generator gen{generator};
+  return gen;
 }

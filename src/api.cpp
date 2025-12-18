@@ -2,27 +2,35 @@
 
 #include <cstddef>
 #include <memory>
-#include <string_view>
 
 #include "circuitGraph.h"
-#include "circuitGraphMessage.pb.h"
+#include "proto.h"
 
 int processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
                  size_t* outputLength) {
-  circuitsolver::CircuitGraphMessage message;
-  message.ParseFromArray(inputBuffer, inputLength);
+  proto::CircuitGraph message;
+  bool success = message.ParseFromArray(inputBuffer, inputLength);
+  if (!success) {
+    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
+  }
   std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
       CircuitGraph::fromProto(message);
   if (!optionalCircuitGraph.has_value()) {
-    return false;
+    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
   }
   std::unique_ptr<CircuitGraph> circuitGraph =
       std::move(optionalCircuitGraph.value());
-  circuitGraph->solveCircuit();
-  circuitsolver::CircuitGraphMessage output = circuitGraph->toProto();
+  bool solved = circuitGraph->solveCircuit();
+  if (!solved) {
+    return CIRCUITSOLVER_ERROR_NO_SOLUTION;
+  }
+  proto::CircuitGraph output = circuitGraph->toProto();
   *outputLength = output.ByteSizeLong();
   *outputBuffer = operator new(*outputLength);
-  output.SerializeToArray(*outputBuffer, *outputLength);
+  success = output.SerializeToArray(*outputBuffer, *outputLength);
+  if (!success) {
+    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
+  }
   return 0;
 }
 
@@ -35,7 +43,6 @@ const char* getErrorMessage(int errorNumber) {
       {CIRCUITSOLVER_ERROR_INVALID_INPUT, "Invalid input"},
       {CIRCUITSOLVER_ERROR_NO_SOLUTION, "No solution"},
       {CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION, "Failed serialization"},
-      {CIRCUITSOLVER_ERROR_BAD_ALLOC, "Bad allocation"},
   };
   auto it = errorMessages.find(errorNumber);
   if (it != errorMessages.end()) {

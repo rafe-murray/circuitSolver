@@ -1,11 +1,13 @@
 #include "edge.h"
 
 #include <memory>
+#include <optional>
 
-#include "circuitGraphMessage.pb.h"
+#include "proto.h"
+#include "uuid.h"
 #include "vertex.h"
 
-Edge::Edge(int id, std::unique_ptr<Branch> branch)
+Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
     : id(id), branch(std::move(branch)) {}
 // template<typename T>
 // Edge::Edge(int id, const T& branch)
@@ -24,7 +26,7 @@ Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
   rhs.branch = nullptr;
 }
 
-unsigned Edge::getId() const { return id; };
+uuids::uuid Edge::getId() const { return id; };
 Vertex Edge::getFrom() const { return branch->getFrom(); };
 Vertex Edge::getTo() const { return branch->getTo(); };
 /**
@@ -37,24 +39,33 @@ Expression Edge::getConstraint() const { return branch->getConstraint(); }
 bool Edge::operator==(const Edge& rhs) const { return id == rhs.id; }
 // Edge& operator=(const Edge& other);
 
-void Edge::toProto(circuitsolver::CircuitGraphMessage::Edge* proto) {
-  return branch->toProto(proto);
-}
-void Edge::toProto(circuitsolver::CircuitGraphMessage::Edge* proto,
-                   const double* parameters) {
+void Edge::toProto(proto::Edge* proto) { return branch->toProto(proto); }
+void Edge::toProto(proto::Edge* proto, const double* parameters) {
   return branch->toProto(proto, parameters);
 }
-std::optional<Edge> Edge::fromProto(
-    circuitsolver::CircuitGraphMessage::Edge proto,
-    const std::vector<std::unique_ptr<Vertex>>& vertices) {
-  if (!proto.has_fromid() || !proto.has_toid() || !proto.has_id()) {
+std::optional<Edge> Edge::fromProto(proto::Edge proto,
+                                    const VertexMap& vertices) {
+  if (!proto.has_from_id() || !proto.has_to_id() || !proto.has_id()) {
     return std::nullopt;
   }
+  std::optional<uuids::uuid> optionalFromId =
+      uuids::uuid::from_string(proto.from_id());
+  std::optional<uuids::uuid> optionalToId =
+      uuids::uuid::from_string(proto.to_id());
+  std::optional<uuids::uuid> optionalId = uuids::uuid::from_string(proto.id());
+  if (!optionalId.has_value() || !optionalToId.has_value() ||
+      !optionalFromId.has_value()) {
+    return std::nullopt;
+  }
+  uuids::uuid id = optionalId.value();
+  uuids::uuid fromId = optionalFromId.value();
+  uuids::uuid toId = optionalToId.value();
+
   std::unique_ptr<Branch> newBranch;
-  const Vertex& from = *vertices[proto.fromid()];
-  const Vertex& to = *vertices[proto.toid()];
-  switch (proto.specificBranch_case()) {
-    case circuitsolver::CircuitGraphMessage::Edge::kCurrentSource: {
+  const Vertex& from = *vertices.at(fromId);
+  const Vertex& to = *vertices.at(toId);
+  switch (proto.specific_branch_case()) {
+    case proto::Edge::kCurrentSource: {
       Expression current;
       if (proto.has_current()) {
         current = proto.current();
@@ -62,32 +73,32 @@ std::optional<Edge> Edge::fromProto(
       newBranch = std::make_unique<CurrentSource>(from, to, current);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::kIdealDiode: {
+    case proto::Edge::kIdealDiode: {
       Expression current, voltage;
       if (proto.has_current()) {
         current = proto.current();
       }
-      if (proto.idealdiode().has_voltage()) {
-        voltage = proto.idealdiode().voltage();
+      if (proto.ideal_diode().has_voltage()) {
+        voltage = proto.ideal_diode().voltage();
       }
       newBranch = std::make_unique<IdealDiode>(from, to, voltage, current);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::kRealDiode: {
+    case proto::Edge::kRealDiode: {
       Expression i0, n, vt;
-      if (proto.realdiode().has_i0()) {
-        i0 = proto.realdiode().i0();
+      if (proto.real_diode().has_i0()) {
+        i0 = proto.real_diode().i0();
       }
-      if (proto.realdiode().has_n()) {
-        n = proto.realdiode().n();
+      if (proto.real_diode().has_n()) {
+        n = proto.real_diode().n();
       }
-      if (proto.realdiode().has_vt()) {
-        vt = proto.realdiode().vt();
+      if (proto.real_diode().has_vt()) {
+        vt = proto.real_diode().vt();
       }
       newBranch = std::make_unique<RealDiode>(from, to, i0, n, vt);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::kResistor: {
+    case proto::Edge::kResistor: {
       Expression resistance;
       if (proto.resistor().has_resistance()) {
         resistance = proto.resistor().resistance();
@@ -95,37 +106,30 @@ std::optional<Edge> Edge::fromProto(
       newBranch = std::make_unique<Resistor>(from, to, resistance);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::kVoltageSource: {
+    case proto::Edge::kVoltageSource: {
       Expression voltage;
-      if (proto.voltagesource().has_voltage()) {
-        voltage = proto.voltagesource().voltage();
+      if (proto.voltage_source().has_voltage()) {
+        voltage = proto.voltage_source().voltage();
       }
       newBranch = std::make_unique<VoltageSource>(from, to, voltage);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::kZenerDiode: {
+    case proto::Edge::kZenerDiode: {
       Expression izt, rzt, vzt;
-      if (proto.zenerdiode().has_izt()) {
-        izt = proto.zenerdiode().izt();
+      if (proto.zener_diode().has_izt()) {
+        izt = proto.zener_diode().izt();
       }
-      if (proto.zenerdiode().has_rzt()) {
-        rzt = proto.zenerdiode().rzt();
+      if (proto.zener_diode().has_rzt()) {
+        rzt = proto.zener_diode().rzt();
       }
-      if (proto.zenerdiode().has_vzt()) {
-        vzt = proto.zenerdiode().vzt();
+      if (proto.zener_diode().has_vzt()) {
+        vzt = proto.zener_diode().vzt();
       }
       newBranch = std::make_unique<ZenerDiode>(from, to, izt, rzt, vzt);
       break;
     }
-    case circuitsolver::CircuitGraphMessage::Edge::SPECIFICBRANCH_NOT_SET:
+    case proto::Edge::SPECIFIC_BRANCH_NOT_SET:
       return std::nullopt;
   }
-  return Edge(proto.id(), std::move(newBranch));
+  return Edge(id, std::move(newBranch));
 }
-
-namespace std {
-template <>
-struct hash<Edge> {
-  size_t operator()(const Edge& e) const { return hash<int>()(e.getId()); }
-};
-}  // namespace std
