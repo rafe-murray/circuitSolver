@@ -1,11 +1,11 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
-#include <iostream>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 struct BinaryOpNode;
 struct ExpressionNode;
