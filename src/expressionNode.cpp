@@ -139,6 +139,7 @@ void UnaryOpNode::getDiscontinuities(
 
 void VariableNode::getDiscontinuities(
     std::unordered_set<double*>& discontinuities) {
+  (void)discontinuities;
   // Do nothing
 }
 
@@ -167,6 +168,7 @@ void UnaryOpNode::getDiscontinuityError(std::vector<ExpressionNodePtr>& error) {
 
 void VariableNode::getDiscontinuityError(
     std::vector<ExpressionNodePtr>& error) {
+  (void)error;
   // Do nothing
 }
 

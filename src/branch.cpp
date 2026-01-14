@@ -29,7 +29,7 @@ std::unique_ptr<Branch> CurrentSource::copy() const {
 }
 CurrentSource::CurrentSource(const Vertex& from, const Vertex& to,
                              const Expression& current)
-    : current(current), Branch(from, to) {}
+    : Branch(from, to), current(current) {}
 Expression CurrentSource::getCurrent() const { return current; };
 Expression CurrentSource::getConstraint() const {
   return from.getVoltage() + voltage - to.getVoltage();
@@ -100,7 +100,7 @@ std::unique_ptr<Branch> Resistor::copy() const {
 }
 Resistor::Resistor(const Vertex& from, const Vertex& to,
                    const Expression& resistance)
-    : resistance(resistance), Branch(from, to) {}
+    : Branch(from, to), resistance(resistance) {}
 // The resistance of the resistor in the branch, in Ohms
 Expression Resistor::getCurrent() const {
   return (from.getVoltage() - to.getVoltage()) / resistance;
@@ -120,7 +120,7 @@ std::unique_ptr<Branch> VoltageSource::copy() const {
 }
 VoltageSource::VoltageSource(const Vertex& from, const Vertex& to,
                              const Expression& voltage)
-    : voltage(voltage), Branch(from, to) {}
+    : Branch(from, to), voltage(voltage) {}
 // The voltage gain from the from to to, in Volts
 Expression VoltageSource::getCurrent() const { return current; };
 Expression VoltageSource::getConstraint() const {
@@ -141,7 +141,7 @@ std::unique_ptr<Branch> ZenerDiode::copy() const {
 ZenerDiode::ZenerDiode(const Vertex& from, const Vertex& to,
                        const Expression& izt, const Expression& rzt,
                        const Expression& vzt)
-    : izt(izt), rzt(rzt), vzt(vzt), Branch(from, to) {}
+    : Branch(from, to), izt(izt), rzt(rzt), vzt(vzt) {}
 
 Expression ZenerDiode::getCurrent() const {
   return (from.getVoltage() - to.getVoltage() + vzt - rzt * izt) / rzt;

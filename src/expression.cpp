@@ -254,7 +254,7 @@ std::vector<Expression> Expression::getDiscontinuityErrors() {
   return errorExpressions;
 }
 
-int Expression::getNumUnknowns() const { return getUnknowns().size(); }
+size_t Expression::getNumUnknowns() const { return getUnknowns().size(); }
 
 ExpressionMap Expression::getMap() const {
   ExpressionMap map;
@@ -277,7 +277,7 @@ Expression::getCostFunction() {
 void Expression::addToProblem(ceres::Problem& problem) {
   auto costFunction = getCostFunction();
   auto unknowns = getMutableUnknowns();
-  for (int i = 0; i < unknowns.size(); i++) {
+  for (size_t i = 0; i < unknowns.size(); i++) {
     costFunction->AddParameterBlock(1);
   }
   auto discontinuityErrors = getDiscontinuityErrors();

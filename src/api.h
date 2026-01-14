@@ -3,11 +3,17 @@
 
 // Blocking call for now
 EXPORT
-int processGraph(void* inputBuffer, size_t inputLength, void** outputBuffer,
-                 size_t* outputLength);
+int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
+                         void** outputBuffer, size_t* outputLength);
 
 EXPORT
-int destroyGraph(void* graph);
+void destroyGraphBuffer(void* graphBuffer);
+
+EXPORT
+void destroyGraphJson(char* graphJson);
+
+EXPORT
+int solveGraphFromJson(char* inputJson, char** outputJson);
 
 EXPORT
 const char* getErrorMessage(int errorNumber);

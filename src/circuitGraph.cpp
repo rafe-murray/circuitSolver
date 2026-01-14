@@ -77,7 +77,7 @@ partitionSolution CircuitGraph::solvePartition(
 // TODO: fix case of no discontinuities
 bool CircuitGraph::solveCircuit() {
   std::vector<double*> basis = getDiscontinuities();
-  int basisSize = basis.size();
+  size_t basisSize = basis.size();
   int numPartitions;
   if (basisSize > 0) {
     numPartitions = 1 << basisSize;
@@ -96,7 +96,7 @@ bool CircuitGraph::solveCircuit() {
   }
   double minError = std::numeric_limits<double>::max();
   int bestIndex = -1;
-  for (int i = 0; i < solutions.size(); i++) {
+  for (size_t i = 0; i < solutions.size(); i++) {
     if (!solutions[i].summary.IsSolutionUsable()) {
       continue;
     }
@@ -123,10 +123,10 @@ bool CircuitGraph::solveCircuit() {
     }
   }
   assert(solution.expressions.size() == solution.parameters.size());
-  for (int i = 0; i < solution.expressions.size(); i++) {
+  for (size_t i = 0; i < solution.expressions.size(); i++) {
     auto unknowns = solution.expressions[i].getMutableUnknowns();
     auto parameters = solution.parameters[i];
-    for (int j = 0; j < unknowns.size(); j++) {
+    for (size_t j = 0; j < unknowns.size(); j++) {
       *(unknowns[j]) = parameters[j];
     }
     solution.expressions[i].markKnown();

@@ -133,7 +133,7 @@ class Expression {
 
   std::vector<double*> getMutableUnknowns();
 
-  int getNumUnknowns() const;
+  size_t getNumUnknowns() const;
 
   ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>* getCostFunction();
 
