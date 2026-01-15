@@ -1,0 +1,20 @@
+# Run with `dart run ffigen --config ffigen.yaml`.
+name: CircuitSolverFfiBindings
+description: |
+  Bindings for `src/circuit_solver_ffi.h`.
+
+  Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
+output: 'lib/circuit_solver_ffi_bindings_generated.dart'
+headers:
+  entry-points:
+    - 'src/circuit_solver_ffi.h'
+  include-directives:
+    - 'src/circuit_solver_ffi.h'
+ffi-native:
+preamble: |
+  // ignore_for_file: always_specify_types
+  // ignore_for_file: camel_case_types
+  // ignore_for_file: non_constant_identifier_names
+comments:
+  style: any
+  length: full
