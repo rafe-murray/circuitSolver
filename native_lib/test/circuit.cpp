@@ -2,9 +2,9 @@
 #include <gtest/gtest.h>
 #include <uuid.h>
 
-#include "src/branch.h"
-#include "src/circuitGraph.h"
-#include "src/proto.h"
+#include "circuit_solver/branch.h"
+#include "circuit_solver/circuitGraph.h"
+#include "circuit_solver/proto.h"
 #include "utils.h"
 
 TEST(CircuitTest, BuildBasicCircuit) {

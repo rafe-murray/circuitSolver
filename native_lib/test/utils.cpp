@@ -8,7 +8,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "src/proto.h"
+#include "circuit_solver/proto.h"
 
 testing::AssertionResult IsWithinRelativeTolerance(double expected,
                                                    double actual, double tol) {

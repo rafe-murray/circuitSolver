@@ -5,8 +5,8 @@
 
 #include <iostream>
 
-#include "expressionCostFunctor.h"
-#include "expressionNode.h"
+#include "circuit_solver/expressionCostFunctor.h"
+#include "circuit_solver/expressionNode.h"
 
 class Expression;
 

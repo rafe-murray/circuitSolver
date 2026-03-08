@@ -1,6 +1,7 @@
-#include "circuitGraph.h"
+#include "circuit_solver/circuitGraph.h"
 
 #include <google/protobuf/util/json_util.h>
+#include <uuid.h>
 
 #include <cassert>
 #include <cstdio>
@@ -12,11 +13,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "edge.h"
-#include "expression.h"
-#include "proto.h"
-#include "uuid.h"
-#include "vertex.h"
+#include "circuit_solver/edge.h"
+#include "circuit_solver/expression.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 
 // TODO: reorganize this file
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "src/expression.h"
+#include "circuit_solver/expression.h"
 #include "utils.h"
 
 TEST(MathTest, BasicEquality) {

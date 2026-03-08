@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include "expression.h"
-#include "proto.h"
-#include "vertex.h"
+#include "circuit_solver/expression.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 // TODO: move the definitions to the source file not the header!!
 class Branch {
  public:

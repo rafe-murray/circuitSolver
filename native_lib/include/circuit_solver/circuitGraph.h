@@ -5,10 +5,10 @@
 #include <ostream>
 #include <unordered_map>
 
-#include "edge.h"
-#include "expression.h"
-#include "proto.h"
-#include "vertex.h"
+#include "circuit_solver/edge.h"
+#include "circuit_solver/expression.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 
 // TODO: add error handling for:
 //  - Cases where there are too few equations for the number of unknowns

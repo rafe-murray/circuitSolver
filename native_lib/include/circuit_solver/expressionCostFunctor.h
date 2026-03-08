@@ -1,7 +1,7 @@
 #ifndef EXPRESSION_COST_FUNCTOR_H
 #define EXPRESSION_COST_FUNCTOR_H
 
-#include "expressionNode.h"
+#include "circuit_solver/expressionNode.h"
 
 class ExpressionCostFunctor {
  public:

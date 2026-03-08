@@ -1,4 +1,4 @@
-#include "expression.h"
+#include "circuit_solver/expression.h"
 
 #include <iostream>
 #include <memory>
@@ -6,8 +6,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "expressionCostFunctor.h"
-#include "expressionNode.h"
+#include "circuit_solver/expressionCostFunctor.h"
+#include "circuit_solver/expressionNode.h"
 
 // TODO: remove this
 using namespace std;

@@ -1,11 +1,11 @@
-#include "edge.h"
+#include "circuit_solver/edge.h"
 
-#include <memory>
+#include <uuid.h>
+
 #include <optional>
 
-#include "proto.h"
-#include "uuid.h"
-#include "vertex.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 
 Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
     : id(id), branch(std::move(branch)) {}

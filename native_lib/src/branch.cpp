@@ -1,8 +1,9 @@
-#include "branch.h"
+#include "circuit_solver/branch.h"
 
-#include "proto.h"
-#include "src/vertex.h"
-#include "uuid.h"
+#include <uuid.h>
+
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 
 Branch::Branch(const Vertex& from, const Vertex& to) : from(from), to(to) {}
 Vertex Branch::getFrom() { return from; }

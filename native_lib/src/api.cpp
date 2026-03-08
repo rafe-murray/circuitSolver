@@ -1,4 +1,4 @@
-#include "api.h"
+#include "circuit_solver/api.h"
 
 #include <google/protobuf/util/json_util.h>
 
@@ -6,8 +6,8 @@
 #include <cstring>
 #include <memory>
 
-#include "circuitGraph.h"
-#include "proto.h"
+#include "circuit_solver/circuitGraph.h"
+#include "circuit_solver/proto.h"
 
 int solveCircuit(proto::CircuitGraph input, proto::CircuitGraph& output) {
   std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =

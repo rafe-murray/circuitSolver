@@ -1,12 +1,13 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
+#include <uuid.h>
+
 #include <memory>
 #include <optional>
 
-#include "expression.h"
-#include "proto.h"
-#include "uuid.h"
+#include "circuit_solver/expression.h"
+#include "circuit_solver/proto.h"
 
 // TODO: add a cpp file
 class Vertex {

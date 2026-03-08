@@ -2,7 +2,7 @@
 #define TEST_UTILS_H
 #include <gtest/gtest.h>
 
-#include "../src/proto.h"
+#include "circuit_solver/proto.h"
 #include "uuid.h"
 
 // Backup for if this is not defined in the cmake file

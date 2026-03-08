@@ -5,10 +5,10 @@
 
 #include <memory>
 
-#include "branch.h"
-#include "expression.h"
-#include "proto.h"
-#include "vertex.h"
+#include "circuit_solver/branch.h"
+#include "circuit_solver/expression.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 
 class Edge {
  public:
