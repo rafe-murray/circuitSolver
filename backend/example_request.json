@@ -1,0 +1,29 @@
+{
+  "edges": {
+    "186c9b6f-d4b8-479c-92b8-b8e79e559785": {
+      "id": "186c9b6f-d4b8-479c-92b8-b8e79e559785",
+      "from_id": "bc48a7b8-5f3e-4cdd-9b38-348351fbfaf0",
+      "to_id": "c4ac9c35-570c-41a3-a507-84873acd69a6",
+      "resistor": {
+        "resistance": 2.0
+      }
+    },
+    "24c47fea-3c60-40c4-a3bb-cc239d8d7f93": {
+      "id": "24c47fea-3c60-40c4-a3bb-cc239d8d7f93",
+      "from_id": "bc48a7b8-5f3e-4cdd-9b38-348351fbfaf0",
+      "to_id": "c4ac9c35-570c-41a3-a507-84873acd69a6",
+      "voltage_source": {
+        "voltage": 5.0
+      }
+    }
+  },
+  "vertices": {
+    "c4ac9c35-570c-41a3-a507-84873acd69a6": {
+      "id": "c4ac9c35-570c-41a3-a507-84873acd69a6"
+    },
+    "bc48a7b8-5f3e-4cdd-9b38-348351fbfaf0": {
+      "id": "bc48a7b8-5f3e-4cdd-9b38-348351fbfaf0",
+      "voltage": 0.0
+    }
+  }
+}
