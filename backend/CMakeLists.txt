@@ -14,5 +14,7 @@ pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
 
 # build dir is relative to the build dir of this target
 add_subdirectory(../native_lib ../../native_lib/build)
-add_executable(circuit-solver src/main.cpp)
-target_link_libraries(circuit-solver PRIVATE circuitSolverLib)
+add_executable(circuit-solver src/main.cpp src/circuitSolverService.cpp
+                              src/circuitSolverService.h)
+target_link_libraries(circuit-solver PRIVATE circuitSolverLib
+                                             PkgConfig::Pistache)
