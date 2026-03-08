@@ -20,8 +20,12 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
 add_library(circuitSolverLib STATIC)
 target_sources(
   circuitSolverLib
-  PRIVATE src/circuitGraph.cpp src/expression.cpp src/expressionNode.cpp
-          src/branch.cpp src/edge.cpp
+  PRIVATE src/circuitGraph.cpp
+          src/expression.cpp
+          src/expressionNode.cpp
+          src/branch.cpp
+          src/edge.cpp
+          src/api.cpp
           ./circuit_solver/v1/circuit_graph_message.proto)
 target_include_directories(circuitSolverLib PUBLIC include)
 
