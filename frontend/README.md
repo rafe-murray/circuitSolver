@@ -1,16 +1,15 @@
-# frontend
+# Circuit Solver — Frontend (desktop-first)
 
-A new Flutter project.
+This directory contains a minimal Flutter scaffold for the Circuit Solver frontend.
 
-## Getting Started
+Notes
+- Targets desktop first. Web clients should call a backend solver service (set `SOLVER_BACKEND_URL`).
+- This repository is part of a larger monorepo; the native solver code lives in the mono repo's `native_lib/` and is not copied here.
 
-This project is a starting point for a Flutter application.
+Setup
+1. Install Flutter and ensure desktop support is enabled.
+2. Run `flutter pub get`.
+3. Generate code: see `tool/README.md`.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Development
+- The editor UI and storage are stubbed. This scaffold provides a starting point for implementing canvas interactions, snapping, solver FFI, and persistence.
