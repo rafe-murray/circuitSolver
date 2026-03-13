@@ -1,5 +1,7 @@
 #include "circuit_solver/expression.h"
 
+#include <cassert>
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -8,9 +10,6 @@
 
 #include "circuit_solver/expressionCostFunctor.h"
 #include "circuit_solver/expressionNode.h"
-
-// TODO: remove this
-using namespace std;
 
 // TODO: add a scaling factor for each Expression
 // - This way parameters can on the order of 1, which ceres expects
@@ -23,23 +22,35 @@ using namespace std;
 //  - 1 for voltages
 //  - 1 by default
 
-Expression::Expression() : Expression(make_shared<VariableNode>()) {}
+Expression::Expression() : Expression(std::make_shared<VariableNode>()) {}
+
+Expression::Expression(const Expression& other)
+    : root(other.root), map(other.map), unknowns(other.unknowns) {}
+
+Expression& Expression::operator=(const Expression& other) {
+  root = other.root;
+  map = other.map;
+  unknowns = other.unknowns;
+  return *this;
+}
 
 Expression::Expression(double value)
-    : Expression(make_shared<VariableNode>(value)) {}
+    : Expression(std::make_shared<VariableNode>(value)) {}
 
-Expression::Expression(shared_ptr<ExpressionNode> root)
+Expression::Expression(std::shared_ptr<ExpressionNode> root)
     : root(std::move(root)) {}
 
 Expression::~Expression() {}
 
 Expression Expression::operator+(Expression rhs) const {
-  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  std::shared_ptr<VariableNode> u =
+      std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 0) {
     return Expression(root);
   }
 
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
     return Expression(std::move(rhs.root));
   }
@@ -48,22 +59,25 @@ Expression Expression::operator+(Expression rhs) const {
     return Expression(u->value + v->value);
   }
 
-  shared_ptr<UnaryOpNode> n = dynamic_pointer_cast<UnaryOpNode>(rhs.root);
+  std::shared_ptr<UnaryOpNode> n =
+      std::dynamic_pointer_cast<UnaryOpNode>(rhs.root);
   if (n && n->op == UnaryOp::NEG)
     return Expression(
-        make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB));
+        std::make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB));
 
   return Expression(
-      make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::ADD));
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::ADD));
 }
 
 Expression Expression::operator-(Expression rhs) const {
-  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  std::shared_ptr<VariableNode> u =
+      std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 0) {
     return Expression(root);
   }
 
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
     if (u && u->known) return Expression(-u->value);
     return -Expression(std::move(rhs.root));
@@ -78,11 +92,12 @@ Expression Expression::operator-(Expression rhs) const {
   }
 
   return Expression(
-      make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::SUB));
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::SUB));
 }
 
 Expression Expression::operator*(Expression rhs) const {
-  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(rhs.root);
+  std::shared_ptr<VariableNode> u =
+      std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known) {
     if (u->value == 0) {
       return Expression(std::move(rhs.root));
@@ -91,7 +106,8 @@ Expression Expression::operator*(Expression rhs) const {
     }
   }
 
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known) {
     if (v->value == 0) {
       return Expression(root);
@@ -105,17 +121,18 @@ Expression Expression::operator*(Expression rhs) const {
   }
 
   return Expression(
-      make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::MUL));
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::MUL));
 }
 
 Expression Expression::operator/(Expression rhs) const {
-  shared_ptr<VariableNode> u =
-      dynamic_pointer_cast<VariableNode>(std::move(rhs.root));
+  std::shared_ptr<VariableNode> u =
+      std::dynamic_pointer_cast<VariableNode>(std::move(rhs.root));
   if (u && u->known && u->value == 1) {
     return Expression(root);
   }
 
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
 
   if (v && u && v->known && u->known) {
     return Expression(v->value / u->value);
@@ -126,15 +143,16 @@ Expression Expression::operator/(Expression rhs) const {
   }
 
   return Expression(
-      make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::DIV));
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::DIV));
 }
 
 Expression Expression::operator-() const {
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known) {
     return Expression(-v->value);
   }
-  return Expression(make_shared<UnaryOpNode>(root, UnaryOp::NEG));
+  return Expression(std::make_shared<UnaryOpNode>(root, UnaryOp::NEG));
 }
 
 Expression std::exp(Expression arg) {
@@ -147,8 +165,10 @@ Expression std::exp(Expression arg) {
 }
 
 bool Expression::operator==(const Expression& rhs) const {
-  shared_ptr<VariableNode> u = dynamic_pointer_cast<VariableNode>(root);
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(rhs.root);
+  std::shared_ptr<VariableNode> u =
+      std::dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(rhs.root);
   // TODO: why has this been implemented this way?
   if (u && v && u->known && v->known) {
     return u->value == v->value;
@@ -168,12 +188,13 @@ bool Expression::operator!=(const Expression& rhs) const {
 }
 
 Expression& Expression::operator=(double rhs) {
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   if (v) {
     v->value = rhs;
     v->known = true;
   } else
-    throw invalid_argument(
+    throw std::invalid_argument(
         "Attempting to assign to an Expression that is "
         "dependent on multiple unknowns");
   return *this;
@@ -211,31 +232,45 @@ Condition Expression::operator>=(Expression rhs) const {
 Expression Expression::makeConditional(Condition condition,
                                        Expression valIfTrue,
                                        Expression valIfFalse) {
-  return Expression(make_shared<TernaryOpNode>(
-      make_shared<Condition>(condition), std::move(valIfTrue.root),
+  return Expression(std::make_shared<TernaryOpNode>(
+      std::make_shared<Condition>(condition), std::move(valIfTrue.root),
       std::move(valIfFalse.root)));
 }
 
 bool Expression::isConstant() const {
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(root);
+  std::shared_ptr<VariableNode> v =
+      std::dynamic_pointer_cast<VariableNode>(root);
   return v && v->known;
 }
 
-std::unordered_set<const double*> Expression::getUnknowns() const {
-  unordered_set<const double*> unknowns;
-  this->root->getUnknowns(unknowns);
-  return unknowns;
+const std::vector<double*>& Expression::getUnknowns() const {
+  if (unknowns == nullptr) {
+    updateMapAndUnknowns();
+  }
+  return *unknowns;
 }
 
 std::vector<double*> Expression::getMutableUnknowns() {
-  std::unordered_set<double*> unknownSet;
-  root->getUnknowns(unknownSet);
-  std::vector<double*> unknowns;
-  unknowns.reserve(unknownSet.size());
-  for (auto unknown : unknownSet) {
-    unknowns.push_back(unknown);
+  if (unknowns == nullptr) {
+    updateMapAndUnknowns();
   }
-  return unknowns;
+  return *unknowns;
+}
+
+void Expression::updateMapAndUnknowns() const {
+  map = std::make_shared<ExpressionMap>();
+  unknowns = std::make_shared<std::vector<double*>>();
+
+  std::unordered_set<double*> unknown_set;
+  root->getUnknowns(unknown_set);
+
+  unknowns->reserve(unknown_set.size());
+  unsigned i = 0;
+  for (double* unknown : unknown_set) {
+    unknowns->push_back(unknown);
+    (*map)[unknown] = i;
+    i++;
+  }
 }
 
 std::unordered_set<double*> Expression::getDiscontinuities() {
@@ -256,28 +291,30 @@ std::vector<Expression> Expression::getDiscontinuityErrors() {
 
 size_t Expression::getNumUnknowns() const { return getUnknowns().size(); }
 
-ExpressionMap Expression::getMap() const {
-  ExpressionMap map;
-  unsigned i = 0;
-  for (auto unknown : getUnknowns()) {
-    map[unknown] = i;
-    i++;
+const ExpressionMap& Expression::getMap() const {
+  if (map == nullptr) {
+    updateMapAndUnknowns();
   }
-  return map;
+  return *map;
 }
 
-ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>*
-Expression::getCostFunction() {
-  ExpressionMap map = getMap();
-  auto costFunctor = new ExpressionCostFunctor(root, map);
-  return new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
-      costFunctor);
-}
+// ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>*
+// Expression::getCostFunction() {
+//   ExpressionMap map = getMap();
+//   auto costFunctor = new ExpressionCostFunctor(root, map);
+//   return new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
+//       costFunctor);
+// }
 
 void Expression::addToProblem(ceres::Problem& problem) {
-  auto costFunction = getCostFunction();
-  auto unknowns = getMutableUnknowns();
-  for (size_t i = 0; i < unknowns.size(); i++) {
+  if (map == nullptr) {
+    updateMapAndUnknowns();
+  }
+  auto costFunctor = new ExpressionCostFunctor(root, *map);
+  auto costFunction =
+      new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
+          costFunctor);
+  for (size_t i = 0; i < unknowns->size(); i++) {
     costFunction->AddParameterBlock(1);
   }
   auto discontinuityErrors = getDiscontinuityErrors();
@@ -285,7 +322,7 @@ void Expression::addToProblem(ceres::Problem& problem) {
     error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
-  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), unknowns);
+  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), *unknowns);
 }
 
 double Expression::evaluate() const {

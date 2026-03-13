@@ -4,6 +4,7 @@
 #include <ceres/ceres.h>
 
 #include <iostream>
+#include <memory>
 
 #include "circuit_solver/expressionCostFunctor.h"
 #include "circuit_solver/expressionNode.h"
@@ -38,6 +39,8 @@ class Expression {
    * Creates an expression that consists of a single unknown value
    */
   Expression();
+  Expression(const Expression& other);
+  Expression& operator=(const Expression& other);
 
   /*
    * Creates an expression with a single known value
@@ -125,7 +128,7 @@ class Expression {
    * @return a vector of double* where each entry points to the value of one of
    * the unknowns of this expression
    */
-  std::unordered_set<const double*> getUnknowns() const;
+  const std::vector<double*>& getUnknowns() const;
 
   std::unordered_set<double*> getDiscontinuities();
 
@@ -169,9 +172,12 @@ class Expression {
    * Since the unknowns are stored in a tree ADT we need a way to translate
    * between
    */
-  ExpressionMap getMap() const;
+  const ExpressionMap& getMap() const;
+  void updateMapAndUnknowns() const;
   Expression(ExpressionNodePtr root);
   ExpressionNodePtr root;
+  mutable std::shared_ptr<ExpressionMap> map;
+  mutable std::shared_ptr<std::vector<double*>> unknowns;
   friend std::ostream& operator<<(std::ostream& out, const Expression& e);
   friend Expression std::exp(Expression arg);
 };

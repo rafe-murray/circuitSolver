@@ -48,7 +48,7 @@ partitionSolution CircuitGraph::solvePartition(
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::vector<std::vector<double>> allParameters;
-  std::unordered_set<const double*> allUnknowns;
+  // std::unordered_set<const double*> allUnknowns;
   for (auto& expression : expressions) {
     auto unknowns = expression.getMutableUnknowns();
     std::vector<double> parameters;
@@ -56,8 +56,8 @@ partitionSolution CircuitGraph::solvePartition(
       parameters.push_back(*unknown);
     }
     allParameters.push_back(parameters);
-    auto constUnknowns = expression.getUnknowns();
-    allUnknowns.merge(constUnknowns);
+    // auto constUnknowns = expression.getUnknowns();
+    // allUnknowns.merge(constUnknowns);
   }
   // std::cout << "Cost: " << summary.final_cost << summary.message <<
   // std::endl; print(std::cout, *this, allUnknowns);
@@ -88,7 +88,7 @@ bool CircuitGraph::solveCircuit() {
   std::vector<std::vector<bool>> isHigh;
   for (int i = 0; i < numPartitions; i++) {
     isHigh.push_back(std::vector<bool>(basisSize));
-    for (int j = 0; j < basisSize; j++) {
+    for (size_t j = 0; j < basisSize; j++) {
       isHigh[i][j] = (i >> j) & 1;
     }
     solutions[i] = solvePartition(basis, isHigh[i]);
@@ -96,7 +96,7 @@ bool CircuitGraph::solveCircuit() {
   }
   double minError = std::numeric_limits<double>::max();
   int bestIndex = -1;
-  for (size_t i = 0; i < solutions.size(); i++) {
+  for (unsigned i = 0; i < solutions.size(); i++) {
     if (!solutions[i].summary.IsSolutionUsable()) {
       continue;
     }
@@ -152,14 +152,14 @@ void CircuitGraph::resetUnknowns() {
   }
 }
 
-std::unordered_set<const double*> CircuitGraph::getUnknowns() {
-  std::unordered_set<const double*> unknowns;
-  auto expressions = getExpressions();
-  for (auto expression : expressions) {
-    unknowns.merge(expression.getUnknowns());
-  }
-  return unknowns;
-}
+// std::unordered_set<const double*> CircuitGraph::getUnknowns() {
+//   std::unordered_set<const double*> unknowns;
+//   auto expressions = getExpressions();
+//   for (auto expression : expressions) {
+//     unknowns.merge(expression.getUnknowns());
+//   }
+//   return unknowns;
+// }
 
 std::vector<Expression> CircuitGraph::getExpressions() {
   std::vector<Expression> expressions;

@@ -114,7 +114,7 @@ class CircuitGraph {
  private:
   std::vector<double*> getDiscontinuities();
   void resetUnknowns();
-  std::unordered_set<const double*> getUnknowns();
+  // std::unordered_set<const double*> getUnknowns();
   /**
    * Get the sum of the currents going into/out of a node
    * @param node - the node to get the currents for
