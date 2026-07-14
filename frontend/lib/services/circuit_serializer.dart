@@ -49,9 +49,10 @@ class CircuitSerializer {
   static Map<String, dynamic> _encodeComponent(CircuitComponent c) => {
     'id': c.id,
     'type': c.type.name,
-    'x': c.position.dx,
-    'y': c.position.dy,
-    'rotation': c.rotation,
+    'ep0x': c.endpoint0.dx,
+    'ep0y': c.endpoint0.dy,
+    'ep1x': c.endpoint1.dx,
+    'ep1y': c.endpoint1.dy,
     'properties': c.properties,
   };
 
@@ -80,11 +81,14 @@ class CircuitSerializer {
     return CircuitComponent(
       id: map['id'] as int,
       type: type,
-      position: Offset(
-        (map['x'] as num).toDouble(),
-        (map['y'] as num).toDouble(),
+      endpoint0: Offset(
+        (map['ep0x'] as num).toDouble(),
+        (map['ep0y'] as num).toDouble(),
       ),
-      rotation: (map['rotation'] as num).toDouble(),
+      endpoint1: Offset(
+        (map['ep1x'] as num).toDouble(),
+        (map['ep1y'] as num).toDouble(),
+      ),
       properties: props,
     );
   }

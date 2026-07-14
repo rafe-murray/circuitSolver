@@ -1,108 +1,129 @@
 import 'dart:async';
 import 'dart:isolate';
+import 'dart:typed_data';
 
-import 'ffi_bridge_bindings_generated.dart' as bindings;
+import 'package:circuit_solver_proto/circuit_solver_proto.dart';
 
-/// A very short-lived native function.
-///
-/// For very short-lived functions, it is fine to call them on the main isolate.
-/// They will block the Dart execution while running the native function, so
-/// only do this for native functions which are guaranteed to be short-lived.
-int sum(int a, int b) => bindings.sum(a, b);
+import 'src/circuit_solver_ffi.dart';
 
-/// A longer lived native function, which occupies the thread calling it.
+export 'src/circuit_solver_ffi.dart' show CircuitSolverException;
+
+/// Solves the given circuit graph using the native circuitSolverLib.
 ///
-/// Do not call these kind of native functions in the main isolate. They will
-/// block Dart execution. This will cause dropped frames in Flutter applications.
-/// Instead, call these native functions on a separate isolate.
+/// The circuit is serialized to binary protobuf, passed to the native solver
+/// on a dedicated helper isolate, and the result is deserialized back into a
+/// [CircuitGraphMessage] before being returned.
 ///
-/// Modify this to suit your own use case. Example use cases:
+/// Running the solver on a helper isolate ensures the calling isolate (e.g.
+/// the Flutter UI isolate) is never blocked, even for circuits that take a
+/// significant amount of time to solve.
 ///
-/// 1. Reuse a single isolate for various different kinds of requests.
-/// 2. Use multiple helper isolates for parallel execution.
-Future<int> sumAsync(int a, int b) async {
+/// Throws [CircuitSolverException] if:
+/// - the input protobuf is malformed or the circuit topology is unsolvable
+///   ([CircuitSolverException.code] == [CIRCUITSOLVER_ERROR_INVALID_INPUT]),
+/// - the nonlinear solver could not converge on a solution
+///   ([CircuitSolverException.code] == [CIRCUITSOLVER_ERROR_NO_SOLUTION]), or
+/// - the result could not be serialized
+///   ([CircuitSolverException.code] == [CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION]).
+Future<CircuitGraphMessage> solveCircuit(CircuitGraphMessage input) async {
   final SendPort helperIsolateSendPort = await _helperIsolateSendPort;
-  final int requestId = _nextSumRequestId++;
-  final _SumRequest request = _SumRequest(requestId, a, b);
-  final Completer<int> completer = Completer<int>();
-  _sumRequests[requestId] = completer;
+  final int requestId = _nextRequestId++;
+  final _SolveRequest request = _SolveRequest(requestId, input.writeToBuffer());
+  final Completer<CircuitGraphMessage> completer =
+      Completer<CircuitGraphMessage>();
+  _pendingRequests[requestId] = completer;
   helperIsolateSendPort.send(request);
   return completer.future;
 }
 
-/// A request to compute `sum`.
-///
-/// Typically sent from one isolate to another.
-class _SumRequest {
-  final int id;
-  final int a;
-  final int b;
+// ---------------------------------------------------------------------------
+// Internal isolate plumbing
+// ---------------------------------------------------------------------------
 
-  const _SumRequest(this.id, this.a, this.b);
+/// A request sent to the helper isolate.
+class _SolveRequest {
+  const _SolveRequest(this.id, this.inputBytes);
+
+  final int id;
+  final Uint8List inputBytes;
 }
 
-/// A response with the result of `sum`.
-///
-/// Typically sent from one isolate to another.
-class _SumResponse {
-  final int id;
-  final int result;
+/// A successful response from the helper isolate.
+class _SolveResponse {
+  const _SolveResponse(this.id, this.outputBytes);
 
-  const _SumResponse(this.id, this.result);
+  final int id;
+  final Uint8List outputBytes;
 }
 
-/// Counter to identify [_SumRequest]s and [_SumResponse]s.
-int _nextSumRequestId = 0;
+/// An error response from the helper isolate.
+class _SolveError {
+  const _SolveError(this.id, this.exception);
 
-/// Mapping from [_SumRequest] `id`s to the completers corresponding to the correct future of the pending request.
-final Map<int, Completer<int>> _sumRequests = <int, Completer<int>>{};
+  final int id;
+  final CircuitSolverException exception;
+}
 
-/// The SendPort belonging to the helper isolate.
-Future<SendPort> _helperIsolateSendPort = () async {
-  // The helper isolate is going to send us back a SendPort, which we want to
-  // wait for.
+/// Monotonically increasing request counter.
+int _nextRequestId = 0;
+
+/// Map from in-flight request IDs to their completers.
+final Map<int, Completer<CircuitGraphMessage>> _pendingRequests =
+    <int, Completer<CircuitGraphMessage>>{};
+
+/// The [SendPort] used to communicate with the long-lived helper isolate.
+///
+/// Lazily initialized on first use; the isolate lives for the lifetime of the
+/// current isolate group.
+final Future<SendPort> _helperIsolateSendPort = _startHelperIsolate();
+
+Future<SendPort> _startHelperIsolate() async {
   final Completer<SendPort> completer = Completer<SendPort>();
-
-  // Receive port on the main isolate to receive messages from the helper.
-  // We receive two types of messages:
-  // 1. A port to send messages on.
-  // 2. Responses to requests we sent.
   final ReceivePort receivePort = ReceivePort()
     ..listen((dynamic data) {
       if (data is SendPort) {
-        // The helper isolate sent us the port on which we can sent it requests.
         completer.complete(data);
         return;
       }
-      if (data is _SumResponse) {
-        // The helper isolate sent us a response to a request we sent.
-        final Completer<int> completer = _sumRequests[data.id]!;
-        _sumRequests.remove(data.id);
-        completer.complete(data.result);
+      if (data is _SolveResponse) {
+        final Completer<CircuitGraphMessage> pendingCompleter = _pendingRequests
+            .remove(data.id)!;
+        pendingCompleter.complete(
+          CircuitGraphMessage.fromBuffer(data.outputBytes),
+        );
+        return;
+      }
+      if (data is _SolveError) {
+        final Completer<CircuitGraphMessage> pendingCompleter = _pendingRequests
+            .remove(data.id)!;
+        pendingCompleter.completeError(data.exception);
         return;
       }
       throw UnsupportedError('Unsupported message type: ${data.runtimeType}');
     });
 
-  // Start the helper isolate.
-  await Isolate.spawn((SendPort sendPort) async {
-    final ReceivePort helperReceivePort = ReceivePort()
-      ..listen((dynamic data) {
-        // On the helper isolate listen to requests and respond to them.
-        if (data is _SumRequest) {
-          final int result = bindings.sum_long_running(data.a, data.b);
-          final _SumResponse response = _SumResponse(data.id, result);
-          sendPort.send(response);
-          return;
-        }
-        throw UnsupportedError('Unsupported message type: ${data.runtimeType}');
-      });
-
-    // Send the port to the main isolate on which we can receive requests.
-    sendPort.send(helperReceivePort.sendPort);
-  }, receivePort.sendPort);
-
-  // Wait until the helper isolate has sent us back the SendPort on which we
-  // can start sending requests.
+  await Isolate.spawn(_helperIsolateEntry, receivePort.sendPort);
   return completer.future;
-}();
+}
+
+/// Entry point for the helper isolate.
+///
+/// Listens for [_SolveRequest] messages, calls [solveCircuitSync] on the
+/// native library, and sends back either a [_SolveResponse] or a
+/// [_SolveError].
+void _helperIsolateEntry(SendPort sendPort) {
+  final ReceivePort helperReceivePort = ReceivePort()
+    ..listen((dynamic data) {
+      if (data is! _SolveRequest) {
+        throw UnsupportedError('Unsupported message type: ${data.runtimeType}');
+      }
+      try {
+        final Uint8List outputBytes = solveCircuitSync(data.inputBytes);
+        sendPort.send(_SolveResponse(data.id, outputBytes));
+      } on CircuitSolverException catch (e) {
+        sendPort.send(_SolveError(data.id, e));
+      }
+    });
+
+  sendPort.send(helperReceivePort.sendPort);
+}

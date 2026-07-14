@@ -265,7 +265,7 @@ std::vector<Edge> CircuitGraph::getIncident(const Vertex& v) {
 std::vector<Vertex> CircuitGraph::getVertices() const {
   std::vector<Vertex> vertexList;
   vertexList.reserve(vertices.size());
-  for (auto& vertex : vertices) {
+  for (const auto& vertex : vertices) {
     vertexList.push_back(*vertex.second);
   }
   return vertexList;
@@ -274,7 +274,7 @@ std::vector<Vertex> CircuitGraph::getVertices() const {
 std::vector<Edge> CircuitGraph::getEdges() const {
   std::vector<Edge> edgeList;
   edgeList.reserve(edges.size());
-  for (auto& edge : edges) {
+  for (const auto& edge : edges) {
     edgeList.push_back(*edge.second);
   }
   return edgeList;

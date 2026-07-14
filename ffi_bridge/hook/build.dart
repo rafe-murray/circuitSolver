@@ -1,22 +1,19 @@
-import 'package:native_toolchain_c/native_toolchain_c.dart';
-import 'package:logging/logging.dart';
 import 'package:hooks/hooks.dart';
+import 'package:logging/logging.dart';
+import 'package:native_toolchain_cmake/native_toolchain_cmake.dart';
 
 void main(List<String> args) async {
   await build(args, (input, output) async {
-    final packageName = input.packageName;
-    final cbuilder = CBuilder.library(
-      name: packageName,
-      assetName: '${packageName}_bindings_generated.dart',
-      sources: [
-        'src/$packageName.c',
-      ],
+    final cmake = CMakeBuilder.create(
+      name: input.packageName,
+      sourceDir: input.packageRoot.resolve('../native_lib'),
     );
-    await cbuilder.run(
+    await cmake.run(
       input: input,
       output: output,
       logger: Logger('')
-        ..level = .ALL
+        ..level = Level.ALL
+        // ignore: avoid_print
         ..onRecord.listen((record) => print(record.message)),
     );
   });

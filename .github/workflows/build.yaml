@@ -3,8 +3,14 @@ name: Build with CMake
 on:
   push:
     branches: ["main"]
+    paths:
+      - backend
+      - native_lib
   pull_request:
     branches: ["main"]
+    paths:
+      - backend
+      - native_lib
 env:
   # CMake build type
   BUILD_TYPE: Release
@@ -19,6 +25,7 @@ jobs:
           # No point installing protobuf - the version on apt is too old
           sudo apt-get install -y libceres-dev
           sudo apt-get install -y libpistache-dev
+        # TODO: compile, install, and cache protobuf
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type

@@ -1,10 +1,15 @@
 # Run with `dart run ffigen --config ffigen.yaml`.
-name: FfiBridgeBindings
+name: CircuitSolverBindings
 description: |
-  Bindings for `src/ffi_bridge.h`.
+  Bindings for the circuitSolverLib C API.
+
+  Generated from src/ffi_bridge.h, a pure-C redeclaration of the five
+  extern "C" functions in native_lib/include/circuit_solver/api.h. That
+  file includes C++ headers which ffigen cannot parse; this wrapper avoids
+  the issue while remaining an exact contract match.
 
   Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
-output: 'lib/ffi_bridge_bindings_generated.dart'
+output: 'lib/src/circuit_solver_bindings_generated.dart'
 headers:
   entry-points:
     - 'src/ffi_bridge.h'

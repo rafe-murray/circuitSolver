@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'commands/command.dart';
 import 'screens/editor_page.dart';
 import 'screens/landing_page.dart';
 import 'services/storage.dart';
@@ -22,6 +23,7 @@ class CircuitSolverApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<StorageService>.value(value: storage),
+        ChangeNotifierProvider<HistoryStack>(create: (_) => HistoryStack()),
         ChangeNotifierProvider<CanvasViewModel>(
           create: (_) => CanvasViewModel(),
         ),

@@ -47,7 +47,7 @@ class Expression {
    *
    * @param value - the value of the resultant Expression
    */
-  Expression(double value);
+  explicit Expression(double value);
 
   // TODO: check if this is needed
   ~Expression();

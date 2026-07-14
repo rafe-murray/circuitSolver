@@ -1,30 +1,45 @@
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+/// Pure C redeclaration of the circuitSolverLib extern "C" API.
+///
+/// This header exists solely so that `dart run ffigen` can parse the public
+/// API without needing to process the C++ headers included by the canonical
+/// api.h (e.g. <stdexcept>, <string>). It must be kept in sync with
+/// native_lib/include/circuit_solver/api.h.
+#ifndef CIRCUIT_SOLVER_FFI_H_
+#define CIRCUIT_SOLVER_FFI_H_
 
-#if _WIN32
-#include <windows.h>
-#else
-#include <pthread.h>
-#include <unistd.h>
-#endif
+#include <stddef.h>
 
-#if _WIN32
-#define FFI_PLUGIN_EXPORT __declspec(dllexport)
-#else
-#define FFI_PLUGIN_EXPORT
-#endif
+// Error codes returned by solveGraphFromBuffer and solveGraphFromJson.
+#define CIRCUITSOLVER_ERROR_INVALID_INPUT 1
+#define CIRCUITSOLVER_ERROR_NO_SOLUTION 2
+#define CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION 3
 
-// A very short-lived native function.
-//
-// For very short-lived functions, it is fine to call them on the main isolate.
-// They will block the Dart execution while running the native function, so
-// only do this for native functions which are guaranteed to be short-lived.
-FFI_PLUGIN_EXPORT intptr_t sum(intptr_t a, intptr_t b);
+/// Solves a circuit supplied as a binary protobuf buffer.
+///
+/// On success returns 0, writes the solved binary protobuf to *outputBuffer
+/// and its length to *outputLength. The caller must free the output buffer
+/// with destroyGraphBuffer().
+///
+/// On failure returns a non-zero error code. Call getErrorMessage() for a
+/// human-readable description.
+int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
+                         void** outputBuffer, size_t* outputLength);
 
-// A longer lived native function, which occupies the thread calling it.
-//
-// Do not call these kind of native functions in the main isolate. They will
-// block Dart execution. This will cause dropped frames in Flutter applications.
-// Instead, call these native functions on a separate isolate.
-FFI_PLUGIN_EXPORT intptr_t sum_long_running(intptr_t a, intptr_t b);
+/// Frees a buffer previously returned by solveGraphFromBuffer().
+void destroyGraphBuffer(void* graphBuffer);
+
+/// Frees a JSON string previously returned by the C solveGraphFromJson().
+void destroyGraphJson(char* graphJson);
+
+/// Solves a circuit supplied as a JSON string.
+///
+/// On success returns 0 and writes the solved JSON to *outputJson. The caller
+/// must free the string with destroyGraphJson().
+///
+/// On failure returns a non-zero error code.
+int solveGraphFromJson(char* inputJson, char** outputJson);
+
+/// Returns a human-readable description for the given error code.
+const char* getErrorMessage(int errorNumber);
+
+#endif  // CIRCUIT_SOLVER_FFI_H_

@@ -384,7 +384,7 @@ struct VariableNode : ExpressionNode {
    * Creates a `VariableNode` representing a known value
    * @param value the value of the node
    */
-  VariableNode(double value);
+  explicit VariableNode(double value);
 
   /**
    * Evaluates this node in the AST

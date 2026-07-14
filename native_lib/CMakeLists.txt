@@ -3,6 +3,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For clangd support
 
+# if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+# if(("${CMAKE_HOST_SYSTEM_PROCESSOR}" MATCHES "arm64") AND ("${ARCHS}" MATCHES
+# "x86_64")) set(USE_HOST_LIBS false) else() set(USE_HOST_LIBS true) endif()
+# set(USE_HOST_LIBS false) else() set(USE_HOST_LIBS true) endif()
+
+set(USE_HOST_LIBS true)
+
 project(circuitSolverLib)
 
 option(CIRCUITSOLVER_BUILD_TESTS "Compile a test executable" ON)
@@ -26,7 +33,7 @@ target_sources(
           src/branch.cpp
           src/edge.cpp
           src/api.cpp
-          ./circuit_solver/v1/circuit_graph_message.proto)
+          ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1/circuit_graph_message.proto)
 target_include_directories(circuitSolverLib PUBLIC include)
 
 include(FetchContent)
@@ -50,23 +57,29 @@ set(protobuf_BUILD_EXAMPLES
     OFF
     CACHE BOOL "" FORCE)
 
-find_package(Ceres CONFIG)
-if(NOT Ceres_FOUND)
+if(USE_HOST_LIBS)
+  find_package(Ceres CONFIG)
+endif()
+if((NOT Ceres_FOUND) OR (NOT USE_HOST_LIBS))
+  # if((NOT Ceres_FOUND))
   message("Ceres not found. Downloading from source...")
   FetchContent_Declare(
     ceres_solver
     GIT_REPOSITORY https://github.com/ceres-solver/ceres-solver.git
-    GIT_TAG f9b7b6651b108136a16df44d91fb31735645f5a7 # Eigen 5 support
+    GIT_TAG f9b7b6651b108136a16df44d91fb31735645f5a7
     GIT_SHALLOW OFF)
+  # GIT_SHALLOW true)
   FetchContent_MakeAvailable(ceres_solver)
   if(NOT TARGET Ceres::ceres)
     add_library(Ceres::ceres ALIAS ceres)
   endif()
 endif()
 
-find_package(Protobuf CONFIG)
+if(USE_HOST_LIBS)
+  find_package(Protobuf CONFIG)
+endif()
 
-if(NOT Protobuf_FOUND)
+if((NOT Protobuf_FOUND) OR (NOT USE_HOST_LIBS))
   message("Protobuf not found. Downloading from source...")
   FetchContent_Declare(
     protobuf
@@ -81,7 +94,9 @@ if(NOT Protobuf_FOUND)
 endif()
 
 # Generate protobuf code
-protobuf_generate(TARGET circuitSolverLib)
+protobuf_generate(
+  TARGET circuitSolverLib
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
 
 # generated protobuf headers will be in current (build) directory
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
@@ -93,8 +108,15 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(stduuid)
 
+# target_include_directories(circuitSolverLib PUBLIC
+# $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}> # Where circuit_graph.pb.h
+# lives $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src> ) Link all of the
+# external libraries
 target_link_libraries(circuitSolverLib PUBLIC protobuf::libprotobuf stduuid
                                               Ceres::ceres)
+
+# Compile the main executable add_executable(solver src/main.cpp)
+# target_link_libraries(solver PRIVATE circuitSolverLib)
 
 if(CIRCUITSOLVER_BUILD_TESTS)
   FetchContent_Declare(

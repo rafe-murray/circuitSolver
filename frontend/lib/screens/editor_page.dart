@@ -2,17 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../commands/command.dart';
+import '../commands/property_command.dart';
+import '../commands/remove_command.dart';
+import '../commands/rotate_command.dart';
+import '../commands/selection_commands.dart';
 import '../models/circuit_component.dart';
 import '../models/component_type.dart';
+import '../models/editor_tool.dart';
 import '../services/storage.dart';
 import '../viewmodels/canvas_viewmodel.dart';
 import '../widgets/canvas.dart';
 import '../widgets/component_bank.dart';
+import '../widgets/tool_palette.dart';
 
 /// The main circuit editor screen.
 ///
-/// Layout: [ComponentBank] (left) | [CircuitCanvas] (centre) | Inspector (right).
-/// Keyboard shortcuts follow industry conventions (Ctrl/Cmd+Z, Delete, R, etc.).
+/// Layout: [ToolPalette] (far-left) | [ComponentBank] (conditional, left) |
+/// [CircuitCanvas] (centre) | Inspector (right).
+///
+/// Keyboard shortcuts follow industry conventions (Ctrl/Cmd+Z, Delete, R, etc.)
+/// and Photoshop tool conventions for tool switching.
 class EditorPage extends StatefulWidget {
   const EditorPage({super.key});
 
@@ -32,11 +42,13 @@ class _EditorPageState extends State<EditorPage> {
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<CanvasViewModel>(context);
+    final hs = Provider.of<HistoryStack>(context);
+    final showBank = vm.activeTool == EditorTool.addComponent;
 
     return KeyboardListener(
       focusNode: _focusNode,
       autofocus: true,
-      onKeyEvent: (event) => _handleKey(event, vm),
+      onKeyEvent: (event) => _handleKey(event, vm, hs),
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Circuit Solver'),
@@ -44,25 +56,33 @@ class _EditorPageState extends State<EditorPage> {
             _ToolbarButton(
               icon: Icons.undo,
               tooltip: 'Undo (Ctrl+Z)',
-              onPressed: vm.canUndo ? vm.undo : null,
+              onPressed: hs.canUndo ? () => hs.undo(vm) : null,
             ),
             _ToolbarButton(
               icon: Icons.redo,
               tooltip: 'Redo (Ctrl+Shift+Z)',
-              onPressed: vm.canRedo ? vm.redo : null,
+              onPressed: hs.canRedo ? () => hs.redo(vm) : null,
             ),
             const VerticalDivider(width: 16),
             _ToolbarButton(
               icon: Icons.rotate_right,
               tooltip: 'Rotate 90° (R)',
               onPressed: vm.selectedIds.isNotEmpty
-                  ? vm.rotateSelectionClockwise
+                  ? () => RotateClockwiseCommand(
+                      vm: vm,
+                      historyStack: hs,
+                    ).execute()
                   : null,
             ),
             _ToolbarButton(
               icon: Icons.delete_outline,
               tooltip: 'Delete (Delete / Backspace)',
-              onPressed: vm.selectedIds.isNotEmpty ? vm.deleteSelected : null,
+              onPressed: vm.selectedIds.isNotEmpty
+                  ? () => RemoveSelectedCommand(
+                      vm: vm,
+                      historyStack: hs,
+                    ).execute()
+                  : null,
             ),
             const VerticalDivider(width: 16),
             _ToolbarButton(
@@ -74,12 +94,19 @@ class _EditorPageState extends State<EditorPage> {
         ),
         body: Row(
           children: [
-            SizedBox(
-              width: 200,
-              child: ComponentBank(
-                onTap: (type) => _addToCentre(type, vm, context),
+            const ToolPalette(),
+            if (showBank)
+              SizedBox(
+                width: 200,
+                child: ComponentBank(
+                  onTap: (type) => SelectForInsertionCommand(
+                    type: type,
+                    vm: vm,
+                    historyStack: hs,
+                  ).execute(),
+                  selectedType: vm.selectedComponentForInsertion,
+                ),
               ),
-            ),
             const Expanded(child: CircuitCanvas()),
             const SizedBox(width: 200, child: _Inspector()),
           ],
@@ -88,54 +115,94 @@ class _EditorPageState extends State<EditorPage> {
     );
   }
 
-  void _handleKey(KeyEvent event, CanvasViewModel vm) {
+  void _handleKey(KeyEvent event, CanvasViewModel vm, HistoryStack hs) {
     if (event is! KeyDownEvent) return;
 
     final ctrl =
         HardwareKeyboard.instance.isControlPressed ||
         HardwareKeyboard.instance.isMetaPressed;
     final shift = HardwareKeyboard.instance.isShiftPressed;
+    final alt = HardwareKeyboard.instance.isAltPressed;
 
+    // --- Ctrl/Cmd shortcuts (take priority over everything) -----------------
+    if (ctrl) {
+      switch (event.logicalKey) {
+        // Undo: Ctrl+Z
+        case LogicalKeyboardKey.keyZ when !shift:
+          hs.undo(vm);
+          return;
+        // Redo: Ctrl+Shift+Z or Ctrl+Y
+        case LogicalKeyboardKey.keyZ when shift:
+          hs.redo(vm);
+          return;
+        case LogicalKeyboardKey.keyY:
+          hs.redo(vm);
+          return;
+        // Save: Ctrl+S
+        case LogicalKeyboardKey.keyS:
+          _showSaveDialog(context, vm);
+          return;
+        // Select all: Ctrl+A
+        case LogicalKeyboardKey.keyA:
+          SelectAllCommand(vm: vm, historyStack: hs).execute();
+          return;
+        default:
+          break;
+      }
+    }
+
+    // --- Tool switching shortcuts (no Ctrl) ---------------------------------
+    if (!ctrl && !alt) {
+      for (final tool in EditorTool.values) {
+        if (tool.matchesKeyEvent(event)) {
+          SetToolCommand(tool: tool, vm: vm, historyStack: hs).execute();
+          return;
+        }
+      }
+    }
+
+    // --- Component insertion shortcuts (AddComponent tool only) -------------
+    if (vm.activeTool == EditorTool.addComponent && !ctrl && !shift && !alt) {
+      final type = _componentKeyMapping(event.logicalKey);
+      if (type != null) {
+        SelectForInsertionCommand(
+          type: type,
+          vm: vm,
+          historyStack: hs,
+        ).execute();
+        return;
+      }
+    }
+
+    // --- General shortcuts (no Ctrl) ----------------------------------------
     switch (event.logicalKey) {
-      // Undo: Ctrl+Z
-      case LogicalKeyboardKey.keyZ when ctrl && !shift:
-        vm.undo();
-      // Redo: Ctrl+Shift+Z or Ctrl+Y
-      case LogicalKeyboardKey.keyZ when ctrl && shift:
-        vm.redo();
-      case LogicalKeyboardKey.keyY when ctrl:
-        vm.redo();
-      // Save: Ctrl+S
-      case LogicalKeyboardKey.keyS when ctrl:
-        _showSaveDialog(context, vm);
       // Delete selected: Delete or Backspace
       case LogicalKeyboardKey.delete:
       case LogicalKeyboardKey.backspace:
-        vm.deleteSelected();
-      // Rotate: R
-      case LogicalKeyboardKey.keyR:
-        vm.rotateSelectionClockwise();
-      // Select all: Ctrl+A
-      case LogicalKeyboardKey.keyA when ctrl:
-        for (final c in vm.components) {
-          vm.selectComponent(c.id, additive: true);
-        }
-      // Escape: clear selection
+        RemoveSelectedCommand(vm: vm, historyStack: hs).execute();
+      // Rotate 90° clockwise: R (quick rotate, works from any tool)
+      case LogicalKeyboardKey.keyR when !ctrl && !shift:
+        RotateClockwiseCommand(vm: vm, historyStack: hs).execute();
+      // Escape: clear selection / cancel
       case LogicalKeyboardKey.escape:
-        vm.clearSelection();
+        ClearSelectionCommand(vm: vm, historyStack: hs).execute();
       default:
         break;
     }
   }
 
-  /// Places a component near the visual centre of the canvas.
-  void _addToCentre(
-    ComponentType type,
-    CanvasViewModel vm,
-    BuildContext context,
-  ) {
-    const fallback = Offset(400, 300);
-    vm.addFromBank(type, fallback);
+  /// Maps an insertion shortcut key to its [ComponentType].
+  ComponentType? _componentKeyMapping(LogicalKeyboardKey key) {
+    return switch (key) {
+      LogicalKeyboardKey.keyC => ComponentType.currentSource,
+      LogicalKeyboardKey.keyI => ComponentType.idealDiode,
+      LogicalKeyboardKey.keyD => ComponentType.realDiode,
+      LogicalKeyboardKey.keyR => ComponentType.resistor,
+      LogicalKeyboardKey.keyV => ComponentType.voltageSource,
+      LogicalKeyboardKey.keyW => ComponentType.wire,
+      LogicalKeyboardKey.keyZ => ComponentType.zenerDiode,
+      _ => null,
+    };
   }
 
   Future<void> _showSaveDialog(BuildContext context, CanvasViewModel vm) async {
@@ -260,6 +327,7 @@ class _ComponentInspector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vm = Provider.of<CanvasViewModel>(context, listen: false);
+    final hs = Provider.of<HistoryStack>(context, listen: false);
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -274,7 +342,13 @@ class _ComponentInspector extends StatelessWidget {
             label: e.key,
             value: e.value,
             onChanged: (newVal) {
-              vm.updateProperty(component.id, e.key, newVal);
+              UpdatePropertyCommand(
+                componentId: component.id,
+                key: e.key,
+                newValue: newVal,
+                vm: vm,
+                historyStack: hs,
+              ).execute();
             },
           ),
         ),

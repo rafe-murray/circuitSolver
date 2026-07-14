@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstring>
+#include <limits>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -27,8 +28,8 @@ proto::CircuitGraph solveCircuit(proto::CircuitGraph input) {
   return circuitGraph->toProto();
 }
 
-int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
-                         void** outputBuffer, size_t* outputLength) {
+int solveGraphFromBuffer(void* inputBuffer, int inputLength,
+                         void** outputBuffer, int* outputLength) {
   proto::CircuitGraph message;
   bool success = message.ParseFromArray(inputBuffer, inputLength);
   if (!success) {
@@ -42,7 +43,12 @@ int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
   } catch (NoSolutionException) {
     return CIRCUITSOLVER_ERROR_NO_SOLUTION;
   }
-  *outputLength = output.ByteSizeLong();
+  size_t length = output.ByteSizeLong();
+  if (length > std::numeric_limits<int>::max()) {
+    // Message was too big
+    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
+  }
+  *outputLength = (int)length;
   *outputBuffer = operator new(*outputLength);
   success = output.SerializeToArray(*outputBuffer, *outputLength);
   if (!success) {

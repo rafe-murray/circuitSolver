@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../commands/command.dart';
 import '../services/storage.dart';
 import '../viewmodels/canvas_viewmodel.dart';
 import '../viewmodels/landing_viewmodel.dart';
@@ -112,7 +113,8 @@ class _NewCircuitBanner extends StatelessWidget {
 
   void _openBlankEditor(BuildContext context) {
     final canvasVm = Provider.of<CanvasViewModel>(context, listen: false);
-    canvasVm.clearCanvas();
+    final history = Provider.of<HistoryStack>(context, listen: false);
+    canvasVm.clearCanvas(clearHistory: history.clear);
     Navigator.pushNamed(context, '/editor').then((_) => vm.reload());
   }
 }
@@ -186,9 +188,10 @@ class _CircuitTile extends StatelessWidget {
 
   Future<void> _openCircuit(BuildContext context) async {
     final canvasVm = Provider.of<CanvasViewModel>(context, listen: false);
+    final history = Provider.of<HistoryStack>(context, listen: false);
     final loaded = await vm.getCircuit(circuit.id);
     if (loaded == null) return;
-    canvasVm.loadFromCircuit(loaded);
+    canvasVm.loadFromCircuit(loaded, clearHistory: history.clear);
     if (!context.mounted) return;
     Navigator.pushNamed(context, '/editor').then((_) => vm.reload());
   }

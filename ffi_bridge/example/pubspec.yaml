@@ -31,6 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  circuit_solver_proto:
+    path: ../../circuit_solver_proto
+
   ffi_bridge:
     # When depending on this package from a real application you should use:
     #   ffi_bridge: ^x.y.z

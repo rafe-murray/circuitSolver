@@ -13,7 +13,7 @@
 class Vertex {
  public:
   Vertex(uuids::uuid id, double voltage) : id(id), voltage(voltage) {}
-  Vertex(uuids::uuid id) : id(id) {}
+  explicit Vertex(uuids::uuid id) : id(id) {}
   // For maps
   Vertex() {}
   bool operator==(const Vertex& rhs) const { return id == rhs.id; }
