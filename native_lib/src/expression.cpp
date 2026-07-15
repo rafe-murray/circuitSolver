@@ -126,7 +126,7 @@ Expression Expression::operator*(Expression rhs) const {
 
 Expression Expression::operator/(Expression rhs) const {
   std::shared_ptr<VariableNode> u =
-      std::dynamic_pointer_cast<VariableNode>(std::move(rhs.root));
+      std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 1) {
     return Expression(root);
   }

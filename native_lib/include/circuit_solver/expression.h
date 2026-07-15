@@ -35,19 +35,19 @@ Expression exp(Expression arg);
  */
 class Expression {
  public:
-  /*
+  /**
    * Creates an expression that consists of a single unknown value
    */
   Expression();
   Expression(const Expression& other);
   Expression& operator=(const Expression& other);
 
-  /*
+  /**
    * Creates an expression with a single known value
    *
    * @param value - the value of the resultant Expression
    */
-  explicit Expression(double value);
+  Expression(double value);
 
   // TODO: check if this is needed
   ~Expression();
