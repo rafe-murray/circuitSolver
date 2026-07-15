@@ -5,3 +5,6 @@ build
 .clangd
 compile_commands.json
 .cache
+
+# vcpkg
+vcpkg_installed

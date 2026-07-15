@@ -1,0 +1,17 @@
+{
+  "name": "circuit-solver-lib",
+  "version": "0.1.0",
+  "dependencies": [
+    "protobuf",
+    "stduuid",
+    "ceres"
+  ],
+  "features": {
+    "test": {
+      "description": "Dependencies needed for testing",
+      "dependencies": [
+        "gtest"
+      ]
+    }
+  }
+}
