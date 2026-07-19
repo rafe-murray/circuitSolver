@@ -4,7 +4,15 @@
   "dependencies": [
     "protobuf",
     "stduuid",
-    "ceres"
+    "ceres",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
   ],
   "features": {
     "test": {

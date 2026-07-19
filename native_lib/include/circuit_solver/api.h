@@ -27,6 +27,8 @@ const char* getErrorMessage(int errorNumber);
 #ifdef __cplusplus
 #include <string>
 
+#include "circuit_solver/proto.h"
+
 class NoSolutionException : std::logic_error {
  public:
   explicit NoSolutionException(const std::string& message)
@@ -44,6 +46,8 @@ class FailedSerializationException : std::runtime_error {
     return std::runtime_error::what();
   }
 };
+
+proto::CircuitGraph solveCircuit(proto::CircuitGraph input);
 
 // Gets and returns a string version of a protocol buffer
 std::string solveGraphFromString(std::string inputString);

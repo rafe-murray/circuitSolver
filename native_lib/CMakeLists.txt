@@ -26,7 +26,7 @@ target_sources(
           src/branch.cpp
           src/edge.cpp
           src/api.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1/circuit_graph_message.proto)
+          ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1alpha1/circuit_graph_message.proto)
 target_include_directories(circuitSolverLib PUBLIC include)
 
 include(FetchContent)
@@ -41,6 +41,10 @@ find_package(stduuid CONFIG REQUIRED)
 protobuf_generate(
   TARGET circuitSolverLib
   IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/circuit_solver/v1alpha1/circuit_graph_message.pb.h"
+  DESTINATION include
+)
 
 # generated protobuf headers will be in current (build) directory
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
