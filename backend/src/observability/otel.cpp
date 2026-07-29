@@ -62,9 +62,7 @@ void initMetrics() {
   // TODO: see above
   otlp::OtlpGrpcMetricExporterOptions opts;
   auto exporter = otlp::OtlpGrpcMetricExporterFactory::Create(opts);
-  metric_sdk::PeriodicExportingMetricReaderOptions reader_options;
-  reader_options.export_interval_millis = std::chrono::milliseconds(1000);
-  reader_options.export_timeout_millis = std::chrono::milliseconds(500);
+  metric_sdk::PeriodicExportingMetricReaderOptions reader_options{};
   auto reader = metric_sdk::PeriodicExportingMetricReaderFactory::Create(
       std::move(exporter), reader_options);
   auto context = metric_sdk::MeterContextFactory::Create();

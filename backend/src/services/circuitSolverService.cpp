@@ -10,12 +10,11 @@
 #include <circuit_solver/api.h>
 
 #include <memory>
+#include <string>
 
 #include "service.h"
 
 namespace circuitsolver::server::services {
-
-const std::string CircuitSolverService::base = "/v1alpha1";
 
 CircuitSolverService::CircuitSolverService(
     const std::shared_ptr<Pistache::Rest::Router>& router)
@@ -26,9 +25,9 @@ void CircuitSolverService::init() { configureRoutes(); }
 void CircuitSolverService::configureRoutes() {
   using namespace Pistache::Rest;
   // TODO: should we remove this route in favour of supporting gRPC directly?
-  Routes::Post(*router, base + "/solve",
+  Routes::Post(*getRouter(), base + "/solve",
                Routes::bind(&CircuitSolverService::solveProtobuf, this));
-  Routes::Post(*router, base + "/solve/json",
+  Routes::Post(*getRouter(), base + "/solve/json",
                Routes::bind(&CircuitSolverService::solveJson, this));
 }
 

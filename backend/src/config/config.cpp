@@ -12,14 +12,16 @@ auto Config::mergeFromAllSources() -> Config {
       // .addSource(OptsConfigSource{})
       ;
 
-  auto port = configManager.get<uint16_t>("port").value_or(8080);
-  auto numThreads = configManager.get<unsigned>("numThreads").value_or(2);
-  auto maxRequestSize =
-      configManager.get<size_t>("maxRequestSize").value_or(32768);
-  auto maxResponseSize =
-      configManager.get<size_t>("maxResponseSize").value_or(32768);
+  auto port = configManager.get<uint16_t>("port").value_or(defaultPort);
+  auto numThreads =
+      configManager.get<int>("numThreads").value_or(defaultNumThreads);
+  auto maxRequestSize = configManager.get<size_t>("maxRequestSize")
+                            .value_or(defaultMaxRequestSize);
+  auto maxResponseSize = configManager.get<size_t>("maxResponseSize")
+                             .value_or(defaultMaxResponseSize);
   auto logLevel = spdlog::level::from_str(
-      configManager.get<std::string>("logLevel").value_or("info"));
+      configManager.get<std::string>("logLevel")
+          .value_or(spdlog::level::to_short_c_str(defaultLogLevel)));
 
   return Config{.port = port,
                 .numThreads = numThreads,

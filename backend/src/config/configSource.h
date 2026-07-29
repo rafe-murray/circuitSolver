@@ -12,6 +12,8 @@ namespace circuitsolver::server::config {
 /// configuration info
 class ConfigSource {
  public:
+  virtual ~ConfigSource() = default;
+
   /// get retrieves a value from this ConfigSource with the associated key
   ///
   /// @param key the key to look up
@@ -19,7 +21,13 @@ class ConfigSource {
   /// @see ConfigError
   virtual auto get(std::string_view key)
       -> std::expected<std::string, ConfigError> = 0;
-  virtual ~ConfigSource() = default;
+
+ protected:
+  ConfigSource() = default;
+  ConfigSource(const ConfigSource& other) = default;
+  auto operator=(const ConfigSource& other) -> ConfigSource& = default;
+  ConfigSource(ConfigSource&& other) = default;
+  auto operator=(ConfigSource&& other) -> ConfigSource& = default;
 };
 
 /// ConfigKey enforces our canonical string representation of a given key
@@ -41,7 +49,12 @@ class EnvConfigSource : public ConfigSource {
   /// Constructs a new EnvConfigSource, where `prefix` is prepended to each
   /// environment variable before fetching it
   EnvConfigSource(std::string_view prefix) : prefix(prefix) {}
+  EnvConfigSource(const EnvConfigSource& other) = default;
+  auto operator=(const EnvConfigSource& other) -> EnvConfigSource& = default;
+  EnvConfigSource(EnvConfigSource&& other) = default;
+  auto operator=(EnvConfigSource&& other) -> EnvConfigSource& = default;
   ~EnvConfigSource() override = default;
+
   /// prefix is the prefix to prepend to each environment variable name before
   /// fetching them
   std::string prefix;
@@ -61,7 +74,12 @@ class EnvConfigSource : public ConfigSource {
 /// command line
 class OptsConfigSource : public ConfigSource {
  public:
+  OptsConfigSource(const OptsConfigSource& other) = default;
+  auto operator=(const OptsConfigSource& other) -> OptsConfigSource& = default;
+  OptsConfigSource(OptsConfigSource&& other) = default;
+  auto operator=(OptsConfigSource&& other) -> OptsConfigSource& = default;
   ~OptsConfigSource() override = default;
+
   auto get(std::string_view key)
       -> std::expected<std::string, ConfigError> override;
 };

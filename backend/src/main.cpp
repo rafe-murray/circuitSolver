@@ -15,8 +15,6 @@ using circuitsolver::server::services::CircuitSolverService;
 namespace logger = circuitsolver::server::observability::logger;
 namespace otel = circuitsolver::server::observability::otel;
 
-static Pistache::Http::Endpoint* endpoint;
-
 auto main() -> int {
   auto config = Config::mergeFromAllSources();
 
@@ -26,7 +24,7 @@ auto main() -> int {
   spdlog::info("Starting up circuitsolver server");
 
   Pistache::Address address(Pistache::Ipv4::any(), Pistache::Port(config.port));
-  endpoint = new Pistache::Http::Endpoint(address);
+  auto endpoint = std::make_unique<Pistache::Http::Endpoint>(address);
   auto router = std::make_shared<Pistache::Rest::Router>();
 
   auto opts = Pistache::Http::Endpoint::options()

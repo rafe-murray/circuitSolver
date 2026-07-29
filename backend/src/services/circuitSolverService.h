@@ -16,11 +16,17 @@ class CircuitSolverService : public Service {
   /// @param router the router to bind the routes to
   explicit CircuitSolverService(
       const std::shared_ptr<Pistache::Rest::Router>& router);
+  CircuitSolverService(const CircuitSolverService& other) = default;
+  auto operator=(const CircuitSolverService& other)
+      -> CircuitSolverService& = default;
+  CircuitSolverService(CircuitSolverService&& other) = default;
+  auto operator=(CircuitSolverService&& other)
+      -> CircuitSolverService& = default;
   ~CircuitSolverService() override = default;
   void init() override;
 
   /// base is the base path that all `CircuitSolverService` routes are bound to.
-  static const std::string base;
+  inline static const std::string base = "v1alpha1";
 
  private:
   /// configureRoutes binds the routes to the router

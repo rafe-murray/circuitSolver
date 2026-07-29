@@ -4,7 +4,7 @@
 
 namespace circuitsolver::server::config {
 /// ErrorType is the type of config error that occurred
-enum class ErrorType {
+enum class ErrorType : uint8_t {
   /// InvalidKey indicates that the desired key was malformed
   InvalidKey,
   /// NoSuchEnvironmentVariable indicates that an environment variable with a

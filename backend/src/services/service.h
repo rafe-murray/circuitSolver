@@ -23,13 +23,22 @@ class Service {
   /// `response`
   /// @param exception the exception to handle
   /// @param response the response to write back to
-  virtual void handleException(
-      const std::exception& exception,
-      Pistache::Http::ResponseWriter& response) const noexcept;
+  virtual void handleException(const std::exception& exception,
+                               Pistache::Http::ResponseWriter& response) const;
+  // Pistache::Http::ResponseWriter& response) const noexcept;
 
  protected:
+  /// getRouter gets the router for this Service
+  [[nodiscard]] auto getRouter() -> std::shared_ptr<Pistache::Rest::Router>;
+
+  Service(const Service& other) = default;
+  auto operator=(const Service& other) -> Service& = default;
+  Service(Service&& other) = default;
+  auto operator=(Service&& other) -> Service& = default;
+
+ private:
   /// router is the router for this `Service`
-  const std::shared_ptr<Pistache::Rest::Router> router;
+  std::shared_ptr<Pistache::Rest::Router> router;
 };
 
 }  // namespace circuitsolver::server::services
