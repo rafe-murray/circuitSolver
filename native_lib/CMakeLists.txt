@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For clangd support
 
@@ -13,7 +13,10 @@ set(BUILD_SHARED_LIBS
     CACHE BOOL "Build all libraries as static" FORCE)
 
 add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
-                    -Wno-missing-field-initializers)
+  -Wno-missing-field-initializers
+  # abseil generates a lot of warnings with nullability extensions but it is
+  # fine as they are gated behind compiler-specific macros
+  -Wno-nullability-extension)
 
 # Add the source code as a library so it is exposed to both main executable and
 # tests
@@ -42,16 +45,17 @@ protobuf_generate(
   TARGET circuitSolverLib
   IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/../proto)
 
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/circuit_solver/v1alpha1/circuit_graph_message.pb.h"
-  DESTINATION include
-)
+# install(FILES "${CMAKE_CURRENT_BINARY_DIR}/circuit_solver/v1alpha1/circuit_graph_message.pb.h"
+#   DESTINATION include
+# )
 
 # generated protobuf headers will be in current (build) directory
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 # TODO: make some headers private
-target_link_libraries(circuitSolverLib PUBLIC protobuf::libprotobuf stduuid
-                                              Ceres::ceres)
+target_link_libraries(circuitSolverLib PRIVATE stduuid Ceres::ceres)
+
+target_link_libraries(circuitSolverLib PUBLIC protobuf::libprotobuf)
 
 # Compile the main executable add_executable(solver src/main.cpp)
 # target_link_libraries(solver PRIVATE circuitSolverLib)

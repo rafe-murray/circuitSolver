@@ -1,5 +1,7 @@
+#pragma once
+
 #include <cstddef>
-#include <stdexcept>
+#include <expected>
 #define EXPORT extern "C"
 
 // Blocking call for now
@@ -29,28 +31,39 @@ const char* getErrorMessage(int errorNumber);
 
 #include "circuit_solver/proto.h"
 
-class NoSolutionException : std::logic_error {
- public:
-  explicit NoSolutionException(const std::string& message)
-      : std::logic_error(message) {}
-  const char* what() const noexcept override {
-    return std::logic_error::what();
-  }
+namespace circuitsolver {
+
+enum class ErrorType : int {
+  NoSolution = CIRCUITSOLVER_ERROR_NO_SOLUTION,
+  FailedSerialization = CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION,
+  InvalidInput = CIRCUITSOLVER_ERROR_INVALID_INPUT,
 };
 
-class FailedSerializationException : std::runtime_error {
+// Class for errors from circuitsolver
+class CircuitSolverError {
+  // TODO: add helper constructors
+  // TODO: make message optional
+
  public:
-  explicit FailedSerializationException(const std::string& message)
-      : std::runtime_error(message) {}
-  const char* what() const noexcept override {
-    return std::runtime_error::what();
-  }
+  explicit CircuitSolverError(ErrorType type, std::string_view message);
+
+  std::string message() const;
+  ErrorType type() const;
+
+ private:
+  const ErrorType _type;
+  const std::string _message;
 };
 
-proto::CircuitGraph solveCircuit(proto::CircuitGraph input);
+std::expected<proto::CircuitGraph, CircuitSolverError> solveCircuit(
+    proto::CircuitGraph input);
 
 // Gets and returns a string version of a protocol buffer
-std::string solveGraphFromString(std::string inputString);
-std::string solveGraphFromJson(std::string inputJson);
+std::expected<std::string, CircuitSolverError> solveGraphFromString(
+    std::string inputString);
+std::expected<std::string, CircuitSolverError> solveGraphFromJson(
+    std::string inputJson);
+
+}  // namespace circuitsolver
 
 #endif

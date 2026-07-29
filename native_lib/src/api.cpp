@@ -1,129 +1,18 @@
 #include "circuit_solver/api.h"
 
+#include <absl/status/status.h>
 #include <google/protobuf/util/json_util.h>
 
 #include <cstddef>
 #include <cstring>
+#include <expected>
+#include <format>
 #include <limits>
 #include <memory>
-#include <sstream>
-#include <stdexcept>
+#include <utility>
 
 #include "circuit_solver/circuitGraph.h"
 #include "circuit_solver/proto.h"
-
-proto::CircuitGraph solveCircuit(proto::CircuitGraph input) {
-  std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
-      CircuitGraph::fromProto(input);
-  if (!optionalCircuitGraph.has_value()) {
-    throw std::invalid_argument(
-        "Protobuf did not match the expected schema for a circuit graph");
-  }
-  std::unique_ptr<CircuitGraph> circuitGraph =
-      std::move(optionalCircuitGraph.value());
-  bool solved = circuitGraph->solveCircuit();
-  if (!solved) {
-    throw NoSolutionException("No solution found");
-  }
-  return circuitGraph->toProto();
-}
-
-int solveGraphFromBuffer(void* inputBuffer, int inputLength,
-                         void** outputBuffer, int* outputLength) {
-  proto::CircuitGraph message;
-  bool success = message.ParseFromArray(inputBuffer, inputLength);
-  if (!success) {
-    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
-  }
-  proto::CircuitGraph output;
-  try {
-    output = solveCircuit(message);
-  } catch (std::invalid_argument) {
-    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
-  } catch (NoSolutionException) {
-    return CIRCUITSOLVER_ERROR_NO_SOLUTION;
-  }
-  size_t length = output.ByteSizeLong();
-  if (length > std::numeric_limits<int>::max()) {
-    // Message was too big
-    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
-  }
-  *outputLength = (int)length;
-  *outputBuffer = operator new(*outputLength);
-  success = output.SerializeToArray(*outputBuffer, *outputLength);
-  if (!success) {
-    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
-  }
-  return 0;
-}
-
-int solveGraphFromJson(char* inputJson, char** outputJson) {
-  proto::CircuitGraph message;
-  auto status =
-      google::protobuf::json::JsonStringToMessage(inputJson, &message);
-  if (!status.ok()) {
-    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
-  }
-  proto::CircuitGraph output;
-  try {
-    output = solveCircuit(message);
-  } catch (std::invalid_argument) {
-    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
-  } catch (NoSolutionException) {
-    return CIRCUITSOLVER_ERROR_NO_SOLUTION;
-  }
-  std::string outputString;
-  status = google::protobuf::json::MessageToJsonString(output, &outputString);
-  if (!status.ok()) {
-    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
-  }
-  // std::string makes no guarantees about heap allocation so we need to copy to
-  // our own heap-allocated char buffer
-  *outputJson = new char[outputString.size()];
-  memcpy(*outputJson, outputString.c_str(), outputString.size());
-  return 0;
-}
-
-std::string solveGraphFromJson(std::string inputJson) {
-  proto::CircuitGraph message;
-  auto status =
-      google::protobuf::json::JsonStringToMessage(inputJson, &message);
-  if (!status.ok()) {
-    std::stringstream ss;
-    ss << "Invalid input json: " << inputJson;
-    throw std::invalid_argument(ss.str());
-  }
-  proto::CircuitGraph output;
-  // No catching logic here - we want the user to be able to catch and see any
-  // errors themselves
-  output = solveCircuit(message);
-
-  std::string outputString;
-  status = google::protobuf::json::MessageToJsonString(output, &outputString);
-  if (!status.ok()) {
-    throw FailedSerializationException(
-        "Could not serialize the solved circuit");
-  }
-  // std::string makes no guarantees about heap allocation so we need to copy to
-  // our own heap-allocated char buffer
-  return outputString;
-}
-
-std::string solveGraphFromString(std::string inputString) {
-  proto::CircuitGraph message;
-  bool success = message.ParseFromString(inputString);
-  if (!success) {
-    throw std::invalid_argument("Could not parse input data");
-  }
-  proto::CircuitGraph output;
-  output = solveCircuit(message);
-  std::string outputString;
-  success = output.SerializeToString(&outputString);
-  if (!success) {
-    throw FailedSerializationException("Failed serialization");
-  }
-  return outputString;
-}
 
 void destroyGraphBuffer(void* graphBuffer) { operator delete(graphBuffer); }
 void destroyGraphJson(char* graphJson) { delete[] graphJson; }
@@ -141,3 +30,137 @@ const char* getErrorMessage(int errorNumber) {
     return "Unknown error";
   }
 }
+
+int solveGraphFromBuffer(void* inputBuffer, int inputLength,
+                         void** outputBuffer, int* outputLength) {
+  using namespace circuitsolver;
+  proto::CircuitGraph message;
+  bool success = message.ParseFromArray(inputBuffer, inputLength);
+  if (!success) {
+    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
+  }
+  auto maybeOutput = solveCircuit(message);
+  if (!maybeOutput) {
+    auto error = maybeOutput.error();
+    return std::to_underlying(error.type());
+  }
+  auto output = maybeOutput.value();
+  size_t length = output.ByteSizeLong();
+  if (length > std::numeric_limits<int>::max()) {
+    // Message was too big
+    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
+  }
+  *outputLength = (int)length;
+  *outputBuffer = operator new(*outputLength);
+  success = output.SerializeToArray(*outputBuffer, *outputLength);
+  if (!success) {
+    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
+  }
+  return 0;
+}
+
+int solveGraphFromJson(char* inputJson, char** outputJson) {
+  using namespace circuitsolver;
+  proto::CircuitGraph message;
+  auto status =
+      google::protobuf::json::JsonStringToMessage(inputJson, &message);
+  if (!status.ok()) {
+    return CIRCUITSOLVER_ERROR_INVALID_INPUT;
+  }
+  auto maybeOutput = solveCircuit(message);
+  if (!maybeOutput) {
+    auto error = maybeOutput.error();
+    return std::to_underlying(error.type());
+  }
+  auto output = maybeOutput.value();
+  std::string outputString;
+  status = google::protobuf::json::MessageToJsonString(output, &outputString);
+  if (!status.ok()) {
+    return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
+  }
+  // std::string makes no guarantees about heap allocation so we need to copy to
+  // our own heap-allocated char buffer
+  *outputJson = new char[outputString.size()];
+  memcpy(*outputJson, outputString.c_str(), outputString.size());
+  return 0;
+}
+
+namespace circuitsolver {
+
+CircuitSolverError::CircuitSolverError(ErrorType type, std::string_view message)
+    : _type(type), _message(message) {}
+
+std::string CircuitSolverError::message() const { return _message; }
+ErrorType CircuitSolverError::type() const { return _type; }
+
+std::expected<proto::CircuitGraph, CircuitSolverError> solveCircuit(
+    proto::CircuitGraph input) {
+  std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
+      CircuitGraph::fromProto(input);
+  if (!optionalCircuitGraph.has_value()) {
+    return std::unexpected{CircuitSolverError{
+        ErrorType::InvalidInput,
+        "Protobuf did not match the expected schema for a circuit graph"}};
+  }
+  std::unique_ptr<CircuitGraph> circuitGraph =
+      std::move(optionalCircuitGraph.value());
+  bool solved = circuitGraph->solveCircuit();
+  if (!solved) {
+    return std::unexpected{
+        CircuitSolverError{ErrorType::NoSolution, "No solution found"}};
+  }
+  return circuitGraph->toProto();
+}
+std::expected<std::string, CircuitSolverError> solveGraphFromJson(
+    std::string inputJson) {
+  proto::CircuitGraph message;
+  auto status =
+      google::protobuf::json::JsonStringToMessage(inputJson, &message);
+  if (!status.ok()) {
+    return std::unexpected{
+        CircuitSolverError{ErrorType::InvalidInput,
+                           std::format("Invalid input json: {}", inputJson)}};
+  }
+  auto maybeOutput = solveCircuit(message);
+  if (!maybeOutput) {
+    return std::unexpected{maybeOutput.error()};
+  }
+  auto output = maybeOutput.value();
+
+  std::string outputString;
+  status = google::protobuf::json::MessageToJsonString(output, &outputString);
+  if (!status.ok()) {
+    return std::unexpected{
+        CircuitSolverError{ErrorType::FailedSerialization,
+                           "Could not serialize the solved circuit"}};
+  }
+  return outputString;
+}
+
+std::expected<std::string, CircuitSolverError> solveGraphFromString(
+    std::string inputString) {
+  proto::CircuitGraph message;
+  bool success = message.ParseFromString(inputString);
+  if (!success) {
+    return std::unexpected{
+        CircuitSolverError{
+            ErrorType::InvalidInput,
+            "Could not parse input data",
+        },
+    };
+  }
+  auto maybeOutput = solveCircuit(message);
+  if (!maybeOutput) {
+    return std::unexpected{maybeOutput.error()};
+  }
+  auto output = maybeOutput.value();
+  std::string outputString;
+  success = output.SerializeToString(&outputString);
+  if (!success) {
+    return std::unexpected{CircuitSolverError{ErrorType::FailedSerialization,
+                                              "Failed serialization"}};
+  }
+  return outputString;
+}
+
+}  // namespace circuitsolver
