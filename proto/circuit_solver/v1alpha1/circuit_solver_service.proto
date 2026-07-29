@@ -1,0 +1,24 @@
+edition = "2023";
+package circuit_solver.v1alpha1;
+
+import "circuit_solver/v1alpha1/circuit_graph_message.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/rafe-murray/circuitsolver/proto";
+
+message SolveRequest {
+  CircuitGraphMessage message = 1;
+}
+
+message SolveResponse {
+  CircuitGraphMessage message = 1;
+}
+
+service CircuitSolverService {
+  rpc Solve(SolveRequest) returns (SolveResponse) {
+    option (google.api.http) = {
+      post: "/v1/echo"
+      body: "*"
+    };
+  }
+}

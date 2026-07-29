@@ -1,5 +1,5 @@
 edition = "2023";
-package circuit_solver.v1;
+package circuit_solver.v1alpha1;
 
 message CircuitGraphMessage {
   map<string, Edge> edges = 1;
