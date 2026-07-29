@@ -36,10 +36,10 @@ void CircuitSolverService::solveProtobuf(
     const Pistache::Rest::Request& request,
     Pistache::Http::ResponseWriter response) {
   try {
-    const std::string body = request.body();
+    const std::string& body = request.body();
     auto maybeOutput = solveGraphFromString(body);
     if (maybeOutput) {
-      auto output = maybeOutput.value();
+      const auto& output = maybeOutput.value();
       response.send(Pistache::Http::Code::Ok, output,
                     // Pistache doesn't support application/protobuf as a MIME
                     // type so we set it raw
@@ -48,7 +48,7 @@ void CircuitSolverService::solveProtobuf(
                         "application/protobuf",
                         Pistache::Http::Mime::MediaType::DontParse));
     } else {
-      auto error = maybeOutput.error();
+      const auto& error = maybeOutput.error();
       switch (error.type()) {
         case ErrorType::InvalidInput:
           response.send(Pistache::Http::Code::Bad_Request, error.message());
@@ -73,13 +73,13 @@ void CircuitSolverService::solveProtobuf(
 void CircuitSolverService::solveJson(const Pistache::Rest::Request& request,
                                      Pistache::Http::ResponseWriter response) {
   try {
-    const std::string body = request.body();
+    const std::string& body = request.body();
     auto maybeOutput = solveGraphFromJson(body);
     if (maybeOutput) {
-      auto output = maybeOutput.value();
+      const auto& output = maybeOutput.value();
       response.send(Pistache::Http::Code::Ok, output, MIME(Application, Json));
     } else {
-      auto error = maybeOutput.error();
+      const auto& error = maybeOutput.error();
       switch (error.type()) {
         case ErrorType::InvalidInput:
           response.send(Pistache::Http::Code::Bad_Request, error.message());

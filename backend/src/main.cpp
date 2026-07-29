@@ -17,7 +17,7 @@ namespace otel = circuitsolver::server::observability::otel;
 
 static Pistache::Http::Endpoint* endpoint;
 
-int main() {
+auto main() -> int {
   auto config = Config::mergeFromAllSources();
 
   otel::init(config);

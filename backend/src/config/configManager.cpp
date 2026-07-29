@@ -1,7 +1,8 @@
 #include "configManager.h"
 
 namespace circuitsolver::server::config {
-ConfigManager& ConfigManager::addSource(std::shared_ptr<ConfigSource> source) {
+auto ConfigManager::addSource(std::shared_ptr<ConfigSource> source)
+    -> ConfigManager& {
   sources.push_back(std::move(source));
   return *this;
 }

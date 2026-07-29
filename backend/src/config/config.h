@@ -19,6 +19,6 @@ struct Config {
   spdlog::level::level_enum logLevel;
   /// mergeFromAllSources merges config from all available sources. Currently
   /// only environment variables and defaults are supported.
-  static Config mergeFromAllSources();
+  static auto mergeFromAllSources() -> Config;
 };
 }  // namespace circuitsolver::server::config

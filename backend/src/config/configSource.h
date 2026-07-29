@@ -17,7 +17,8 @@ class ConfigSource {
   /// @param key the key to look up
   /// @return the value retrieved, or a `ConfigError` if something went wrong
   /// @see ConfigError
-  virtual std::expected<std::string, ConfigError> get(std::string_view key) = 0;
+  virtual auto get(std::string_view key)
+      -> std::expected<std::string, ConfigError> = 0;
   virtual ~ConfigSource() = default;
 };
 
@@ -27,7 +28,7 @@ class ConfigKey {
   /// Constructs a new ConfigKey.
   ConfigKey(std::string_view key);
   /// name gets the canonical name of the ConfigKey
-  std::string name();
+  auto name() -> std::string;
 
  private:
   /// key is the actual string representation of the ConfigKey
@@ -43,15 +44,17 @@ class EnvConfigSource : public ConfigSource {
   ~EnvConfigSource() override = default;
   /// prefix is the prefix to prepend to each environment variable name before
   /// fetching them
-  std::string prefix = "";
-  std::expected<std::string, ConfigError> get(std::string_view key) override;
+  std::string prefix;
+  auto get(std::string_view key)
+      -> std::expected<std::string, ConfigError> override;
 
  private:
   /// envVarName retrieves the name of an environment variable associated with
   /// the given key
   /// @param key the key to get the environment variable name for
   /// @return the associated environment variable name
-  static std::expected<std::string, ConfigError> envVarName(ConfigKey key);
+  static auto envVarName(ConfigKey key)
+      -> std::expected<std::string, ConfigError>;
 };
 
 /// OptsConfigSource is a ConfigSource that reads from arguments passed on the
@@ -59,7 +62,8 @@ class EnvConfigSource : public ConfigSource {
 class OptsConfigSource : public ConfigSource {
  public:
   ~OptsConfigSource() override = default;
-  std::expected<std::string, ConfigError> get(std::string_view key) override;
+  auto get(std::string_view key)
+      -> std::expected<std::string, ConfigError> override;
 };
 
 }  // namespace circuitsolver::server::config

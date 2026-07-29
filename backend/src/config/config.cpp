@@ -6,7 +6,7 @@
 #include "configSource.h"
 
 namespace circuitsolver::server::config {
-Config Config::mergeFromAllSources() {
+auto Config::mergeFromAllSources() -> Config {
   auto configManager = ConfigManager{}.addSource(
       std::make_unique<EnvConfigSource>("CIRCUIT_SOLVER"))
       // .addSource(OptsConfigSource{})
@@ -21,6 +21,10 @@ Config Config::mergeFromAllSources() {
   auto logLevel = spdlog::level::from_str(
       configManager.get<std::string>("logLevel").value_or("info"));
 
-  return Config{port, numThreads, maxRequestSize, maxResponseSize, logLevel};
+  return Config{.port = port,
+                .numThreads = numThreads,
+                .maxRequestSize = maxRequestSize,
+                .maxResponseSize = maxResponseSize,
+                .logLevel = logLevel};
 }
 }  // namespace circuitsolver::server::config

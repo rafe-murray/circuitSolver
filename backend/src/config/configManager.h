@@ -33,7 +33,7 @@ class ConfigManager {
   /// the key exists in other sources.
   /// @param source the source to add
   /// @return this
-  ConfigManager& addSource(std::shared_ptr<ConfigSource> source);
+  auto addSource(std::shared_ptr<ConfigSource> source) -> ConfigManager&;
 
   /// get retrieves a value from the ConfigManager
   ///
@@ -44,15 +44,14 @@ class ConfigManager {
   /// @return an optional value that is present if the key was found, or
   /// `std::nullopt` if not
   template <std::constructible_from<std::string> T>
-  std::optional<T> get(std::string_view key) {
+  auto get(std::string_view key) -> std::optional<T> {
     for (const auto& source : sources) {
       auto maybe_value = source->get(key);
       if (maybe_value) {
         return T(maybe_value.value());
-      } else {
-        if (maybe_value.error().type == ErrorType::InvalidKey) {
-          throw std::invalid_argument{maybe_value.error().error};
-        }
+      }
+      if (maybe_value.error().type == ErrorType::InvalidKey) {
+        throw std::invalid_argument{maybe_value.error().error};
       }
     }
     return std::nullopt;
@@ -68,7 +67,7 @@ class ConfigManager {
   /// `std::nullopt` if not
   /// @see std::from_chars()
   template <Numeric T>
-  std::optional<T> get(std::string_view key) {
+  auto get(std::string_view key) -> std::optional<T> {
     for (const auto& source : sources) {
       auto maybe_value = source->get(key);
       if (maybe_value) {
