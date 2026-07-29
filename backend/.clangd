@@ -1,0 +1,8 @@
+Documentation:
+  CommentFormat: Doxygen
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: None
+CompileFlags:
+  Add:
+    - -Wdocumentation
