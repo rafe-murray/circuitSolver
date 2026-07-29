@@ -26,7 +26,7 @@ class CircuitSolverService : public Service {
   void init() override;
 
   /// base is the base path that all `CircuitSolverService` routes are bound to.
-  inline static const std::string base = "v1alpha1";
+  static constexpr std::string base = "v1alpha1";
 
  private:
   /// configureRoutes binds the routes to the router

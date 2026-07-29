@@ -33,17 +33,17 @@ auto EnvConfigSource::envVarName(ConfigKey key)
   auto original = key.name();
   auto env = original;
   for (size_t i = 0; i < original.size(); i++) {
-    auto c = original[i];
-    if (std::isalpha(c) != 0) {
-      env[i] = static_cast<char>(std::toupper(c));
-    } else if (c == '-') {
-      env[i] = '_';
+    auto character = original.at(i);
+    if (std::isalpha(character) != 0) {
+      env.at(i) = static_cast<char>(std::toupper(character));
+    } else if (character == '-') {
+      env.at(i) = '_';
     } else {
       return std::unexpected<ConfigError>{
           {.type = ErrorType::InvalidKey,
            .error = std::format(
-               "Invalid character {} at position {} of config key {}", c, i,
-               original)}};
+               "Invalid character {} at position {} of config key {}",
+               character, i, original)}};
     }
   }
   return env;

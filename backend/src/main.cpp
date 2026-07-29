@@ -15,6 +15,7 @@ using circuitsolver::server::services::CircuitSolverService;
 namespace logger = circuitsolver::server::observability::logger;
 namespace otel = circuitsolver::server::observability::otel;
 
+// NOLINTBEGIN(bugprone-exception-escape)
 auto main() -> int {
   auto config = Config::mergeFromAllSources();
 
@@ -43,3 +44,4 @@ auto main() -> int {
   endpoint->shutdown();
   spdlog::info("Bye");
 }
+// NOLINTEND(bugprone-exception-escape)
