@@ -15,8 +15,40 @@ using circuitsolver::server::services::CircuitSolverService;
 namespace logger = circuitsolver::server::observability::logger;
 namespace otel = circuitsolver::server::observability::otel;
 
+// #ifdef __linux__
+// static void sigHandler [[noreturn]] (int sig) {
+//   switch (sig) {
+//     case SIGINT:
+//     case SIGQUIT:
+//     case SIGTERM:
+//     case SIGHUP:
+//     default:
+//       httpEndpoint->shutdown();
+//       break;
+//   }
+//   exit(0);
+// }
+//
+// static void setUpUnixSignals(std::vector<int> quitSignals) {
+//   sigset_t blocking_mask;
+//   sigemptyset(&blocking_mask);
+//   for (auto sig : quitSignals) sigaddset(&blocking_mask, sig);
+//
+//   struct sigaction sa;
+//   sa.sa_handler = sigHandler;
+//   sa.sa_mask = blocking_mask;
+//   sa.sa_flags = 0;
+//
+//   for (auto sig : quitSignals) sigaction(sig, &sa, nullptr);
+// }
+// #endif
+
 // NOLINTBEGIN(bugprone-exception-escape)
 auto main() -> int {
+  // #ifdef __linux__
+  //   std::vector<int> sigs{SIGQUIT, SIGINT, SIGTERM, SIGHUP};
+  //   setUpUnixSignals(sigs);
+  // #endif
   auto config = Config::mergeFromAllSources();
 
   otel::init(config);
