@@ -13,14 +13,14 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
   # abseil generates a lot of warnings with nullability extensions but it is
   # fine as they are gated behind compiler-specific macros
   -Wno-nullability-extension
-  -Wdocumentation
 )
 
 project(circuitSolverApp)
+set(PKG_CONFIG_ARGN "--static" CACHE STRING "Import static PkgConfig libraries")
 find_package(PkgConfig)
 pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
 
-find_package(opentelemetry-cpp REQUIRED)
+find_package(opentelemetry-cpp CONFIG REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(opentelemetry_spdlog_sink REQUIRED)
 

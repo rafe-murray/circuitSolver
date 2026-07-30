@@ -1,26 +1,59 @@
-FROM ubuntu:20.04
+ARG VCPKG_CACHE_DIR=/cache/vcpkg
+
+FROM ubuntu:26.10 AS builder
+
+ARG VCPKG_CACHE_DIR
+ENV VCPKG_DOWNLOADS=${VCPKG_CACHE_DIR}
+
+# TODO: improve caching
+
+RUN set -eux; \
+  mkdir -p "$VCPKG_CACHE_DIR"; \
+  apt-get update; \
+  apt-get install -y \
+  cmake \
+  ninja-build \
+  libpistache-dev \
+  build-essential \
+  tar \
+  git \
+  zip \
+  unzip \
+  curl \
+  pkg-config \
+  clang \
+  ; \
+  git clone https://github.com/microsoft/vcpkg.git --depth 1; \
+  ./vcpkg/bootstrap-vcpkg.sh; \
+  mkdir -p /circuitsolver;
+
+COPY . /circuitsolver
+
+WORKDIR /circuitsolver/backend
 
 RUN \
-  apt-get update && \
-  # CMake
-  apt-get install -y cmake && \
-  # google-glog + gflags
-  apt-get install -y libgoogle-glog-dev libgflags-dev && \
-  # Use ATLAS for BLAS & LAPACK
-  apt-get install -y libatlas-base-dev && \
-  # Eigen3
-  apt-get install -y libeigen3-dev && \
-  # SuiteSparse (optional)
-  apt-get install -y libsuitesparse-dev && \
-  # git
-  apt-get install -y git && \
-  apt-get install -y curl unzip &&\
-  apt-get install -y g++
-RUN mkdir circuitSolver
-COPY . /circuitSolver
-WORKDIR /circuitSolver
+  --mount=type=cache,target=/circuitsolver/backend/build \
+  --mount=type=cache,target="$VCPKG_CACHE_DIR" \
+  set -eux; \
+  export VCPKG_ROOT="/vcpkg"; \
+  mkdir -p build; \
+  cd build; \
+  cmake .. \
+  --preset=vcpkg \
+  -DVCPKG_MANIFEST_FEATURES="otlp" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DVCPKG_BUILD_TYPE=release \
+  ; \
+  cmake --build . ; \
+  cp circuit-solver ../ ; \
+  cp compile_commands.json ../
 
-RUN \
-  cmake . &&\
-  mkdir build && cd build && \
-  cmake --build ..
+FROM scratch as exporter
+COPY --from=builder /circuitsolver/backend/compile_commands.json /
+
+FROM gcr.io/distroless/cc-debian13 AS base
+
+COPY --from=builder /circuitsolver/backend/circuit-solver /
+COPY --from=builder /usr/lib/aarch64-linux-gnu/libpistache.so.0.4 /usr/lib/aarch64-linux-gnu/
+ENTRYPOINT [ "/circuit-solver" ]
+
