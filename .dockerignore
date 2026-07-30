@@ -1,0 +1,5 @@
+**/build
+frontend
+ffi_bridge
+gen
+**/Dockerfile
