@@ -23,23 +23,21 @@ struct partitionSolution {
 
 class CircuitGraph {
  public:
-  bool solveCircuit();
+  auto solveCircuit() -> bool;
 
   /**
    * Creates a new graph instance
    */
-  CircuitGraph()
-      : adjacencyList(
-            std::unordered_map<uuids::uuid, std::vector<uuids::uuid>>()) {}
+  CircuitGraph() {}
 
   /**
    * Adds a vertex to the graph
    * @param v - the vertex to add
    * @return true on successful insertion
    */
-  bool addVertex(const Vertex& v);
+  auto addVertex(const Vertex& v) -> bool;
 
-  bool hasVertex(const Vertex& v);
+  auto hasVertex(const Vertex& v) -> bool;
 
   /**
    * Removes a vertex from the graph
@@ -53,18 +51,20 @@ class CircuitGraph {
    * @param e - the edge to add
    * @return true if the edge was not part of the graph before and now it is
    */
-  bool addEdge(std::unique_ptr<Edge> e);
+  auto addEdge(std::unique_ptr<Edge> e) -> bool;
 
-  bool addEdge(const Edge& e) { return addEdge(std::make_unique<Edge>(e)); };
+  auto addEdge(const Edge& e) -> bool {
+    return addEdge(std::make_unique<Edge>(e));
+  };
 
-  bool hasEdge(const Edge& e);
+  auto hasEdge(const Edge& e) -> bool;
 
   /**
    * Removes an edge from the graph
    * @param e - the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(const Edge& e);
+  auto removeEdge(const Edge& e) -> bool;
 
   /**
    * Removes an edge from the graph
@@ -72,7 +72,7 @@ class CircuitGraph {
    * @param v2 - the other endpoint of the edge to remove
    * @return true if the edge was in the graph before and it is no longer
    */
-  bool removeEdge(const Vertex& v1, const Vertex& v2);
+  auto removeEdge(const Vertex& v1, const Vertex& v2) -> bool;
 
   /**
    * Gets all edges incident on a vertex. An edge is considered incident on a
@@ -80,20 +80,20 @@ class CircuitGraph {
    * @param v - the vertex which the edges are incident on
    * @return a vector containing all incident edges
    */
-  std::vector<Edge> getIncident(const Vertex& v);
+  auto getIncident(const Vertex& v) -> std::vector<Edge>;
 
   /**
    * Gets all vertices in the graph
    * @return a vector containing all the vertices in the graph
    */
-  std::vector<Vertex> getVertices() const;
+  [[nodiscard]] auto getVertices() const -> std::vector<Vertex>;
 
-  std::vector<Edge> getEdges() const;
+  [[nodiscard]] auto getEdges() const -> std::vector<Edge>;
   // pre: the circuit is solved
-  proto::CircuitGraph toProto() const;
-  proto::CircuitGraph toProto(const double* parameters) const;
-  static std::optional<std::unique_ptr<CircuitGraph>> fromProto(
-      const proto::CircuitGraph& proto);
+  [[nodiscard]] auto toProto() const -> proto::CircuitGraph;
+  auto toProto(const double* parameters) const -> proto::CircuitGraph;
+  static auto fromProto(const proto::CircuitGraph& proto)
+      -> std::optional<std::unique_ptr<CircuitGraph>>;
   /**
    * Compares two CircuitGraphs for equality.
    *
@@ -104,15 +104,15 @@ class CircuitGraph {
    * - For each Edge e in g1, there exists an edge f in g2 with the same id that
    * goes between vertices with the same ids and is of the same Branch type.
    */
-  bool operator==(const CircuitGraph& other) const;
+  auto operator==(const CircuitGraph& other) const -> bool;
 
-  partitionSolution solvePartition(const std::vector<double*>& basis,
-                                   const std::vector<bool>& isHigh);
-  void print(std::ostream& out, const CircuitGraph& cg,
-             std::unordered_set<const double*> parameters);
+  auto solvePartition(const std::vector<double*>& basis,
+                      const std::vector<bool>& isHigh) -> partitionSolution;
+  static void print(std::ostream& out, const CircuitGraph& cg,
+                    const std::unordered_set<const double*>& parameters);
 
  private:
-  std::vector<double*> getDiscontinuities();
+  auto getDiscontinuities() -> std::vector<double*>;
   void resetUnknowns();
   // std::unordered_set<const double*> getUnknowns();
   /**
@@ -123,9 +123,9 @@ class CircuitGraph {
    * arguments and return net current into the node
    * @pre node is in this.graph
    */
-  Expression getNodeCurrents(Vertex node);
+  auto getNodeCurrents(const Vertex& node) -> Expression;
 
-  std::vector<Expression> getExpressions();
+  auto getExpressions() -> std::vector<Expression>;
 
   /**
    * Get the `Vertex` corresponding to `id`
@@ -162,6 +162,6 @@ class CircuitGraph {
   const int maxSolveAttempts = 100;  // High but bounded
 };
 
-std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg);
+auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream&;
 
 #endif  // CIRCUIT_GRAPH_H

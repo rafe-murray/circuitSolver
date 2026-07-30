@@ -15,9 +15,9 @@
 #include "circuit_solver/proto.h"
 
 void destroyGraphBuffer(void* graphBuffer) { operator delete(graphBuffer); }
-void destroyGraphJson(char* graphJson) { delete[] graphJson; }
+void destroyGraphJson(const char* graphJson) { delete[] graphJson; }
 
-const char* getErrorMessage(int errorNumber) {
+auto getErrorMessage(int errorNumber) -> const char* {
   const std::unordered_map<int, const char*> errorMessages = {
       {CIRCUITSOLVER_ERROR_INVALID_INPUT, "Invalid input"},
       {CIRCUITSOLVER_ERROR_NO_SOLUTION, "No solution"},
@@ -26,13 +26,12 @@ const char* getErrorMessage(int errorNumber) {
   auto it = errorMessages.find(errorNumber);
   if (it != errorMessages.end()) {
     return it->second;
-  } else {
-    return "Unknown error";
   }
+  return "Unknown error";
 }
 
-int solveGraphFromBuffer(void* inputBuffer, int inputLength,
-                         void** outputBuffer, int* outputLength) {
+auto solveGraphFromBuffer(void* inputBuffer, int inputLength,
+                          void** outputBuffer, int* outputLength) -> int {
   using namespace circuitsolver;
   proto::CircuitGraph message;
   bool success = message.ParseFromArray(inputBuffer, inputLength);
@@ -41,16 +40,16 @@ int solveGraphFromBuffer(void* inputBuffer, int inputLength,
   }
   auto maybeOutput = solveCircuit(message);
   if (!maybeOutput) {
-    auto error = maybeOutput.error();
+    const auto& error = maybeOutput.error();
     return std::to_underlying(error.type());
   }
-  auto output = maybeOutput.value();
+  const auto& output = maybeOutput.value();
   size_t length = output.ByteSizeLong();
   if (length > std::numeric_limits<int>::max()) {
     // Message was too big
     return CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION;
   }
-  *outputLength = (int)length;
+  *outputLength = static_cast<int>(length);
   *outputBuffer = operator new(*outputLength);
   success = output.SerializeToArray(*outputBuffer, *outputLength);
   if (!success) {
@@ -59,7 +58,7 @@ int solveGraphFromBuffer(void* inputBuffer, int inputLength,
   return 0;
 }
 
-int solveGraphFromJson(char* inputJson, char** outputJson) {
+auto solveGraphFromJson(const char* inputJson, char** outputJson) -> int {
   using namespace circuitsolver;
   proto::CircuitGraph message;
   auto status =
@@ -69,10 +68,10 @@ int solveGraphFromJson(char* inputJson, char** outputJson) {
   }
   auto maybeOutput = solveCircuit(message);
   if (!maybeOutput) {
-    auto error = maybeOutput.error();
+    const auto& error = maybeOutput.error();
     return std::to_underlying(error.type());
   }
-  auto output = maybeOutput.value();
+  const auto& output = maybeOutput.value();
   std::string outputString;
   status = google::protobuf::json::MessageToJsonString(output, &outputString);
   if (!status.ok()) {
@@ -90,11 +89,11 @@ namespace circuitsolver {
 CircuitSolverError::CircuitSolverError(ErrorType type, std::string_view message)
     : _type(type), _message(message) {}
 
-std::string CircuitSolverError::message() const { return _message; }
-ErrorType CircuitSolverError::type() const { return _type; }
+auto CircuitSolverError::message() const -> std::string { return _message; }
+auto CircuitSolverError::type() const -> ErrorType { return _type; }
 
-std::expected<proto::CircuitGraph, CircuitSolverError> solveCircuit(
-    proto::CircuitGraph input) {
+auto solveCircuit(const proto::CircuitGraph& input)
+    -> std::expected<proto::CircuitGraph, CircuitSolverError> {
   std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
       CircuitGraph::fromProto(input);
   if (!optionalCircuitGraph.has_value()) {
@@ -111,8 +110,8 @@ std::expected<proto::CircuitGraph, CircuitSolverError> solveCircuit(
   }
   return circuitGraph->toProto();
 }
-std::expected<std::string, CircuitSolverError> solveGraphFromJson(
-    std::string inputJson) {
+auto solveGraphFromJson(std::string inputJson)
+    -> std::expected<std::string, CircuitSolverError> {
   proto::CircuitGraph message;
   auto status =
       google::protobuf::json::JsonStringToMessage(inputJson, &message);
@@ -137,8 +136,8 @@ std::expected<std::string, CircuitSolverError> solveGraphFromJson(
   return outputString;
 }
 
-std::expected<std::string, CircuitSolverError> solveGraphFromString(
-    std::string inputString) {
+auto solveGraphFromString(const std::string& inputString)
+    -> std::expected<std::string, CircuitSolverError> {
   proto::CircuitGraph message;
   bool success = message.ParseFromString(inputString);
   if (!success) {

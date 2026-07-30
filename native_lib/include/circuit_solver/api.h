@@ -6,24 +6,26 @@
 
 // Blocking call for now
 EXPORT
-int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
-                         void** outputBuffer, size_t* outputLength);
+auto solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
+                         void** outputBuffer, size_t* outputLength) -> int;
 
 EXPORT
 void destroyGraphBuffer(void* graphBuffer);
 
 EXPORT
-void destroyGraphJson(char* graphJson);
+void destroyGraphJson(const char* graphJson);
 
 EXPORT
-int solveGraphFromJson(char* inputJson, char** outputJson);
+auto solveGraphFromJson(const char* inputJson, char** outputJson) -> int;
 
 EXPORT
-const char* getErrorMessage(int errorNumber);
+auto getErrorMessage(int errorNumber) -> const char*;
 
-#define CIRCUITSOLVER_ERROR_INVALID_INPUT 1
-#define CIRCUITSOLVER_ERROR_NO_SOLUTION 2
-#define CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION 3
+enum {
+CIRCUITSOLVER_ERROR_INVALID_INPUT = 1,
+CIRCUITSOLVER_ERROR_NO_SOLUTION = 2,
+CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION = 3
+};
 
 // C++ bindings
 #ifdef __cplusplus
@@ -47,22 +49,22 @@ class CircuitSolverError {
  public:
   explicit CircuitSolverError(ErrorType type, std::string_view message);
 
-  std::string message() const;
-  ErrorType type() const;
+  [[nodiscard]] auto message() const -> std::string;
+  [[nodiscard]] auto type() const -> ErrorType;
 
  private:
   const ErrorType _type;
   const std::string _message;
 };
 
-std::expected<proto::CircuitGraph, CircuitSolverError> solveCircuit(
-    proto::CircuitGraph input);
+auto solveCircuit(const proto::CircuitGraph& input)
+    -> std::expected<proto::CircuitGraph, CircuitSolverError>;
 
 // Gets and returns a string version of a protocol buffer
-std::expected<std::string, CircuitSolverError> solveGraphFromString(
-    std::string inputString);
-std::expected<std::string, CircuitSolverError> solveGraphFromJson(
-    std::string inputJson);
+auto solveGraphFromString(const std::string& inputString)
+    -> std::expected<std::string, CircuitSolverError>;
+auto solveGraphFromJson(
+    std::string inputJson) -> std::expected<std::string, CircuitSolverError>;
 
 }  // namespace circuitsolver
 

@@ -24,15 +24,9 @@
 
 Expression::Expression() : Expression(std::make_shared<VariableNode>()) {}
 
-Expression::Expression(const Expression& other)
-    : root(other.root), map(other.map), unknowns(other.unknowns) {}
+Expression::Expression(const Expression& other) = default;
 
-Expression& Expression::operator=(const Expression& other) {
-  root = other.root;
-  map = other.map;
-  unknowns = other.unknowns;
-  return *this;
-}
+auto Expression::operator=(const Expression& other) -> Expression& = default;
 
 Expression::Expression(double value)
     : Expression(std::make_shared<VariableNode>(value)) {}
@@ -40,68 +34,71 @@ Expression::Expression(double value)
 Expression::Expression(std::shared_ptr<ExpressionNode> root)
     : root(std::move(root)) {}
 
-Expression::~Expression() {}
+Expression::~Expression() = default;
 
-Expression Expression::operator+(Expression rhs) const {
+auto Expression::operator+(Expression rhs) const -> Expression {
   std::shared_ptr<VariableNode> u =
       std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 0) {
-    return Expression(root);
+    return {root};
   }
 
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
-    return Expression(std::move(rhs.root));
+    return {std::move(rhs.root)};
   }
 
   if (v && u && v->known && u->known) {
-    return Expression(u->value + v->value);
+    return {u->value + v->value};
   }
 
   std::shared_ptr<UnaryOpNode> n =
       std::dynamic_pointer_cast<UnaryOpNode>(rhs.root);
-  if (n && n->op == UnaryOp::NEG)
-    return Expression(
-        std::make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB));
+  if (n && n->op == UnaryOp::NEG) {
+    return {std::make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB)};
+  }
 
-  return Expression(
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::ADD));
+  return {
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::ADD)};
 }
 
-Expression Expression::operator-(Expression rhs) const {
+auto Expression::operator-(Expression rhs) const -> Expression {
   std::shared_ptr<VariableNode> u =
       std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 0) {
-    return Expression(root);
+    return {root};
   }
 
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known && v->value == 0) {
-    if (u && u->known) return Expression(-u->value);
+    if (u && u->known) {
+      return {-u->value};
+    }
     return -Expression(std::move(rhs.root));
   }
 
   if (v && u && v->known && u->known) {
-    return Expression(v->value - u->value);
+    return {v->value - u->value};
   }
 
   if (root == rhs.root) {
-    return Expression(0.0);
+    return {0.0};
   }
 
-  return Expression(
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::SUB));
+  return {
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::SUB)};
 }
 
-Expression Expression::operator*(Expression rhs) const {
+auto Expression::operator*(Expression rhs) const -> Expression {
   std::shared_ptr<VariableNode> u =
       std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known) {
     if (u->value == 0) {
-      return Expression(std::move(rhs.root));
-    } else if (u->value == 1) {
+      return {std::move(rhs.root)};
+    }
+    if (u->value == 1) {
       return Expression(root);
     }
   }
@@ -110,61 +107,61 @@ Expression Expression::operator*(Expression rhs) const {
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known) {
     if (v->value == 0) {
-      return Expression(root);
-    } else if (v->value == 1) {
+      return {root};
+    }
+    if (v->value == 1) {
       return Expression(std::move(rhs.root));
     }
   }
 
   if (v && u && v->known && u->known) {
-    return Expression(u->value * v->value);
+    return {u->value * v->value};
   }
 
-  return Expression(
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::MUL));
+  return {
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::MUL)};
 }
 
-Expression Expression::operator/(Expression rhs) const {
+auto Expression::operator/(Expression rhs) const -> Expression {
   std::shared_ptr<VariableNode> u =
       std::dynamic_pointer_cast<VariableNode>(rhs.root);
   if (u && u->known && u->value == 1) {
-    return Expression(root);
+    return {root};
   }
 
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
 
   if (v && u && v->known && u->known) {
-    return Expression(v->value / u->value);
+    return {v->value / u->value};
   }
 
   if (root == rhs.root) {
-    return Expression(1.0);
+    return {1.0};
   }
 
-  return Expression(
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::DIV));
+  return {
+      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::DIV)};
 }
 
-Expression Expression::operator-() const {
+auto Expression::operator-() const -> Expression {
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v && v->known) {
-    return Expression(-v->value);
+    return {-v->value};
   }
-  return Expression(std::make_shared<UnaryOpNode>(root, UnaryOp::NEG));
+  return {std::make_shared<UnaryOpNode>(root, UnaryOp::NEG)};
 }
 
-Expression std::exp(Expression arg) {
+auto std::exp(Expression arg) -> Expression {
   shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(arg.root);
   if (v && v->known) {
-    return Expression(std::exp(v->value));
+    return {std::exp(v->value)};
   }
-  return Expression(
-      make_shared<UnaryOpNode>(std::move(arg.root), UnaryOp::EXP));
+  return {make_shared<UnaryOpNode>(std::move(arg.root), UnaryOp::EXP)};
 }
 
-bool Expression::operator==(const Expression& rhs) const {
+auto Expression::operator==(const Expression& rhs) const -> bool {
   std::shared_ptr<VariableNode> u =
       std::dynamic_pointer_cast<VariableNode>(root);
   std::shared_ptr<VariableNode> v =
@@ -176,52 +173,55 @@ bool Expression::operator==(const Expression& rhs) const {
   return root == rhs.root;
 }
 
-bool Expression::operator==(double rhs) const {
+auto Expression::operator==(double rhs) const -> bool {
   if (!isConstant()) {
     return false;
   }
   return evaluate() == rhs;
 }
 
-bool Expression::operator!=(const Expression& rhs) const {
+auto Expression::operator!=(const Expression& rhs) const -> bool {
   return !(*this == rhs);
 }
 
-Expression& Expression::operator=(double rhs) {
+auto Expression::operator=(double rhs) -> Expression& {
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v) {
     v->value = rhs;
     v->known = true;
-  } else
-    throw std::invalid_argument(
-        "Attempting to assign to an Expression that is "
-        "dependent on multiple unknowns");
+  } else {
+    {
+      throw std::invalid_argument(
+          "Attempting to assign to an Expression that is "
+          "dependent on multiple unknowns");
+    }
+  }
   return *this;
 }
 
-Expression& Expression::operator+=(const Expression& rhs) {
+auto Expression::operator+=(const Expression& rhs) -> Expression& {
   *this = *this + rhs;
   return *this;
 }
 
-Expression& Expression::operator-=(const Expression& rhs) {
+auto Expression::operator-=(const Expression& rhs) -> Expression& {
   *this = *this - rhs;
   return *this;
 }
 
-Condition Expression::operator<(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::LT);
+auto Expression::operator<(Expression rhs) const -> Condition {
+  return {root, std::move(rhs.root), BooleanBinaryOp::LT};
 }
 
-Condition Expression::operator<=(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::LEQ);
+auto Expression::operator<=(Expression rhs) const -> Condition {
+  return {root, std::move(rhs.root), BooleanBinaryOp::LEQ};
 }
-Condition Expression::operator>(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::GT);
+auto Expression::operator>(Expression rhs) const -> Condition {
+  return {root, std::move(rhs.root), BooleanBinaryOp::GT};
 }
-Condition Expression::operator>=(Expression rhs) const {
-  return Condition(root, std::move(rhs.root), BooleanBinaryOp::GEQ);
+auto Expression::operator>=(Expression rhs) const -> Condition {
+  return {root, std::move(rhs.root), BooleanBinaryOp::GEQ};
 }
 // Condition Expression::operator!=(Expression rhs) const {
 //   return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
@@ -229,28 +229,28 @@ Condition Expression::operator>=(Expression rhs) const {
 // Condition Expression::equals(Expression rhs) const {
 //   return Condition(root, std::move(rhs.root), BooleanBinaryOp::EQ);
 // }
-Expression Expression::makeConditional(Condition condition,
-                                       Expression valIfTrue,
-                                       Expression valIfFalse) {
-  return Expression(std::make_shared<TernaryOpNode>(
+auto Expression::makeConditional(const Condition& condition,
+                                 Expression valIfTrue, Expression valIfFalse)
+    -> Expression {
+  return {std::make_shared<TernaryOpNode>(
       std::make_shared<Condition>(condition), std::move(valIfTrue.root),
-      std::move(valIfFalse.root)));
+      std::move(valIfFalse.root))};
 }
 
-bool Expression::isConstant() const {
+auto Expression::isConstant() const -> bool {
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   return v && v->known;
 }
 
-const std::vector<double*>& Expression::getUnknowns() const {
+auto Expression::getUnknowns() const -> const std::vector<double*>& {
   if (unknowns == nullptr) {
     updateMapAndUnknowns();
   }
   return *unknowns;
 }
 
-std::vector<double*> Expression::getMutableUnknowns() {
+auto Expression::getMutableUnknowns() -> std::vector<double*> {
   if (unknowns == nullptr) {
     updateMapAndUnknowns();
   }
@@ -273,25 +273,28 @@ void Expression::updateMapAndUnknowns() const {
   }
 }
 
-std::unordered_set<double*> Expression::getDiscontinuities() {
+auto Expression::getDiscontinuities() -> std::unordered_set<double*> {
   std::unordered_set<double*> discontinuities;
   root->getDiscontinuities(discontinuities);
   return discontinuities;
 }
 
-std::vector<Expression> Expression::getDiscontinuityErrors() {
+auto Expression::getDiscontinuityErrors() -> std::vector<Expression> {
   std::vector<ExpressionNodePtr> errors;
   std::vector<Expression> errorExpressions;
   root->getDiscontinuityError(errors);
-  for (auto error : errors) {
+  errorExpressions.reserve(errors.size());
+  for (const auto& error : errors) {
     errorExpressions.push_back(Expression(error));
   }
   return errorExpressions;
 }
 
-size_t Expression::getNumUnknowns() const { return getUnknowns().size(); }
+auto Expression::getNumUnknowns() const -> size_t {
+  return getUnknowns().size();
+}
 
-const ExpressionMap& Expression::getMap() const {
+auto Expression::getMap() const -> const ExpressionMap& {
   if (map == nullptr) {
     updateMapAndUnknowns();
   }
@@ -310,8 +313,8 @@ void Expression::addToProblem(ceres::Problem& problem) {
   if (map == nullptr) {
     updateMapAndUnknowns();
   }
-  auto costFunctor = new ExpressionCostFunctor(root, *map);
-  auto costFunction =
+  auto* costFunctor = new ExpressionCostFunctor(root, *map);
+  auto* costFunction =
       new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
           costFunctor);
   for (size_t i = 0; i < unknowns->size(); i++) {
@@ -325,35 +328,34 @@ void Expression::addToProblem(ceres::Problem& problem) {
   problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), *unknowns);
 }
 
-double Expression::evaluate() const {
-  double* parameters = new double[getNumUnknowns()];
+auto Expression::evaluate() const -> double {
+  auto* parameters = new double[getNumUnknowns()];
   ExpressionMap map = getMap();
   return expressionNode::evaluate(root, parameters, map);
 }
 
-double Expression::evaluate(double const* parameters) const {
+auto Expression::evaluate(double const* parameters) const -> double {
   ExpressionMap map = getMap();
   return expressionNode::evaluate(root, parameters, map);
 }
 
-double* Expression::getPtrToUnknown() {
+auto Expression::getPtrToUnknown() -> double* {
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
   if (v) {
     return &v->value;
-  } else {
-    return nullptr;
   }
+  return nullptr;
 }
 
 void Expression::markKnown() { root->markKnown(); }
 
-std::ostream& operator<<(std::ostream& out, const Expression& e) {
+auto operator<<(std::ostream& out, const Expression& e) -> std::ostream& {
   out << "(" << e.root.get() << ")" << e.root;
   return out;
 }
 
-ceres::Solver::Options getDefaultOptions() {
+auto getDefaultOptions() -> ceres::Solver::Options {
   ceres::Solver::Options options;
 
   options.linear_solver_type = ceres::DENSE_QR;

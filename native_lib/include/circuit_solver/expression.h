@@ -18,7 +18,7 @@ namespace std {
  *
  * @return an Expression representing e^this
  */
-Expression exp(Expression arg);
+auto exp(Expression arg) -> Expression;
 }  // namespace std
 
 /**
@@ -40,7 +40,7 @@ class Expression {
    */
   Expression();
   Expression(const Expression& other);
-  Expression& operator=(const Expression& other);
+  auto operator=(const Expression& other) -> Expression&;
 
   /**
    * Creates an expression with a single known value
@@ -58,7 +58,7 @@ class Expression {
    * @param rhs - the expression to add to this one
    * @return a new Expression that represents this + rhs
    */
-  Expression operator+(Expression rhs) const;
+  auto operator+(Expression rhs) const -> Expression;
 
   /**
    * Subtracts two expressions
@@ -66,7 +66,7 @@ class Expression {
    * @param rhs - the expression to subtract from this one
    * @return a new Expression that represents this - rhs
    */
-  Expression operator-(Expression rhs) const;
+  auto operator-(Expression rhs) const -> Expression;
 
   /**
    * Multiplies two expressions
@@ -74,7 +74,7 @@ class Expression {
    * @param rhs - the expression to multiply by this one
    * @return a new Expression that represents this * rhs
    */
-  Expression operator*(Expression rhs) const;
+  auto operator*(Expression rhs) const -> Expression;
 
   /**
    * Divides two expressions
@@ -82,37 +82,37 @@ class Expression {
    * @param rhs - the expression to divide this one by
    * @return a new Expression that represents this / rhs
    */
-  Expression operator/(Expression rhs) const;
+  auto operator/(Expression rhs) const -> Expression;
 
   /**
    * Negates an expression
    * @return a new Expression that represents -this
    */
-  Expression operator-() const;
+  auto operator-() const -> Expression;
 
-  Expression& operator=(double rhs);
+  auto operator=(double rhs) -> Expression&;
 
-  Expression& operator+=(const Expression& rhs);
-  Expression& operator-=(const Expression& rhs);
+  auto operator+=(const Expression& rhs) -> Expression&;
+  auto operator-=(const Expression& rhs) -> Expression&;
 
   // TODO: add docs for these methods
-  Condition operator<(Expression rhs) const;
-  Condition operator<=(Expression rhs) const;
-  Condition operator>(Expression rhs) const;
-  Condition operator>=(Expression rhs) const;
+  auto operator<(Expression rhs) const -> Condition;
+  auto operator<=(Expression rhs) const -> Condition;
+  auto operator>(Expression rhs) const -> Condition;
+  auto operator>=(Expression rhs) const -> Condition;
   // Condition operator!=(Expression rhs) const;
   // Condition equals(Expression rhs) const;
-  static Expression makeConditional(Condition condition, Expression valIfTrue,
-                                    Expression valIfFalse);
+  static auto makeConditional(const Condition& condition, Expression valIfTrue,
+                              Expression valIfFalse) -> Expression;
 
   /**
    * Checks if two Expressions are equal
    *
    * @return true if equal, otherwise false
    */
-  bool operator==(const Expression& rhs) const;
-  bool operator==(double rhs) const;
-  bool operator!=(const Expression& rhs) const;
+  auto operator==(const Expression& rhs) const -> bool;
+  auto operator==(double rhs) const -> bool;
+  auto operator!=(const Expression& rhs) const -> bool;
 
   /**
    * Checks if this expression is a constant value
@@ -120,7 +120,7 @@ class Expression {
    * @return true if this is a constant or false if there are one or more
    * unknowns
    */
-  bool isConstant() const;
+  auto isConstant() const -> bool;
 
   /**
    * Gets the unknowns this Expression depends on
@@ -128,28 +128,29 @@ class Expression {
    * @return a vector of double* where each entry points to the value of one of
    * the unknowns of this expression
    */
-  const std::vector<double*>& getUnknowns() const;
+  auto getUnknowns() const -> const std::vector<double*>&;
 
-  std::unordered_set<double*> getDiscontinuities();
+  auto getDiscontinuities() -> std::unordered_set<double*>;
 
-  std::vector<Expression> getDiscontinuityErrors();
+  auto getDiscontinuityErrors() -> std::vector<Expression>;
 
-  std::vector<double*> getMutableUnknowns();
+  auto getMutableUnknowns() -> std::vector<double*>;
 
-  size_t getNumUnknowns() const;
+  auto getNumUnknowns() const -> size_t;
 
-  ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>* getCostFunction();
+  auto getCostFunction()
+      -> ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>*;
 
   /**
    * Evaluates the Expression, replacing unknowns with 0
    *
    * @return the value of the Expression
    */
-  double evaluate() const;
+  auto evaluate() const -> double;
 
-  double evaluate(double const* parameters) const;
+  auto evaluate(double const* parameters) const -> double;
 
-  double* getPtrToUnknown();
+  auto getPtrToUnknown() -> double*;
 
   /**
    * If `this` represents a single unknown, changes that unknown to now have the
@@ -172,16 +173,17 @@ class Expression {
    * Since the unknowns are stored in a tree ADT we need a way to translate
    * between
    */
-  const ExpressionMap& getMap() const;
+  auto getMap() const -> const ExpressionMap&;
   void updateMapAndUnknowns() const;
   Expression(ExpressionNodePtr root);
   ExpressionNodePtr root;
   mutable std::shared_ptr<ExpressionMap> map;
   mutable std::shared_ptr<std::vector<double*>> unknowns;
-  friend std::ostream& operator<<(std::ostream& out, const Expression& e);
-  friend Expression std::exp(Expression arg);
+  friend auto operator<<(std::ostream& out, const Expression& e)
+      -> std::ostream&;
+  friend auto std::exp(Expression arg) -> Expression;
 };
 
-ceres::Solver::Options getDefaultOptions();
+auto getDefaultOptions() -> ceres::Solver::Options;
 
 #endif

@@ -15,10 +15,10 @@ class Vertex {
   Vertex(uuids::uuid id, double voltage) : id(id), voltage(voltage) {}
   explicit Vertex(uuids::uuid id) : id(id) {}
   // For maps
-  Vertex() {}
-  bool operator==(const Vertex& rhs) const { return id == rhs.id; }
-  Expression getVoltage() const { return voltage; };
-  uuids::uuid getId() const { return id; };
+  Vertex() = default;
+  auto operator==(const Vertex& rhs) const -> bool { return id == rhs.id; }
+  auto getVoltage() const -> Expression { return voltage; };
+  auto getId() const -> uuids::uuid { return id; };
   void toProto(proto::Vertex* proto) {
     std::string idString = uuids::to_string(id);
     proto->set_id(idString);
@@ -29,7 +29,7 @@ class Vertex {
     proto->set_id(idString);
     proto->set_voltage(voltage.evaluate(parameters));
   }
-  static std::optional<Vertex> fromProto(proto::Vertex proto) {
+  static auto fromProto(const proto::Vertex& proto) -> std::optional<Vertex> {
     if (!proto.has_id()) {
       return std::nullopt;
     }
@@ -41,9 +41,8 @@ class Vertex {
     uuids::uuid id = optionalId.value();
     if (proto.has_voltage()) {
       return Vertex(id, proto.voltage());
-    } else {
-      return Vertex(id);
     }
+    return Vertex(id);
   }
 
  private:

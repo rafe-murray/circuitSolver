@@ -19,25 +19,25 @@ class Edge {
   // For hash map; do not use
   Edge();
   Edge(const Edge& other);
-  Edge& operator=(const Edge& other);
+  auto operator=(const Edge& other) -> Edge&;
   // Move constructor
   Edge(Edge&& rhs) noexcept;
 
-  uuids::uuid getId() const;
-  Vertex getFrom() const;
-  Vertex getTo() const;
+  [[nodiscard]] auto getId() const -> uuids::uuid;
+  [[nodiscard]] auto getFrom() const -> Vertex;
+  [[nodiscard]] auto getTo() const -> Vertex;
   /**
    * Returns an expression that represents the current through this branch, in
    * Amps
    */
-  Expression getCurrent() const;
+  [[nodiscard]] auto getCurrent() const -> Expression;
 
-  Expression getConstraint() const;
-  bool operator==(const Edge& rhs) const;
+  [[nodiscard]] auto getConstraint() const -> Expression;
+  auto operator==(const Edge& rhs) const -> bool;
   void toProto(proto::Edge* proto);
   void toProto(proto::Edge* proto, const double* parameters);
-  static std::optional<Edge> fromProto(proto::Edge proto,
-                                       const VertexMap& vertices);
+  static auto fromProto(const proto::Edge& proto, const VertexMap& vertices)
+      -> std::optional<Edge>;
 
  private:
   // Identifier for the branch, should be unique to a graph

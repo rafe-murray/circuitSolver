@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "circuit_solver/edge.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
@@ -22,8 +23,9 @@
 
 // TODO: ensure that ternaryOpNodes will always add an expression that equates
 // the basis with a valid expression as its constraint method
-partitionSolution CircuitGraph::solvePartition(
-    const std::vector<double*>& basis, const std::vector<bool>& isHigh) {
+auto CircuitGraph::solvePartition(const std::vector<double*>& basis,
+                                  const std::vector<bool>& isHigh)
+    -> partitionSolution {
   // std::cout << "Starting state:";
   // print(std::cout, *this, getUnknowns());
   ceres::Problem problem;
@@ -52,7 +54,8 @@ partitionSolution CircuitGraph::solvePartition(
   for (auto& expression : expressions) {
     auto unknowns = expression.getMutableUnknowns();
     std::vector<double> parameters;
-    for (auto unknown : unknowns) {
+    parameters.reserve(unknowns.size());
+    for (auto* unknown : unknowns) {
       parameters.push_back(*unknown);
     }
     allParameters.push_back(parameters);
@@ -61,7 +64,9 @@ partitionSolution CircuitGraph::solvePartition(
   }
   // std::cout << "Cost: " << summary.final_cost << summary.message <<
   // std::endl; print(std::cout, *this, allUnknowns);
-  partitionSolution solution{summary, expressions, allParameters};
+  partitionSolution solution{.summary = summary,
+                             .expressions = expressions,
+                             .parameters = allParameters};
   return solution;
 }
 
@@ -75,10 +80,10 @@ partitionSolution CircuitGraph::solvePartition(
  */
 
 // TODO: fix case of no discontinuities
-bool CircuitGraph::solveCircuit() {
+auto CircuitGraph::solveCircuit() -> bool {
   std::vector<double*> basis = getDiscontinuities();
   size_t basisSize = basis.size();
-  int numPartitions;
+  int numPartitions = 0;
   if (basisSize > 0) {
     numPartitions = 1 << basisSize;
   } else {
@@ -87,9 +92,9 @@ bool CircuitGraph::solveCircuit() {
   std::vector<partitionSolution> solutions(numPartitions);
   std::vector<std::vector<bool>> isHigh;
   for (int i = 0; i < numPartitions; i++) {
-    isHigh.push_back(std::vector<bool>(basisSize));
+    isHigh.emplace_back(basisSize);
     for (size_t j = 0; j < basisSize; j++) {
-      isHigh[i][j] = (i >> j) & 1;
+      isHigh[i][j] = (((i >> j) & 1) != 0);
     }
     solutions[i] = solvePartition(basis, isHigh[i]);
     resetUnknowns();
@@ -110,17 +115,14 @@ bool CircuitGraph::solveCircuit() {
     return false;
   }
   partitionSolution solution = solutions[bestIndex];
-  if (solution.summary.message.find("Gradient tolerance") ==
-          std::string::npos &&
+  if (!absl::StrContains(solution.summary.message, "Gradient tolerance") &&
       solution.summary.final_cost > 1e-15) {
     if (solveAttempts < maxSolveAttempts) {
       solveAttempts++;
       resetUnknowns();
       return solveCircuit();
-    } else {
-      // Exceeded max solve attempts
-      return false;
-    }
+    }  // Exceeded max solve attempts
+    return false;
   }
   assert(solution.expressions.size() == solution.parameters.size());
   for (size_t i = 0; i < solution.expressions.size(); i++) {
@@ -142,12 +144,12 @@ void CircuitGraph::resetUnknowns() {
   auto expressions = getExpressions();
   for (auto expression : expressions) {
     auto unknowns = expression.getMutableUnknowns();
-    for (auto unknown : unknowns) {
+    for (auto* unknown : unknowns) {
       *unknown = distrib(rng);
     }
   }
   auto discontinuities = getDiscontinuities();
-  for (auto discontinuity : discontinuities) {
+  for (auto* discontinuity : discontinuities) {
     *discontinuity = distrib(rng);
   }
 }
@@ -161,10 +163,12 @@ void CircuitGraph::resetUnknowns() {
 //   return unknowns;
 // }
 
-std::vector<Expression> CircuitGraph::getExpressions() {
+auto CircuitGraph::getExpressions() -> std::vector<Expression> {
   std::vector<Expression> expressions;
   for (Vertex& node : getVertices()) {
-    if (node.getVoltage().isConstant()) continue;
+    if (node.getVoltage().isConstant()) {
+      continue;
+    }
     Expression netCurrent = getNodeCurrents(node);
     expressions.push_back(netCurrent);
   }
@@ -175,7 +179,7 @@ std::vector<Expression> CircuitGraph::getExpressions() {
   return expressions;
 }
 
-Expression CircuitGraph::getNodeCurrents(Vertex node) {
+auto CircuitGraph::getNodeCurrents(const Vertex& node) -> Expression {
   Expression nodeCurrents = 0;
   for (Edge& branch : getIncident(node)) {
     Expression current = branch.getCurrent();
@@ -190,15 +194,15 @@ Expression CircuitGraph::getNodeCurrents(Vertex node) {
 
 // Vertex CircuitGraph::getVertex(int id) { return *vertices.at(id); }
 // Edge& CircuitGraph::getEdge(int id) { return *edges.at(id); }
-bool CircuitGraph::hasVertex(const Vertex& v) {
-  return vertices.find(v.getId()) != vertices.end();
+auto CircuitGraph::hasVertex(const Vertex& v) -> bool {
+  return vertices.contains(v.getId());
 }
 
-bool CircuitGraph::hasEdge(const Edge& e) {
-  return edges.find(e.getId()) != edges.end();
+auto CircuitGraph::hasEdge(const Edge& e) -> bool {
+  return edges.contains(e.getId());
 }
 
-bool CircuitGraph::addVertex(const Vertex& v) {
+auto CircuitGraph::addVertex(const Vertex& v) -> bool {
   // Only add the vertex if it doesn't already exist
   if (!hasVertex(v)) {
     adjacencyList[v.getId()] = std::vector<uuids::uuid>();
@@ -220,11 +224,15 @@ bool CircuitGraph::addVertex(const Vertex& v) {
 //   return true;
 // }
 
-bool CircuitGraph::addEdge(std::unique_ptr<Edge> e) {
-  if (hasEdge(*e)) return false;
+auto CircuitGraph::addEdge(std::unique_ptr<Edge> e) -> bool {
+  if (hasEdge(*e)) {
+    return false;
+  }
   Vertex from = e->getFrom();
   Vertex to = e->getTo();
-  if (!hasVertex(from) || !hasVertex(to)) return false;
+  if (!hasVertex(from) || !hasVertex(to)) {
+    return false;
+  }
 
   // Add the edge in both directions
   adjacencyList[from.getId()].push_back(e->getId());
@@ -252,7 +260,7 @@ bool CircuitGraph::addEdge(std::unique_ptr<Edge> e) {
 //   return false;
 // }
 
-std::vector<Edge> CircuitGraph::getIncident(const Vertex& v) {
+auto CircuitGraph::getIncident(const Vertex& v) -> std::vector<Edge> {
   std::vector<Edge> incidentEdges;
   auto edgeIds = adjacencyList[v.getId()];
   incidentEdges.reserve(edgeIds.size());
@@ -262,7 +270,7 @@ std::vector<Edge> CircuitGraph::getIncident(const Vertex& v) {
   return incidentEdges;
 }
 
-std::vector<Vertex> CircuitGraph::getVertices() const {
+auto CircuitGraph::getVertices() const -> std::vector<Vertex> {
   std::vector<Vertex> vertexList;
   vertexList.reserve(vertices.size());
   for (const auto& vertex : vertices) {
@@ -271,7 +279,7 @@ std::vector<Vertex> CircuitGraph::getVertices() const {
   return vertexList;
 }
 
-std::vector<Edge> CircuitGraph::getEdges() const {
+auto CircuitGraph::getEdges() const -> std::vector<Edge> {
   std::vector<Edge> edgeList;
   edgeList.reserve(edges.size());
   for (const auto& edge : edges) {
@@ -280,14 +288,14 @@ std::vector<Edge> CircuitGraph::getEdges() const {
   return edgeList;
 }
 
-bool CircuitGraph::operator==(const CircuitGraph& other) const {
+auto CircuitGraph::operator==(const CircuitGraph& other) const -> bool {
   // TODO: fixme
-  for (auto& entry : vertices) {
-    if (other.vertices.find(entry.first) == other.vertices.end()) {
+  for (const auto& entry : vertices) {
+    if (!other.vertices.contains(entry.first)) {
       return false;
     }
-    auto& v = entry.second;
-    auto& u = other.vertices.at(entry.first);
+    const auto& v = entry.second;
+    const auto& u = other.vertices.at(entry.first);
     if (v->getVoltage().isConstant() != u->getVoltage().isConstant()) {
       return false;
     }
@@ -295,12 +303,12 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
       return false;
     }
   }
-  for (auto& entry : edges) {
-    if (other.edges.find(entry.first) == other.edges.end()) {
+  for (const auto& entry : edges) {
+    if (!other.edges.contains(entry.first)) {
       return false;
     }
-    auto& e = entry.second;
-    auto& f = other.edges.at(entry.first);
+    const auto& e = entry.second;
+    const auto& f = other.edges.at(entry.first);
     if (e->getFrom().getId() != f->getFrom().getId()) {
       return false;
     }
@@ -309,9 +317,9 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
     }
     // HACK: using existing logic to convert to protobuf messages to determine
     // edge type rather than creating an overloaded function
-    auto eMsg = new proto::CircuitGraph::Edge();
+    auto* eMsg = new proto::CircuitGraph::Edge();
     e->toProto(eMsg);
-    auto fMsg = new proto::CircuitGraph::Edge();
+    auto* fMsg = new proto::CircuitGraph::Edge();
     f->toProto(fMsg);
     if (eMsg->specific_branch_case() != fMsg->specific_branch_case()) {
       return false;
@@ -320,42 +328,43 @@ bool CircuitGraph::operator==(const CircuitGraph& other) const {
   return true;
 }
 
-proto::CircuitGraph CircuitGraph::toProto() const {
+auto CircuitGraph::toProto() const -> proto::CircuitGraph {
   proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
     const std::string vertexId = uuids::to_string(vertex.getId());
     (*proto.mutable_vertices())[vertexId] = proto::Vertex();
-    auto protoVertex = &proto.mutable_vertices()->at(vertexId);
+    auto* protoVertex = &proto.mutable_vertices()->at(vertexId);
     vertex.toProto(protoVertex);
   }
   for (auto& edge : getEdges()) {
     const std::string edgeId = uuids::to_string(edge.getId());
     (*proto.mutable_edges())[edgeId] = proto::Edge();
-    auto protoEdge = &proto.mutable_edges()->at(edgeId);
+    auto* protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge);
   }
   return proto;
 }
-proto::CircuitGraph CircuitGraph::toProto(const double* parameters) const {
+auto CircuitGraph::toProto(const double* parameters) const
+    -> proto::CircuitGraph {
   proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
     const std::string vertexId = uuids::to_string(vertex.getId());
     (*proto.mutable_vertices())[vertexId] = proto::Vertex();
-    auto protoVertex = &proto.mutable_vertices()->at(vertexId);
+    auto* protoVertex = &proto.mutable_vertices()->at(vertexId);
     vertex.toProto(protoVertex, parameters);
   }
   for (auto& edge : getEdges()) {
     const std::string edgeId = uuids::to_string(edge.getId());
     (*proto.mutable_edges())[edgeId] = proto::Edge();
-    auto protoEdge = &proto.mutable_edges()->at(edgeId);
+    auto* protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge, parameters);
   }
   return proto;
 }
-std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
-    const proto::CircuitGraph& proto) {
+auto CircuitGraph::fromProto(const proto::CircuitGraph& proto)
+    -> std::optional<std::unique_ptr<CircuitGraph>> {
   auto cg = std::make_unique<CircuitGraph>();
-  for (auto protoVertex : proto.vertices()) {
+  for (const auto& protoVertex : proto.vertices()) {
     if (auto vertex = Vertex::fromProto(protoVertex.second);
         vertex.has_value()) {
       cg->addVertex(vertex.value());
@@ -363,7 +372,7 @@ std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
       return std::nullopt;
     }
   }
-  for (auto protoEdge : proto.edges()) {
+  for (const auto& protoEdge : proto.edges()) {
     if (auto edge = Edge::fromProto(protoEdge.second, cg->vertices);
         edge.has_value()) {
       cg->addEdge(std::make_unique<Edge>(std::move(edge.value())));
@@ -373,37 +382,38 @@ std::optional<std::unique_ptr<CircuitGraph>> CircuitGraph::fromProto(
   }
   return cg;
 }
-std::vector<double*> CircuitGraph::getDiscontinuities() {
+auto CircuitGraph::getDiscontinuities() -> std::vector<double*> {
   std::unordered_set<double*> discontinuities;
   auto expressions = getExpressions();
   for (auto expression : expressions) {
     discontinuities.merge(expression.getDiscontinuities());
   }
   std::vector<double*> discontinuitiesVector;
-  for (auto el : discontinuities) {
+  discontinuitiesVector.reserve(discontinuities.size());
+  for (auto* el : discontinuities) {
     discontinuitiesVector.push_back(el);
   }
   return discontinuitiesVector;
 }
 
-std::ostream& operator<<(std::ostream& out, const CircuitGraph& cg) {
+auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream& {
   std::string output;
   (void)google::protobuf::json::MessageToJsonString(cg.toProto(), &output);
-  out << output << std::endl;
+  out << output << '\n';
   return out;
 }
 
 void CircuitGraph::print(std::ostream& out, const CircuitGraph& cg,
-                         std::unordered_set<const double*> parameters) {
+                         const std::unordered_set<const double*>& parameters) {
   size_t parameterSize = parameters.size();
-  double* paramArray = new double[parameterSize];
+  auto* paramArray = new double[parameterSize];
   int i = 0;
-  for (auto parameter : parameters) {
+  for (const auto* parameter : parameters) {
     paramArray[i] = *parameter;
     i++;
   }
   std::string output;
   (void)google::protobuf::json::MessageToJsonString(cg.toProto(paramArray),
                                                     &output);
-  out << output << std::endl;
+  out << output << '\n';
 }

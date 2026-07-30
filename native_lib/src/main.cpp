@@ -85,14 +85,15 @@
 // bool testIdealDiodes() { return false; }
 // bool testZenerDiodes() { return false; }
 //
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
   bool err = false;
   // err |= testBasicCircuit();
   // err |= testRealDiodes();
   // err |= testIdealDiodes();
   // err |= testZenerDiodes();
-  if (!err)
-    std::cout << "All tests passed!" << std::endl;
-  else
-    std::cout << "Tests failed. See above for details" << std::endl;
+  if (!err) {
+    std::cout << "All tests passed!" << '\n';
+  } else {
+    std::cout << "Tests failed. See above for details" << '\n';
+  }
 }

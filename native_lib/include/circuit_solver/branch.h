@@ -9,13 +9,13 @@
 // TODO: move the definitions to the source file not the header!!
 class Branch {
  public:
-  virtual ~Branch() {};
-  virtual std::unique_ptr<Branch> copy() const = 0;
+  virtual ~Branch() = default;
+  [[nodiscard]] virtual auto copy() const -> std::unique_ptr<Branch> = 0;
   Branch(const Vertex& from, const Vertex& to);
-  Vertex getFrom();
-  Vertex getTo();
-  virtual Expression getCurrent() const = 0;
-  virtual Expression getConstraint() const;
+  auto getFrom() -> Vertex;
+  auto getTo() -> Vertex;
+  [[nodiscard]] virtual auto getCurrent() const -> Expression = 0;
+  [[nodiscard]] virtual auto getConstraint() const -> Expression;
   virtual void toProto(proto::Edge* proto) const;
   virtual void toProto(proto::Edge* proto, const double* parameters) const;
 
@@ -26,11 +26,11 @@ class Branch {
 
 class CurrentSource : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
   CurrentSource(const Vertex& from, const Vertex& to,
                 const Expression& current = {});
-  Expression getCurrent() const override;
-  Expression getConstraint() const override;
+  auto getCurrent() const -> Expression override;
+  auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;
 
@@ -41,12 +41,12 @@ class CurrentSource : public Branch {
 };
 class IdealDiode : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
   IdealDiode(const Vertex& from, const Vertex& to,
              const Expression& voltage = {}, const Expression& current = {});
 
-  Expression getCurrent() const override;
-  Expression getConstraint() const override;
+  auto getCurrent() const -> Expression override;
+  auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;
 
@@ -59,10 +59,10 @@ class IdealDiode : public Branch {
 
 class RealDiode : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
-  RealDiode(const Vertex& from, const Vertex& to, Expression i0 = {},
-            Expression n = {}, Expression vt = {});
-  Expression getCurrent() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
+  RealDiode(const Vertex& from, const Vertex& to, const Expression& i0 = {},
+            const Expression& n = {}, const Expression& vt = {});
+  auto getCurrent() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;
 
@@ -74,12 +74,12 @@ class RealDiode : public Branch {
 
 class Resistor : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
   Resistor(const Vertex& from, const Vertex& to,
            const Expression& resistance = {});
   // The resistance of the resistor in the branch, in Ohms
   Expression resistance;
-  Expression getCurrent() const override;
+  auto getCurrent() const -> Expression override;
 
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;
@@ -87,25 +87,25 @@ class Resistor : public Branch {
 
 class VoltageSource : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
   VoltageSource(const Vertex& from, const Vertex& to,
                 const Expression& voltage = {});
   // The voltage gain from the from to to, in Volts
   Expression voltage;
   Expression current;
-  Expression getCurrent() const override;
-  Expression getConstraint() const override;
+  auto getCurrent() const -> Expression override;
+  auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;
 };
 
 class ZenerDiode : public Branch {
  public:
-  std::unique_ptr<Branch> copy() const override;
+  auto copy() const -> std::unique_ptr<Branch> override;
   ZenerDiode(const Vertex& from, const Vertex& to, const Expression& izt = {},
              const Expression& rzt = {}, const Expression& vzt = {});
 
-  Expression getCurrent() const override;
+  auto getCurrent() const -> Expression override;
 
   void toProto(proto::Edge* proto) const override;
   void toProto(proto::Edge* proto, const double* parameters) const override;

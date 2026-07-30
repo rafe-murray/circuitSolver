@@ -13,11 +13,11 @@ Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
 // Edge::Edge(int id, const T& branch)
 //     : id(id), branch(std::make_unique<T>(branch)) {}
 // For hash map; do not use
-Edge::Edge() {}
+Edge::Edge() = default;
 
 // NOTE: these might not be correct
 Edge::Edge(const Edge& other) : id(other.id), branch(other.branch->copy()) {}
-Edge& Edge::operator=(const Edge& other) {
+auto Edge::operator=(const Edge& other) -> Edge& {
   this->id = other.id;
   this->branch = other.branch->copy();
   return *this;
@@ -26,25 +26,27 @@ Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
   rhs.branch = nullptr;
 }
 
-uuids::uuid Edge::getId() const { return id; };
-Vertex Edge::getFrom() const { return branch->getFrom(); };
-Vertex Edge::getTo() const { return branch->getTo(); };
+auto Edge::getId() const -> uuids::uuid { return id; };
+auto Edge::getFrom() const -> Vertex { return branch->getFrom(); };
+auto Edge::getTo() const -> Vertex { return branch->getTo(); };
 /**
  * Returns an expression that represents the current through this branch, in
  * Amps
  */
-Expression Edge::getCurrent() const { return branch->getCurrent(); }
+auto Edge::getCurrent() const -> Expression { return branch->getCurrent(); }
 
-Expression Edge::getConstraint() const { return branch->getConstraint(); }
-bool Edge::operator==(const Edge& rhs) const { return id == rhs.id; }
+auto Edge::getConstraint() const -> Expression {
+  return branch->getConstraint();
+}
+auto Edge::operator==(const Edge& rhs) const -> bool { return id == rhs.id; }
 // Edge& operator=(const Edge& other);
 
-void Edge::toProto(proto::Edge* proto) { return branch->toProto(proto); }
+void Edge::toProto(proto::Edge* proto) { branch->toProto(proto); }
 void Edge::toProto(proto::Edge* proto, const double* parameters) {
-  return branch->toProto(proto, parameters);
+  branch->toProto(proto, parameters);
 }
-std::optional<Edge> Edge::fromProto(proto::Edge proto,
-                                    const VertexMap& vertices) {
+auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
+    -> std::optional<Edge> {
   if (!proto.has_from_id() || !proto.has_to_id() || !proto.has_id()) {
     return std::nullopt;
   }
@@ -74,7 +76,8 @@ std::optional<Edge> Edge::fromProto(proto::Edge proto,
       break;
     }
     case proto::Edge::kIdealDiode: {
-      Expression current, voltage;
+      Expression current;
+      Expression voltage;
       if (proto.has_current()) {
         current = proto.current();
       }
@@ -85,7 +88,9 @@ std::optional<Edge> Edge::fromProto(proto::Edge proto,
       break;
     }
     case proto::Edge::kRealDiode: {
-      Expression i0, n, vt;
+      Expression i0;
+      Expression n;
+      Expression vt;
       if (proto.real_diode().has_i0()) {
         i0 = proto.real_diode().i0();
       }
@@ -115,7 +120,9 @@ std::optional<Edge> Edge::fromProto(proto::Edge proto,
       break;
     }
     case proto::Edge::kZenerDiode: {
-      Expression izt, rzt, vzt;
+      Expression izt;
+      Expression rzt;
+      Expression vzt;
       if (proto.zener_diode().has_izt()) {
         izt = proto.zener_diode().izt();
       }

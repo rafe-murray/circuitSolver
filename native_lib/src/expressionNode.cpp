@@ -2,12 +2,13 @@
 
 #include <memory>
 #include <unordered_set>
+#include <utility>
 
 BinaryOpNode::BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
                            BinaryOp op)
-    : lhs(lhs), rhs(rhs), op(op) {}
+    : lhs(std::move(std::move(lhs))), rhs(std::move(std::move(rhs))), op(op) {}
 
-Condition::Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
+Condition::Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
                      BooleanBinaryOp op) {
   switch (op) {
     case BooleanBinaryOp::LT:
@@ -33,9 +34,11 @@ Condition::Condition(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
 TernaryOpNode::TernaryOpNode(std::shared_ptr<Condition> condition,
                              ExpressionNodePtr valIfTrue,
                              ExpressionNodePtr valIfFalse)
-    : condition(condition), valIfTrue(valIfTrue), valIfFalse(valIfFalse) {}
+    : condition(std::move(std::move(condition))),
+      valIfTrue(std::move(std::move(valIfTrue))),
+      valIfFalse(std::move(std::move(valIfFalse))) {}
 UnaryOpNode::UnaryOpNode(ExpressionNodePtr operand, UnaryOp op)
-    : operand(operand), op(op) {}
+    : operand(std::move(std::move(operand))), op(op) {}
 
 VariableNode::VariableNode() : value(1.0), known(false) {}
 VariableNode::VariableNode(double value) : value(value), known(true) {}
@@ -56,7 +59,7 @@ void Condition::getUnknowns(std::unordered_set<const double*>& unknowns) const {
   constraint->getUnknowns(unknowns);
 }
 
-void Condition::getUnknowns(std::unordered_set<double*>& unknowns) {
+void Condition::getUnknowns(std::unordered_set<double*>& unknowns) const {
   val->getUnknowns(unknowns);
   constraint->getUnknowns(unknowns);
 }
@@ -85,11 +88,15 @@ void UnaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
 
 void VariableNode::getUnknowns(
     std::unordered_set<const double*>& unknowns) const {
-  if (!known) unknowns.insert(&value);
+  if (!known) {
+    unknowns.insert(&value);
+  }
 }
 
 void VariableNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  if (!known) unknowns.insert(&value);
+  if (!known) {
+    unknowns.insert(&value);
+  }
 }
 
 void BinaryOpNode::markKnown() {
@@ -97,7 +104,7 @@ void BinaryOpNode::markKnown() {
   rhs->markKnown();
 }
 
-void Condition::markKnown() {
+void Condition::markKnown() const {
   val->markKnown();
   constraint->markKnown();
 }
@@ -119,7 +126,7 @@ void BinaryOpNode::getDiscontinuities(
 }
 
 void Condition::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) {
+    std::unordered_set<double*>& discontinuities) const {
   discontinuities.insert(&constraint->value);
   // Unlikely, but we could have nested conditionals, so we recurse
   val->getDiscontinuities(discontinuities);
@@ -149,7 +156,8 @@ void BinaryOpNode::getDiscontinuityError(
   rhs->getDiscontinuityError(error);
 }
 
-void Condition::getDiscontinuityError(std::vector<ExpressionNodePtr>& error) {
+void Condition::getDiscontinuityError(
+    std::vector<ExpressionNodePtr>& error) const {
   error.push_back(getError());
   // Unlikely, but we could have nested conditionals, so we recurse
   val->getDiscontinuityError(error);
@@ -172,11 +180,11 @@ void VariableNode::getDiscontinuityError(
   // Do nothing
 }
 
-std::shared_ptr<BinaryOpNode> Condition::getError() const {
+auto Condition::getError() const -> std::shared_ptr<BinaryOpNode> {
   return std::make_shared<BinaryOpNode>(val, constraint, BinaryOp::SUB);
 }
 
-std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
+auto BinaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
   out << "(" << lhs;
   switch (op) {
     case BinaryOp::MUL:
@@ -196,19 +204,19 @@ std::ostream& BinaryOpNode::serialize(std::ostream& out) const {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out,
-                         std::shared_ptr<Condition> condition) {
+auto operator<<(std::ostream& out, const std::shared_ptr<Condition>& condition)
+    -> std::ostream& {
   out << "(" << condition->val << (condition->includeZero ? " >= " : " > ")
       << "0)";
   return out;
 }
 
-std::ostream& TernaryOpNode::serialize(std::ostream& out) const {
+auto TernaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
   out << "(" << condition << " ? " << valIfTrue << " : " << valIfFalse << ")";
   return out;
 }
 
-std::ostream& UnaryOpNode::serialize(std::ostream& out) const {
+auto UnaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
   out << "(";
   switch (op) {
     case UnaryOp::EXP:
@@ -222,7 +230,7 @@ std::ostream& UnaryOpNode::serialize(std::ostream& out) const {
   return out;
 }
 
-std::ostream& VariableNode::serialize(std::ostream& out) const {
+auto VariableNode::serialize(std::ostream& out) const -> std::ostream& {
   if (known) {
     out << value;
   } else {
@@ -231,6 +239,7 @@ std::ostream& VariableNode::serialize(std::ostream& out) const {
   return out;
 }
 
-std::ostream& operator<<(std::ostream& out, ExpressionNodePtr node) {
+auto operator<<(std::ostream& out, const ExpressionNodePtr& node)
+    -> std::ostream& {
   return node->serialize(out);
 }
