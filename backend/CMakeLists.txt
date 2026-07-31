@@ -30,6 +30,7 @@ add_executable(circuit-solver
   src/config/config.cpp
   src/config/configManager.cpp
   src/config/configSource.cpp
+  src/endpointHandler.cpp
   src/main.cpp
   src/observability/logger.cpp
   src/observability/otel.cpp

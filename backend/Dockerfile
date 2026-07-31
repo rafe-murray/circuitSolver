@@ -44,12 +44,7 @@ RUN \
   -DCMAKE_BUILD_TYPE=Release \
   -DVCPKG_BUILD_TYPE=release \
   ; \
-  cmake --build . ; \
-  cp circuit-solver ../ ; \
-  cp compile_commands.json ../
-
-FROM scratch as exporter
-COPY --from=builder /circuitsolver/backend/compile_commands.json /
+  cmake --build . ;
 
 FROM gcr.io/distroless/cc-debian13 AS base
 
