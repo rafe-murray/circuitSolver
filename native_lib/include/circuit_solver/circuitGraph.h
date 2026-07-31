@@ -1,5 +1,4 @@
-#ifndef CIRCUIT_GRAPH_H
-#define CIRCUIT_GRAPH_H
+#pragma once
 
 #include <memory>
 #include <ostream>
@@ -28,7 +27,7 @@ class CircuitGraph {
   /**
    * Creates a new graph instance
    */
-  CircuitGraph() {}
+  CircuitGraph() = default;
 
   /**
    * Adds a vertex to the graph
@@ -91,7 +90,8 @@ class CircuitGraph {
   [[nodiscard]] auto getEdges() const -> std::vector<Edge>;
   // pre: the circuit is solved
   [[nodiscard]] auto toProto() const -> proto::CircuitGraph;
-  auto toProto(const double* parameters) const -> proto::CircuitGraph;
+  [[nodiscard]] auto toProto(std::span<const double> parameters) const
+      -> proto::CircuitGraph;
   static auto fromProto(const proto::CircuitGraph& proto)
       -> std::optional<std::unique_ptr<CircuitGraph>>;
   /**
@@ -109,7 +109,7 @@ class CircuitGraph {
   auto solvePartition(const std::vector<double*>& basis,
                       const std::vector<bool>& isHigh) -> partitionSolution;
   static void print(std::ostream& out, const CircuitGraph& cg,
-                    const std::unordered_set<const double*>& parameters);
+                    std::span<const double> parameters);
 
  private:
   auto getDiscontinuities() -> std::vector<double*>;
@@ -159,9 +159,7 @@ class CircuitGraph {
   EdgeMap edges;
 
   int solveAttempts = 0;
-  const int maxSolveAttempts = 100;  // High but bounded
+  static constexpr int maxSolveAttempts = 100;  // High but bounded
 };
 
 auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream&;
-
-#endif  // CIRCUIT_GRAPH_H

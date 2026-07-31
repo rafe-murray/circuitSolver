@@ -15,7 +15,7 @@ class Edge {
   Edge(uuids::uuid id, std::unique_ptr<Branch> branch);
   template <typename T>
   Edge(uuids::uuid id, const T& branch)
-      : id(id), branch(std::make_unique<T>(branch)){};
+      : id(id), branch(std::make_unique<T>(branch)) {};
   // For hash map; do not use
   Edge();
   Edge(const Edge& other);
@@ -35,7 +35,7 @@ class Edge {
   [[nodiscard]] auto getConstraint() const -> Expression;
   auto operator==(const Edge& rhs) const -> bool;
   void toProto(proto::Edge* proto);
-  void toProto(proto::Edge* proto, const double* parameters);
+  void toProto(proto::Edge* proto, std::span<const double> parameters);
   static auto fromProto(const proto::Edge& proto, const VertexMap& vertices)
       -> std::optional<Edge>;
 

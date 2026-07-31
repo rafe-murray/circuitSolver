@@ -24,7 +24,7 @@ class Vertex {
     proto->set_id(idString);
     proto->set_voltage(voltage.evaluate());
   }
-  void toProto(proto::Vertex* proto, const double* parameters) {
+  void toProto(proto::Vertex* proto, std::span<const double> parameters) {
     std::string idString = uuids::to_string(id);
     proto->set_id(idString);
     proto->set_voltage(voltage.evaluate(parameters));

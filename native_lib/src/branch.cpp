@@ -17,7 +17,8 @@ void Branch::toProto(proto::Edge* proto) const {
   proto->set_to_id(toId);
   proto->set_current(this->getCurrent().evaluate());
 }
-void Branch::toProto(proto::Edge* proto, const double* parameters) const {
+void Branch::toProto(proto::Edge* proto,
+                     std::span<const double> parameters) const {
   std::string fromId = uuids::to_string(from.getId());
   std::string toId = uuids::to_string(to.getId());
   proto->set_from_id(fromId);
@@ -40,7 +41,7 @@ void CurrentSource::toProto(proto::Edge* proto) const {
   proto->mutable_current_source()->set_voltage(voltage.evaluate());
 }
 void CurrentSource::toProto(proto::Edge* proto,
-                            const double* parameters) const {
+                            std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   proto->mutable_current_source()->set_voltage(voltage.evaluate(parameters));
 }
@@ -65,7 +66,8 @@ void IdealDiode::toProto(proto::Edge* proto) const {
   Branch::toProto(proto);
   proto->mutable_ideal_diode()->set_voltage(voltage.evaluate());
 }
-void IdealDiode::toProto(proto::Edge* proto, const double* parameters) const {
+void IdealDiode::toProto(proto::Edge* proto,
+                         std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   proto->mutable_ideal_diode()->set_voltage(voltage.evaluate(parameters));
 }
@@ -88,7 +90,8 @@ void RealDiode::toProto(proto::Edge* proto) const {
   protoRealDiode->set_vt(vt.evaluate());
   protoRealDiode->set_n(n.evaluate());
 }
-void RealDiode::toProto(proto::Edge* proto, const double* parameters) const {
+void RealDiode::toProto(proto::Edge* proto,
+                        std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   auto* protoRealDiode = proto->mutable_real_diode();
   protoRealDiode->set_i0(i0.evaluate(parameters));
@@ -111,7 +114,8 @@ void Resistor::toProto(proto::Edge* proto) const {
   Branch::toProto(proto);
   proto->mutable_resistor()->set_resistance(resistance.evaluate());
 }
-void Resistor::toProto(proto::Edge* proto, const double* parameters) const {
+void Resistor::toProto(proto::Edge* proto,
+                       std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   proto->mutable_resistor()->set_resistance(resistance.evaluate(parameters));
 }
@@ -132,7 +136,7 @@ void VoltageSource::toProto(proto::Edge* proto) const {
   proto->mutable_voltage_source()->set_voltage(voltage.evaluate());
 }
 void VoltageSource::toProto(proto::Edge* proto,
-                            const double* parameters) const {
+                            std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   proto->mutable_voltage_source()->set_voltage(voltage.evaluate(parameters));
 }
@@ -155,7 +159,8 @@ void ZenerDiode::toProto(proto::Edge* proto) const {
   protoZenerDiode->set_rzt(rzt.evaluate());
   protoZenerDiode->set_vzt(vzt.evaluate());
 }
-void ZenerDiode::toProto(proto::Edge* proto, const double* parameters) const {
+void ZenerDiode::toProto(proto::Edge* proto,
+                         std::span<const double> parameters) const {
   Branch::toProto(proto, parameters);
   auto* protoZenerDiode = proto->mutable_zener_diode();
   protoZenerDiode->set_izt(izt.evaluate(parameters));

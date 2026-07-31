@@ -52,7 +52,7 @@ auto CircuitGraph::solvePartition(const std::vector<double*>& basis,
   std::vector<std::vector<double>> allParameters;
   // std::unordered_set<const double*> allUnknowns;
   for (auto& expression : expressions) {
-    auto unknowns = expression.getMutableUnknowns();
+    auto unknowns = expression.getUnknowns();
     std::vector<double> parameters;
     parameters.reserve(unknowns.size());
     for (auto* unknown : unknowns) {
@@ -100,20 +100,23 @@ auto CircuitGraph::solveCircuit() -> bool {
     resetUnknowns();
   }
   double minError = std::numeric_limits<double>::max();
-  int bestIndex = -1;
-  for (unsigned i = 0; i < solutions.size(); i++) {
+  // use a flag over a sentinel value to avoid integer overflow concerns
+  bool isSolutionUsable = false;
+  size_t bestIndex = 0;
+  for (size_t i = 0; i < solutions.size(); i++) {
     if (!solutions[i].summary.IsSolutionUsable()) {
       continue;
     }
     if (solutions[i].summary.final_cost < minError) {
       minError = solutions[i].summary.final_cost;
       bestIndex = i;
+      isSolutionUsable = true;
     }
   }
-  if (bestIndex == -1) {
-    // None of the solutions were usable
+  if (!isSolutionUsable) {
     return false;
   }
+
   partitionSolution solution = solutions[bestIndex];
   if (!absl::StrContains(solution.summary.message, "Gradient tolerance") &&
       solution.summary.final_cost > 1e-15) {
@@ -126,7 +129,7 @@ auto CircuitGraph::solveCircuit() -> bool {
   }
   assert(solution.expressions.size() == solution.parameters.size());
   for (size_t i = 0; i < solution.expressions.size(); i++) {
-    auto unknowns = solution.expressions[i].getMutableUnknowns();
+    auto unknowns = solution.expressions[i].getUnknowns();
     auto parameters = solution.parameters[i];
     for (size_t j = 0; j < unknowns.size(); j++) {
       *(unknowns[j]) = parameters[j];
@@ -143,7 +146,7 @@ void CircuitGraph::resetUnknowns() {
 
   auto expressions = getExpressions();
   for (auto expression : expressions) {
-    auto unknowns = expression.getMutableUnknowns();
+    auto unknowns = expression.getUnknowns();
     for (auto* unknown : unknowns) {
       *unknown = distrib(rng);
     }
@@ -317,10 +320,10 @@ auto CircuitGraph::operator==(const CircuitGraph& other) const -> bool {
     }
     // HACK: using existing logic to convert to protobuf messages to determine
     // edge type rather than creating an overloaded function
-    auto* eMsg = new proto::CircuitGraph::Edge();
-    e->toProto(eMsg);
-    auto* fMsg = new proto::CircuitGraph::Edge();
-    f->toProto(fMsg);
+    auto eMsg = std::make_unique<proto::CircuitGraph::Edge>();
+    e->toProto(eMsg.get());
+    auto fMsg = std::make_unique<proto::CircuitGraph::Edge>();
+    f->toProto(fMsg.get());
     if (eMsg->specific_branch_case() != fMsg->specific_branch_case()) {
       return false;
     }
@@ -344,7 +347,7 @@ auto CircuitGraph::toProto() const -> proto::CircuitGraph {
   }
   return proto;
 }
-auto CircuitGraph::toProto(const double* parameters) const
+auto CircuitGraph::toProto(std::span<const double> parameters) const
     -> proto::CircuitGraph {
   proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
@@ -404,16 +407,9 @@ auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream& {
 }
 
 void CircuitGraph::print(std::ostream& out, const CircuitGraph& cg,
-                         const std::unordered_set<const double*>& parameters) {
-  size_t parameterSize = parameters.size();
-  auto* paramArray = new double[parameterSize];
-  int i = 0;
-  for (const auto* parameter : parameters) {
-    paramArray[i] = *parameter;
-    i++;
-  }
+                         std::span<const double> parameters) {
   std::string output;
-  (void)google::protobuf::json::MessageToJsonString(cg.toProto(paramArray),
+  (void)google::protobuf::json::MessageToJsonString(cg.toProto(parameters),
                                                     &output);
   out << output << '\n';
 }

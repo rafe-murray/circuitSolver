@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <ostream>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -27,7 +28,7 @@ using ExpressionNodePtr = std::shared_ptr<ExpressionNode>;
 
 namespace expressionNode {
 template <typename T>
-auto evaluate(const ExpressionNodePtr& root, T const* parameters,
+auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
               const ExpressionMap& map) -> T;
 }
 
@@ -99,7 +100,7 @@ struct BinaryOpNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(T const* parameters,
+  auto evaluateImplementation(std::span<T> parameters,
                               const ExpressionMap& map) const -> T {
     switch (op) {
       case BinaryOp::MUL:
@@ -221,7 +222,7 @@ struct TernaryOpNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(T const* parameters,
+  auto evaluateImplementation(std::span<T> parameters,
                               const ExpressionMap& map) const -> T {
     return condition->evaluate(parameters, map)
                ? expressionNode::evaluate(valIfTrue, parameters, map)
@@ -268,7 +269,7 @@ struct UnaryOpNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(T const* parameters,
+  auto evaluateImplementation(std::span<T> parameters,
                               const ExpressionMap& map) const -> T {
     switch (op) {
       case UnaryOp::EXP:
@@ -314,7 +315,7 @@ struct VariableNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(T const* parameters,
+  auto evaluateImplementation(std::span<T> parameters,
                               const ExpressionMap& map) const -> T {
     if (known) {
       return T(value);
@@ -352,7 +353,7 @@ namespace expressionNode {
 /// the corresponding value to use in `parameters`
 /// @return the value of the AST with `root` as a root
 template <typename T>
-auto evaluate(const ExpressionNodePtr& root, T const* parameters,
+auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
               const ExpressionMap& map) -> T {
   if (std::shared_ptr<VariableNode> node =
           std::dynamic_pointer_cast<VariableNode>(root)) {

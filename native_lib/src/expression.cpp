@@ -243,14 +243,14 @@ auto Expression::isConstant() const -> bool {
   return v && v->known;
 }
 
-auto Expression::getUnknowns() const -> const std::vector<double*>& {
-  if (unknowns == nullptr) {
-    updateMapAndUnknowns();
-  }
-  return *unknowns;
-}
+// auto Expression::getUnknowns() const -> const std::vector<double*>& {
+//   if (unknowns == nullptr) {
+//     updateMapAndUnknowns();
+//   }
+//   return *unknowns;
+// }
 
-auto Expression::getMutableUnknowns() -> std::vector<double*> {
+auto Expression::getUnknowns() -> std::vector<double*> {
   if (unknowns == nullptr) {
     updateMapAndUnknowns();
   }
@@ -291,7 +291,10 @@ auto Expression::getDiscontinuityErrors() -> std::vector<Expression> {
 }
 
 auto Expression::getNumUnknowns() const -> size_t {
-  return getUnknowns().size();
+  if (unknowns == nullptr) {
+    updateMapAndUnknowns();
+  }
+  return unknowns->size();
 }
 
 auto Expression::getMap() const -> const ExpressionMap& {
@@ -313,9 +316,14 @@ void Expression::addToProblem(ceres::Problem& problem) {
   if (map == nullptr) {
     updateMapAndUnknowns();
   }
+  // Ceres takes ownership
+  // NOLINTBEGIN(cppcoreguidelines-owning-memory)
   auto* costFunctor = new ExpressionCostFunctor(root, *map);
-  auto costFunction = std::make_unique<
-      ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>>(costFunctor);
+  auto* costFunction =
+      new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
+          costFunctor);
+  // NOLINTEND(cppcoreguidelines-owning-memory)
+
   for (size_t i = 0; i < unknowns->size(); i++) {
     costFunction->AddParameterBlock(1);
   }
@@ -324,18 +332,21 @@ void Expression::addToProblem(ceres::Problem& problem) {
     error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
-  problem.AddResidualBlock(costFunction.release(),
-                           std::make_unique<ceres::HuberLoss>(2.0).release(),
-                           *unknowns);
+
+  // NOLINTBEGIN(cppcoreguidelines-owning-memory)
+  // Ceres takes ownership
+  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), *unknowns);
+  // NOLINTEND(cppcoreguidelines-owning-memory)
 }
 
 auto Expression::evaluate() const -> double {
-  auto* parameters = new double[getNumUnknowns()];
+  auto parameters = std::vector<double>(getNumUnknowns());
   ExpressionMap map = getMap();
-  return expressionNode::evaluate(root, parameters, map);
+  return expressionNode::evaluate(root, std::span<const double>{parameters},
+                                  map);
 }
 
-auto Expression::evaluate(double const* parameters) const -> double {
+auto Expression::evaluate(std::span<const double> parameters) const -> double {
   ExpressionMap map = getMap();
   return expressionNode::evaluate(root, parameters, map);
 }

@@ -18,6 +18,9 @@ Edge::Edge() = default;
 // NOTE: these might not be correct
 Edge::Edge(const Edge& other) : id(other.id), branch(other.branch->copy()) {}
 auto Edge::operator=(const Edge& other) -> Edge& {
+  if (this == &other) {
+    return *this;
+  }
   this->id = other.id;
   this->branch = other.branch->copy();
   return *this;
@@ -42,7 +45,7 @@ auto Edge::operator==(const Edge& rhs) const -> bool { return id == rhs.id; }
 // Edge& operator=(const Edge& other);
 
 void Edge::toProto(proto::Edge* proto) { branch->toProto(proto); }
-void Edge::toProto(proto::Edge* proto, const double* parameters) {
+void Edge::toProto(proto::Edge* proto, std::span<const double> parameters) {
   branch->toProto(proto, parameters);
 }
 auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
