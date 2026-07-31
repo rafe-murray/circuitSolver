@@ -99,7 +99,7 @@ auto Expression::operator*(Expression rhs) const -> Expression {
       return {std::move(rhs.root)};
     }
     if (u->value == 1) {
-      return Expression(root);
+      return {root};
     }
   }
 
@@ -110,7 +110,7 @@ auto Expression::operator*(Expression rhs) const -> Expression {
       return {root};
     }
     if (v->value == 1) {
-      return Expression(std::move(rhs.root));
+      return {std::move(rhs.root)};
     }
   }
 
@@ -210,18 +210,18 @@ auto Expression::operator-=(const Expression& rhs) -> Expression& {
   return *this;
 }
 
-auto Expression::operator<(Expression rhs) const -> Condition {
-  return {root, std::move(rhs.root), BooleanBinaryOp::LT};
+auto Expression::operator<(const Expression& rhs) const -> Condition {
+  return {root, rhs.root, BooleanBinaryOp::LT};
 }
 
-auto Expression::operator<=(Expression rhs) const -> Condition {
-  return {root, std::move(rhs.root), BooleanBinaryOp::LEQ};
+auto Expression::operator<=(const Expression& rhs) const -> Condition {
+  return {root, rhs.root, BooleanBinaryOp::LEQ};
 }
-auto Expression::operator>(Expression rhs) const -> Condition {
-  return {root, std::move(rhs.root), BooleanBinaryOp::GT};
+auto Expression::operator>(const Expression& rhs) const -> Condition {
+  return {root, rhs.root, BooleanBinaryOp::GT};
 }
-auto Expression::operator>=(Expression rhs) const -> Condition {
-  return {root, std::move(rhs.root), BooleanBinaryOp::GEQ};
+auto Expression::operator>=(const Expression& rhs) const -> Condition {
+  return {root, rhs.root, BooleanBinaryOp::GEQ};
 }
 // Condition Expression::operator!=(Expression rhs) const {
 //   return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
@@ -314,9 +314,8 @@ void Expression::addToProblem(ceres::Problem& problem) {
     updateMapAndUnknowns();
   }
   auto* costFunctor = new ExpressionCostFunctor(root, *map);
-  auto* costFunction =
-      new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
-          costFunctor);
+  auto costFunction = std::make_unique<
+      ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>>(costFunctor);
   for (size_t i = 0; i < unknowns->size(); i++) {
     costFunction->AddParameterBlock(1);
   }
@@ -325,7 +324,9 @@ void Expression::addToProblem(ceres::Problem& problem) {
     error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
-  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), *unknowns);
+  problem.AddResidualBlock(costFunction.release(),
+                           std::make_unique<ceres::HuberLoss>(2.0).release(),
+                           *unknowns);
 }
 
 auto Expression::evaluate() const -> double {

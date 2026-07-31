@@ -96,10 +96,10 @@ class Expression {
   auto operator-=(const Expression& rhs) -> Expression&;
 
   // TODO: add docs for these methods
-  auto operator<(Expression rhs) const -> Condition;
-  auto operator<=(Expression rhs) const -> Condition;
-  auto operator>(Expression rhs) const -> Condition;
-  auto operator>=(Expression rhs) const -> Condition;
+  auto operator<(const Expression& rhs) const -> Condition;
+  auto operator<=(const Expression& rhs) const -> Condition;
+  auto operator>(const Expression& rhs) const -> Condition;
+  auto operator>=(const Expression& rhs) const -> Condition;
   // Condition operator!=(Expression rhs) const;
   // Condition equals(Expression rhs) const;
   static auto makeConditional(const Condition& condition, Expression valIfTrue,
