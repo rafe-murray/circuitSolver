@@ -11,13 +11,14 @@
 
 class Expression;
 
-namespace std {
+// TODO: use this namespace for whole file
+namespace circuitsolver::expression {
 
 /// Exponentiates an expression
 ///
 /// @return an Expression representing e^this
 auto exp(Expression arg) -> Expression;
-}  // namespace std
+}  // namespace circuitsolver::expression
 
 /// Represents an arithmetic expression that can be built with variables of
 /// unknown values
@@ -33,16 +34,11 @@ class Expression {
  public:
   /// Creates an expression that consists of a single unknown value
   Expression();
-  Expression(const Expression& other);
-  auto operator=(const Expression& other) -> Expression&;
 
   /// Creates an expression with a single known value
   ///
   /// @param value - the value of the resultant Expression
   Expression(double value);
-
-  // TODO: check if this is needed
-  ~Expression();
 
   /// Adds two expressions
   ///
@@ -152,7 +148,7 @@ class Expression {
   mutable std::shared_ptr<std::vector<double*>> unknowns;
   friend auto operator<<(std::ostream& out, const Expression& e)
       -> std::ostream&;
-  friend auto std::exp(Expression arg) -> Expression;
+  friend auto circuitsolver::expression::exp(Expression arg) -> Expression;
 };
 
 auto getDefaultOptions() -> ceres::Solver::Options;

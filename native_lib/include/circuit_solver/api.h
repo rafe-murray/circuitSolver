@@ -1,41 +1,45 @@
-#pragma once
+#ifndef CIRCUITSOLVER_API_H
+#define CIRCUITSOLVER_API_H
 
 #include <cstddef>
-#include <expected>
+
 #define EXPORT extern "C"
 
+// NOLINTBEGIN(modernize-*,cppcoreguidelines-macro-usage)
 // Blocking call for now
 EXPORT
-auto solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
-                         void** outputBuffer, size_t* outputLength) -> int;
+int solveGraphFromBuffer(void* inputBuffer, size_t inputLength,
+                         void** outputBuffer, size_t* outputLength);
 
 EXPORT
 void destroyGraphBuffer(void* graphBuffer);
 
 EXPORT
-void destroyGraphJson(const char* graphJson);
+void destroyGraphJson(char* graphJson);
 
 EXPORT
-auto solveGraphFromJson(const char* inputJson, char** outputJson) -> int;
+int solveGraphFromJson(char* inputJson, char** outputJson);
 
 EXPORT
-auto getErrorMessage(int errorNumber) -> const char*;
+const char* getErrorMessage(int errorNumber);
 
-enum {
-CIRCUITSOLVER_ERROR_INVALID_INPUT = 1,
-CIRCUITSOLVER_ERROR_NO_SOLUTION = 2,
-CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION = 3
-};
+#define CIRCUITSOLVER_ERROR_INVALID_INPUT 1
+#define CIRCUITSOLVER_ERROR_NO_SOLUTION 2
+#define CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION 3
+
+// NOLINTEND(modernize-*,cppcoreguidelines-macro-usage)
 
 // C++ bindings
 #ifdef __cplusplus
+#include <expected>
 #include <string>
+#include <string_view>
 
 #include "circuit_solver/proto.h"
 
 namespace circuitsolver {
 
-enum class ErrorType : int {
+enum class ErrorType : int8_t {
   NoSolution = CIRCUITSOLVER_ERROR_NO_SOLUTION,
   FailedSerialization = CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION,
   InvalidInput = CIRCUITSOLVER_ERROR_INVALID_INPUT,
@@ -53,19 +57,21 @@ class CircuitSolverError {
   [[nodiscard]] auto type() const -> ErrorType;
 
  private:
-  const ErrorType _type;
-  const std::string _message;
+  ErrorType _type;
+  std::string _message;
 };
 
 auto solveCircuit(const proto::CircuitGraph& input)
     -> std::expected<proto::CircuitGraph, CircuitSolverError>;
 
 // Gets and returns a string version of a protocol buffer
-auto solveGraphFromString(const std::string& inputString)
+auto solveGraphFromString(std::string_view input)
     -> std::expected<std::string, CircuitSolverError>;
-auto solveGraphFromJson(
-    std::string inputJson) -> std::expected<std::string, CircuitSolverError>;
+
+auto solveGraphFromJson(std::string_view input)
+    -> std::expected<std::string, CircuitSolverError>;
 
 }  // namespace circuitsolver
 
-#endif
+#endif  // __cplusplus
+#endif  // CIRCUITSOLVER_API_H

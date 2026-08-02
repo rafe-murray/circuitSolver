@@ -18,10 +18,12 @@ class Edge {
       : id(id), branch(std::make_unique<T>(branch)) {};
   // For hash map; do not use
   Edge();
+
   Edge(const Edge& other);
   auto operator=(const Edge& other) -> Edge&;
-  // Move constructor
-  Edge(Edge&& rhs) noexcept;
+  Edge(Edge&& rhs) noexcept = default;
+  auto operator=(Edge&& other) noexcept -> Edge& = default;
+  ~Edge() = default;
 
   [[nodiscard]] auto getId() const -> uuids::uuid;
   [[nodiscard]] auto getFrom() const -> Vertex;

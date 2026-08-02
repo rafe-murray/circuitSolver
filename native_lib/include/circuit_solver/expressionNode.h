@@ -79,6 +79,13 @@ struct ExpressionNode {
   ///
   /// @param error the list of errors to insert into
   virtual void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) = 0;
+
+ protected:
+  ExpressionNode() = default;
+  ExpressionNode(const ExpressionNode& other) = default;
+  auto operator=(const ExpressionNode& other) -> ExpressionNode& = default;
+  ExpressionNode(ExpressionNode&& other) = default;
+  auto operator=(ExpressionNode&& other) -> ExpressionNode& = default;
 };
 
 /// Types of binary operations
@@ -166,7 +173,8 @@ struct Condition {
   /// lhs->evaluate()==rhs->evaluate() such that it goes to 0 when the condition
   /// is false and it goes to 1 when the condition is true
   template <typename T>
-  auto evaluate(T const* parameters, const ExpressionMap& map) const -> bool {
+  auto evaluate(std::span<const T> parameters, const ExpressionMap& map) const
+      -> bool {
     if (includeZero) {
       return expressionNode::evaluate(val, parameters, map) >= 0;
     }

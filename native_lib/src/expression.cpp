@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "circuit_solver/config.h"
 #include "circuit_solver/expressionCostFunctor.h"
 #include "circuit_solver/expressionNode.h"
 
@@ -22,19 +23,18 @@
 //  - 1 for voltages
 //  - 1 by default
 
+using circuitsolver::constants::functionTolerance;
+using circuitsolver::constants::huberLossDelta;
+using circuitsolver::constants::maxConsecutiveNonMonotonicSteps;
+using circuitsolver::constants::maxIterations;
+
 Expression::Expression() : Expression(std::make_shared<VariableNode>()) {}
-
-Expression::Expression(const Expression& other) = default;
-
-auto Expression::operator=(const Expression& other) -> Expression& = default;
 
 Expression::Expression(double value)
     : Expression(std::make_shared<VariableNode>(value)) {}
 
 Expression::Expression(std::shared_ptr<ExpressionNode> root)
     : root(std::move(root)) {}
-
-Expression::~Expression() = default;
 
 auto Expression::operator+(Expression rhs) const -> Expression {
   std::shared_ptr<VariableNode> u =
@@ -153,8 +153,9 @@ auto Expression::operator-() const -> Expression {
   return {std::make_shared<UnaryOpNode>(root, UnaryOp::NEG)};
 }
 
-auto std::exp(Expression arg) -> Expression {
-  shared_ptr<VariableNode> v = dynamic_pointer_cast<VariableNode>(arg.root);
+auto circuitsolver::expression::exp(Expression arg) -> Expression {
+  std::shared_ptr<VariableNode> v =
+      dynamic_pointer_cast<VariableNode>(arg.root);
   if (v && v->known) {
     return {std::exp(v->value)};
   }
@@ -266,11 +267,14 @@ void Expression::updateMapAndUnknowns() const {
 
   unknowns->reserve(unknown_set.size());
   unsigned i = 0;
-  for (double* unknown : unknown_set) {
+  // Sorting algorithm is already non-deterministic
+  // NOLINTBEGIN(bugprone-nondeterministic-pointer-iteration-order)
+  for (auto* unknown : unknown_set) {
     unknowns->push_back(unknown);
     (*map)[unknown] = i;
     i++;
   }
+  // NOLINTEND(bugprone-nondeterministic-pointer-iteration-order)
 }
 
 auto Expression::getDiscontinuities() -> std::unordered_set<double*> {
@@ -335,7 +339,8 @@ void Expression::addToProblem(ceres::Problem& problem) {
 
   // NOLINTBEGIN(cppcoreguidelines-owning-memory)
   // Ceres takes ownership
-  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(2.0), *unknowns);
+  problem.AddResidualBlock(costFunction, new ceres::HuberLoss(huberLossDelta),
+                           *unknowns);
   // NOLINTEND(cppcoreguidelines-owning-memory)
 }
 
@@ -373,14 +378,14 @@ auto getDefaultOptions() -> ceres::Solver::Options {
   options.linear_solver_type = ceres::DENSE_QR;
   options.minimizer_type = ceres::TRUST_REGION;
   options.trust_region_strategy_type = ceres::LEVENBERG_MARQUARDT;
-  options.function_tolerance = 1e-6;
+  options.function_tolerance = functionTolerance;
   options.gradient_tolerance = 0;   // 1e-6
   options.parameter_tolerance = 0;  // 1e-6
-  options.max_num_iterations = 1000;
+  options.max_num_iterations = maxIterations;
   // options.min_trust_region_radius = 1e-64;
   // NOTE: this parameter is VERY important - results in ~1500x better
   // performance
   options.use_nonmonotonic_steps = true;
-  options.max_consecutive_nonmonotonic_steps = 10;
+  options.max_consecutive_nonmonotonic_steps = maxConsecutiveNonMonotonicSteps;
   return options;
 }

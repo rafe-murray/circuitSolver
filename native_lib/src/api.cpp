@@ -9,13 +9,16 @@
 #include <format>
 #include <limits>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "circuit_solver/circuitGraph.h"
 #include "circuit_solver/proto.h"
 
 void destroyGraphBuffer(void* graphBuffer) { operator delete(graphBuffer); }
+// NOLINTBEGIN(cppcoreguidelines-owning-memory)
 void destroyGraphJson(const char* graphJson) { delete[] graphJson; }
+// NOLINTEND(cppcoreguidelines-owning-memory)
 
 auto getErrorMessage(int errorNumber) -> const char* {
   const std::unordered_map<int, const char*> errorMessages = {
@@ -79,7 +82,9 @@ auto solveGraphFromJson(const char* inputJson, char** outputJson) -> int {
   }
   // std::string makes no guarantees about heap allocation so we need to copy to
   // our own heap-allocated char buffer
+  // NOLINTBEGIN(cppcoreguidelines-owning-memory)
   *outputJson = new char[outputString.size()];
+  // NOLINTEND(cppcoreguidelines-owning-memory)
   memcpy(*outputJson, outputString.c_str(), outputString.size());
   return 0;
 }
@@ -110,15 +115,13 @@ auto solveCircuit(const proto::CircuitGraph& input)
   }
   return circuitGraph->toProto();
 }
-auto solveGraphFromJson(std::string inputJson)
+auto solveGraphFromJson(std::string_view input)
     -> std::expected<std::string, CircuitSolverError> {
   proto::CircuitGraph message;
-  auto status =
-      google::protobuf::json::JsonStringToMessage(inputJson, &message);
+  auto status = google::protobuf::json::JsonStringToMessage(input, &message);
   if (!status.ok()) {
-    return std::unexpected{
-        CircuitSolverError{ErrorType::InvalidInput,
-                           std::format("Invalid input json: {}", inputJson)}};
+    return std::unexpected{CircuitSolverError{
+        ErrorType::InvalidInput, std::format("Invalid input json: {}", input)}};
   }
   auto maybeOutput = solveCircuit(message);
   if (!maybeOutput) {
@@ -136,10 +139,10 @@ auto solveGraphFromJson(std::string inputJson)
   return outputString;
 }
 
-auto solveGraphFromString(const std::string& inputString)
+auto solveGraphFromString(std::string_view input)
     -> std::expected<std::string, CircuitSolverError> {
   proto::CircuitGraph message;
-  bool success = message.ParseFromString(inputString);
+  bool success = message.ParseFromString(input);
   if (!success) {
     return std::unexpected{
         CircuitSolverError{

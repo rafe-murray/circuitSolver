@@ -4,6 +4,7 @@
 
 #include <optional>
 
+#include "circuit_solver/branch.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 
@@ -25,9 +26,17 @@ auto Edge::operator=(const Edge& other) -> Edge& {
   this->branch = other.branch->copy();
   return *this;
 }
-Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
-  rhs.branch = nullptr;
-}
+// Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
+//   rhs.branch = nullptr;
+// }
+// auto Edge::operator=(Edge&& other) noexcept -> Edge& {
+//   if (this == &other) {
+//     return *this;
+//   }
+//   this->id = other.id;
+//   this->branch = std::move(other.branch);
+//   return *this;
+// }
 
 auto Edge::getId() const -> uuids::uuid { return id; };
 auto Edge::getFrom() const -> Vertex { return branch->getFrom(); };
@@ -48,6 +57,55 @@ void Edge::toProto(proto::Edge* proto) { branch->toProto(proto); }
 void Edge::toProto(proto::Edge* proto, std::span<const double> parameters) {
   branch->toProto(proto, parameters);
 }
+
+inline auto parseCurrentSource(const proto::Edge& proto, const Vertex& from,
+                               const Vertex& to)
+    -> std::unique_ptr<CurrentSource> {
+  assert(proto.specific_branch_case() == proto::Edge::kCurrentSource);
+  Expression current{};
+  if (proto.has_current()) {
+    current = proto.current();
+  }
+  return std::make_unique<CurrentSource>(
+      BranchConnections{.from = from, .to = to}, current);
+}
+
+inline auto parseIdealDiode(const proto::Edge& proto, const Vertex& from,
+                            const Vertex& to) {
+  assert(proto.specific_branch_case() == proto::Edge::kIdealDiode);
+  Expression current{};
+  Expression voltage{};
+  if (proto.has_current()) {
+    current = proto.current();
+  }
+  if (proto.ideal_diode().has_voltage()) {
+    voltage = proto.ideal_diode().voltage();
+  }
+  return std::make_unique<IdealDiode>(
+      BranchConnections{.from = from, .to = to},
+      IdealDiodeParameters{.voltage = voltage, .current = current});
+}
+
+inline auto parseRealDiode(const proto::Edge& proto, const Vertex& from,
+                           const Vertex& to) -> std::unique_ptr<RealDiode> {
+  assert(proto.specific_branch_case() == proto::Edge::kRealDiode);
+  Expression i0{};
+  Expression n{};
+  Expression vt{};
+  if (proto.real_diode().has_i0()) {
+    i0 = proto.real_diode().i0();
+  }
+  if (proto.real_diode().has_n()) {
+    n = proto.real_diode().n();
+  }
+  if (proto.real_diode().has_vt()) {
+    vt = proto.real_diode().vt();
+  }
+  return std::make_unique<RealDiode>(
+      BranchConnections{.from = from, .to = to},
+      RealDiodeParameters{.i0 = i0, .n = n, .vt = vt});
+}
+
 auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
     -> std::optional<Edge> {
   if (!proto.has_from_id() || !proto.has_to_id() || !proto.has_id()) {
@@ -71,39 +129,15 @@ auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
   const Vertex& to = *vertices.at(toId);
   switch (proto.specific_branch_case()) {
     case proto::Edge::kCurrentSource: {
-      Expression current;
-      if (proto.has_current()) {
-        current = proto.current();
-      }
-      newBranch = std::make_unique<CurrentSource>(from, to, current);
+      newBranch = parseCurrentSource(proto, from, to);
       break;
     }
     case proto::Edge::kIdealDiode: {
-      Expression current;
-      Expression voltage;
-      if (proto.has_current()) {
-        current = proto.current();
-      }
-      if (proto.ideal_diode().has_voltage()) {
-        voltage = proto.ideal_diode().voltage();
-      }
-      newBranch = std::make_unique<IdealDiode>(from, to, voltage, current);
+      newBranch = parseIdealDiode(proto, from, to);
       break;
     }
     case proto::Edge::kRealDiode: {
-      Expression i0;
-      Expression n;
-      Expression vt;
-      if (proto.real_diode().has_i0()) {
-        i0 = proto.real_diode().i0();
-      }
-      if (proto.real_diode().has_n()) {
-        n = proto.real_diode().n();
-      }
-      if (proto.real_diode().has_vt()) {
-        vt = proto.real_diode().vt();
-      }
-      newBranch = std::make_unique<RealDiode>(from, to, i0, n, vt);
+      newBranch = parseRealDiode(proto, from, to);
       break;
     }
     case proto::Edge::kResistor: {
@@ -111,7 +145,8 @@ auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
       if (proto.resistor().has_resistance()) {
         resistance = proto.resistor().resistance();
       }
-      newBranch = std::make_unique<Resistor>(from, to, resistance);
+      newBranch = std::make_unique<Resistor>(
+          BranchConnections{.from = from, .to = to}, resistance);
       break;
     }
     case proto::Edge::kVoltageSource: {
@@ -119,7 +154,8 @@ auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
       if (proto.voltage_source().has_voltage()) {
         voltage = proto.voltage_source().voltage();
       }
-      newBranch = std::make_unique<VoltageSource>(from, to, voltage);
+      newBranch = std::make_unique<VoltageSource>(
+          BranchConnections{.from = from, .to = to}, voltage);
       break;
     }
     case proto::Edge::kZenerDiode: {
@@ -135,7 +171,9 @@ auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
       if (proto.zener_diode().has_vzt()) {
         vzt = proto.zener_diode().vzt();
       }
-      newBranch = std::make_unique<ZenerDiode>(from, to, izt, rzt, vzt);
+      newBranch = std::make_unique<ZenerDiode>(
+          BranchConnections{.from = from, .to = to},
+          ZenerDiodeParameters{.izt = izt, .rzt = rzt, .vzt = vzt});
       break;
     }
     case proto::Edge::SPECIFIC_BRANCH_NOT_SET:
