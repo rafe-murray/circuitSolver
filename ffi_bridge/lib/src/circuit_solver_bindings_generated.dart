@@ -8,43 +8,67 @@
 // ignore_for_file: type=lint, unused_import
 import 'dart:ffi' as ffi;
 
-/// Solves a circuit supplied as a binary protobuf buffer.
+/// Solves the circuit in `inputBuffer`
 ///
-/// On success returns 0, writes the solved binary protobuf to *outputBuffer
-/// and its length to *outputLength. The caller must free the output buffer
-/// with destroyGraphBuffer().
-///
-/// On failure returns a non-zero error code. Call getErrorMessage() for a
-/// human-readable description.
+/// The inputBuffer should be a protobuf data buffer for a CircuitGraphMessage.
+/// If the circuit is successfully solved, `outputBuffer` will contain a
+/// protobuf-serialized CircuitGraphMessage with the solution, and outputLength
+/// will contain the size of that buffer. These values are only valid if the
+/// return value is 0
+/// @param inputBuffer a buffer containing a protobuf-serialized
+/// CircuitGraphMessage representing the circuit to solve
+/// @param inputLength length of the input buffer
+/// @param outputBuffer pointer to the buffer to store the output in. This
+/// buffer is owned by circuitsolver. Call `destroyGraphBuffer()` to free it
+/// @param outputLength pointer to variable to store the length of the output
+/// buffer in
+/// @return 0 on success, or an error code on failure. To get a human readable
+/// message use `getErrorMessage(errno)`
 @ffi.Native<
   ffi.Int Function(
     ffi.Pointer<ffi.Void>,
-    ffi.Size,
+    ffi.Int,
     ffi.Pointer<ffi.Pointer<ffi.Void>>,
-    ffi.Pointer<ffi.Size>,
+    ffi.Pointer<ffi.Int>,
   )
 >()
 external int solveGraphFromBuffer(
   ffi.Pointer<ffi.Void> inputBuffer,
   int inputLength,
   ffi.Pointer<ffi.Pointer<ffi.Void>> outputBuffer,
-  ffi.Pointer<ffi.Size> outputLength,
+  ffi.Pointer<ffi.Int> outputLength,
 );
 
-/// Frees a buffer previously returned by solveGraphFromBuffer().
+/// Frees the memory associated with a __returned__ CircuitGraphMessage buffer
+///
+/// This will crash if a JSON buffer is passed in or any pointer not managed by
+/// circuitsolver
+/// @param graphBuffer the buffer to free
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Void>)>()
 external void destroyGraphBuffer(ffi.Pointer<ffi.Void> graphBuffer);
 
-/// Frees a JSON string previously returned by the C solveGraphFromJson().
+/// Frees the memory associated with the JSON graph
+///
+/// This will crash if the JSON string is not managed by circuitsolver
+/// @param graphJson the string to free
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Char>)>()
 external void destroyGraphJson(ffi.Pointer<ffi.Char> graphJson);
 
-/// Solves a circuit supplied as a JSON string.
+/// Solves the circuit in `inputBuffer`
 ///
-/// On success returns 0 and writes the solved JSON to *outputJson. The caller
-/// must free the string with destroyGraphJson().
-///
-/// On failure returns a non-zero error code.
+/// The inputBuffer should be a protobuf data buffer for a CircuitGraphMessage.
+/// If the circuit is successfully solved, `outputBuffer` will contain a
+/// protobuf-serialized CircuitGraphMessage with the solution, and outputLength
+/// will contain the size of that buffer. These values are only valid if the
+/// return value is 0
+/// @param inputJson a string containing a protobuf json serialized
+/// CircuitGraphMessage representing the circuit to solve. This accepts the
+/// canonical json representation provided by the protobuf parser - other
+/// serializations my work but no guarantees are made
+/// @param outputJson pointer to the string to store the output in. This string
+/// is owned by circuitsolver. Call `destroyGraphBuffer()` to free it
+/// @return 0 on success, or an error code on failure. To get a human readable
+/// message use `getErrorMessage(errno)`
 @ffi.Native<
   ffi.Int Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Pointer<ffi.Char>>)
 >()
@@ -53,7 +77,11 @@ external int solveGraphFromJson(
   ffi.Pointer<ffi.Pointer<ffi.Char>> outputJson,
 );
 
-/// Returns a human-readable description for the given error code.
+/// Get a human readable message given an error number
+///
+/// @param errorNumber error number returned from a circuitsolver request
+/// @return An error message. This is a compile time constant string that should
+/// not be freed
 @ffi.Native<ffi.Pointer<ffi.Char> Function(ffi.Int)>()
 external ffi.Pointer<ffi.Char> getErrorMessage(int errorNumber);
 

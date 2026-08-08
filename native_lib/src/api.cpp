@@ -1,12 +1,12 @@
 #include "circuit_solver/api.h"
 
 #include <absl/status/status.h>
+#include <fmt/format.h>
 #include <google/protobuf/util/json_util.h>
 
 #include <cstddef>
 #include <cstring>
 #include <expected>
-#include <format>
 #include <limits>
 #include <memory>
 #include <string_view>
@@ -121,7 +121,7 @@ auto solveGraphFromJson(std::string_view input)
   auto status = google::protobuf::json::JsonStringToMessage(input, &message);
   if (!status.ok()) {
     return std::unexpected{CircuitSolverError{
-        ErrorType::InvalidInput, std::format("Invalid input json: {}", input)}};
+        ErrorType::InvalidInput, fmt::format("Invalid input json: {}", input)}};
   }
   auto maybeOutput = solveCircuit(message);
   if (!maybeOutput) {

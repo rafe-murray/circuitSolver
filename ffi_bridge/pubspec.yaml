@@ -3,6 +3,10 @@ description: FFI bridge to the circuitSolverLib native C++ library.
 version: 0.0.1
 publish_to: none
 
+hooks:
+  user_defines:
+    env_file: .env
+
 environment:
   sdk: ^3.10.7
 

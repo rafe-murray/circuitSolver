@@ -18,12 +18,10 @@ final class CircuitSolverException implements Exception {
   /// The native error code returned by the library.
   ///
   /// One of:
-  /// - [CIRCUITSOLVER_ERROR_INVALID_INPUT] (1) — the input protobuf was
-  ///   malformed or described an unsolvable topology.
-  /// - [CIRCUITSOLVER_ERROR_NO_SOLUTION] (2) — the nonlinear solver could not
-  ///   find a solution.
-  /// - [CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION] (3) — the result could not
-  ///   be serialized to protobuf.
+  /// - [CIRCUITSOLVER_ERROR_INVALID_INPUT] - the input was malformed
+  /// - [CIRCUITSOLVER_ERROR_NO_SOLUTION] - the solver could not find a solution.
+  /// - [CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION]  - the result could not
+  ///   be serialized
   final int code;
 
   /// Human-readable description of the error from the native library.
@@ -54,13 +52,13 @@ Uint8List solveCircuitSync(Uint8List inputBytes) {
     inputPtr.asTypedList(inputLength).setAll(0, inputBytes);
 
     return using((arena) {
-      final outputPtrPtr = arena<Pointer<Void>>();
-      final outputLengthPtr = arena<Size>();
+      final outputBufferPtr = arena<Pointer<Void>>();
+      final outputLengthPtr = arena<Int>();
 
       final errorCode = solveGraphFromBuffer(
         inputPtr.cast<Void>(),
         inputLength,
-        outputPtrPtr,
+        outputBufferPtr,
         outputLengthPtr,
       );
 
@@ -70,7 +68,7 @@ Uint8List solveCircuitSync(Uint8List inputBytes) {
         throw CircuitSolverException(errorCode, message);
       }
 
-      final outputPtr = outputPtrPtr.value;
+      final outputPtr = outputBufferPtr.value;
       final outputLength = outputLengthPtr.value;
 
       try {
