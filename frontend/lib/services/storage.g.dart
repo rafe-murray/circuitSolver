@@ -11,48 +11,77 @@ class $CircuitsTable extends Circuits with TableInfo<$CircuitsTable, Circuit> {
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
-      'id', aliasedName, false,
-      hasAutoIncrement: true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultConstraints:
-          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _protoBytesMeta =
-      const VerificationMeta('protoBytes');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _protoBytesMeta = const VerificationMeta(
+    'protoBytes',
+  );
   @override
   late final GeneratedColumn<Uint8List> protoBytes = GeneratedColumn<Uint8List>(
-      'proto_bytes', aliasedName, false,
-      type: DriftSqlType.blob, requiredDuringInsert: true);
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'proto_bytes',
+    aliasedName,
+    false,
+    type: DriftSqlType.blob,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   @override
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      defaultValue: currentDateAndTime);
-  static const VerificationMeta _modifiedAtMeta =
-      const VerificationMeta('modifiedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _modifiedAtMeta = const VerificationMeta(
+    'modifiedAt',
+  );
   @override
   late final GeneratedColumn<DateTime> modifiedAt = GeneratedColumn<DateTime>(
-      'modified_at', aliasedName, true,
-      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+    'modified_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, protoBytes, createdAt, modifiedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    protoBytes,
+    createdAt,
+    modifiedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'circuits';
   @override
-  VerificationContext validateIntegrity(Insertable<Circuit> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<Circuit> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -60,27 +89,31 @@ class $CircuitsTable extends Circuits with TableInfo<$CircuitsTable, Circuit> {
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('proto_bytes')) {
       context.handle(
-          _protoBytesMeta,
-          protoBytes.isAcceptableOrUnknown(
-              data['proto_bytes']!, _protoBytesMeta));
+        _protoBytesMeta,
+        protoBytes.isAcceptableOrUnknown(data['proto_bytes']!, _protoBytesMeta),
+      );
     } else if (isInserting) {
       context.missing(_protoBytesMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     }
     if (data.containsKey('modified_at')) {
       context.handle(
-          _modifiedAtMeta,
-          modifiedAt.isAcceptableOrUnknown(
-              data['modified_at']!, _modifiedAtMeta));
+        _modifiedAtMeta,
+        modifiedAt.isAcceptableOrUnknown(data['modified_at']!, _modifiedAtMeta),
+      );
     }
     return context;
   }
@@ -91,16 +124,26 @@ class $CircuitsTable extends Circuits with TableInfo<$CircuitsTable, Circuit> {
   Circuit map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Circuit(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      protoBytes: attachedDatabase.typeMapping
-          .read(DriftSqlType.blob, data['${effectivePrefix}proto_bytes'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      modifiedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}modified_at']),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      protoBytes: attachedDatabase.typeMapping.read(
+        DriftSqlType.blob,
+        data['${effectivePrefix}proto_bytes'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      modifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}modified_at'],
+      ),
     );
   }
 
@@ -116,12 +159,13 @@ class Circuit extends DataClass implements Insertable<Circuit> {
   final Uint8List protoBytes;
   final DateTime createdAt;
   final DateTime? modifiedAt;
-  const Circuit(
-      {required this.id,
-      required this.name,
-      required this.protoBytes,
-      required this.createdAt,
-      this.modifiedAt});
+  const Circuit({
+    required this.id,
+    required this.name,
+    required this.protoBytes,
+    required this.createdAt,
+    this.modifiedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -147,8 +191,10 @@ class Circuit extends DataClass implements Insertable<Circuit> {
     );
   }
 
-  factory Circuit.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory Circuit.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Circuit(
       id: serializer.fromJson<int>(json['id']),
@@ -170,28 +216,30 @@ class Circuit extends DataClass implements Insertable<Circuit> {
     };
   }
 
-  Circuit copyWith(
-          {int? id,
-          String? name,
-          Uint8List? protoBytes,
-          DateTime? createdAt,
-          Value<DateTime?> modifiedAt = const Value.absent()}) =>
-      Circuit(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        protoBytes: protoBytes ?? this.protoBytes,
-        createdAt: createdAt ?? this.createdAt,
-        modifiedAt: modifiedAt.present ? modifiedAt.value : this.modifiedAt,
-      );
+  Circuit copyWith({
+    int? id,
+    String? name,
+    Uint8List? protoBytes,
+    DateTime? createdAt,
+    Value<DateTime?> modifiedAt = const Value.absent(),
+  }) => Circuit(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    protoBytes: protoBytes ?? this.protoBytes,
+    createdAt: createdAt ?? this.createdAt,
+    modifiedAt: modifiedAt.present ? modifiedAt.value : this.modifiedAt,
+  );
   Circuit copyWithCompanion(CircuitsCompanion data) {
     return Circuit(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      protoBytes:
-          data.protoBytes.present ? data.protoBytes.value : this.protoBytes,
+      protoBytes: data.protoBytes.present
+          ? data.protoBytes.value
+          : this.protoBytes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      modifiedAt:
-          data.modifiedAt.present ? data.modifiedAt.value : this.modifiedAt,
+      modifiedAt: data.modifiedAt.present
+          ? data.modifiedAt.value
+          : this.modifiedAt,
     );
   }
 
@@ -209,7 +257,12 @@ class Circuit extends DataClass implements Insertable<Circuit> {
 
   @override
   int get hashCode => Object.hash(
-      id, name, $driftBlobEquality.hash(protoBytes), createdAt, modifiedAt);
+    id,
+    name,
+    $driftBlobEquality.hash(protoBytes),
+    createdAt,
+    modifiedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -240,8 +293,8 @@ class CircuitsCompanion extends UpdateCompanion<Circuit> {
     required Uint8List protoBytes,
     this.createdAt = const Value.absent(),
     this.modifiedAt = const Value.absent(),
-  })  : name = Value(name),
-        protoBytes = Value(protoBytes);
+  }) : name = Value(name),
+       protoBytes = Value(protoBytes);
   static Insertable<Circuit> custom({
     Expression<int>? id,
     Expression<String>? name,
@@ -258,12 +311,13 @@ class CircuitsCompanion extends UpdateCompanion<Circuit> {
     });
   }
 
-  CircuitsCompanion copyWith(
-      {Value<int>? id,
-      Value<String>? name,
-      Value<Uint8List>? protoBytes,
-      Value<DateTime>? createdAt,
-      Value<DateTime?>? modifiedAt}) {
+  CircuitsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<Uint8List>? protoBytes,
+    Value<DateTime>? createdAt,
+    Value<DateTime?>? modifiedAt,
+  }) {
     return CircuitsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -318,20 +372,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [circuits];
 }
 
-typedef $$CircuitsTableCreateCompanionBuilder = CircuitsCompanion Function({
-  Value<int> id,
-  required String name,
-  required Uint8List protoBytes,
-  Value<DateTime> createdAt,
-  Value<DateTime?> modifiedAt,
-});
-typedef $$CircuitsTableUpdateCompanionBuilder = CircuitsCompanion Function({
-  Value<int> id,
-  Value<String> name,
-  Value<Uint8List> protoBytes,
-  Value<DateTime> createdAt,
-  Value<DateTime?> modifiedAt,
-});
+typedef $$CircuitsTableCreateCompanionBuilder =
+    CircuitsCompanion Function({
+      Value<int> id,
+      required String name,
+      required Uint8List protoBytes,
+      Value<DateTime> createdAt,
+      Value<DateTime?> modifiedAt,
+    });
+typedef $$CircuitsTableUpdateCompanionBuilder =
+    CircuitsCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<Uint8List> protoBytes,
+      Value<DateTime> createdAt,
+      Value<DateTime?> modifiedAt,
+    });
 
 class $$CircuitsTableFilterComposer
     extends Composer<_$AppDatabase, $CircuitsTable> {
@@ -343,19 +399,29 @@ class $$CircuitsTableFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<Uint8List> get protoBytes => $composableBuilder(
-      column: $table.protoBytes, builder: (column) => ColumnFilters(column));
+    column: $table.protoBytes,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get modifiedAt => $composableBuilder(
-      column: $table.modifiedAt, builder: (column) => ColumnFilters(column));
+    column: $table.modifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$CircuitsTableOrderingComposer
@@ -368,19 +434,29 @@ class $$CircuitsTableOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<int> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<Uint8List> get protoBytes => $composableBuilder(
-      column: $table.protoBytes, builder: (column) => ColumnOrderings(column));
+    column: $table.protoBytes,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get modifiedAt => $composableBuilder(
-      column: $table.modifiedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.modifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CircuitsTableAnnotationComposer
@@ -399,29 +475,37 @@ class $$CircuitsTableAnnotationComposer
       $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<Uint8List> get protoBytes => $composableBuilder(
-      column: $table.protoBytes, builder: (column) => column);
+    column: $table.protoBytes,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get modifiedAt => $composableBuilder(
-      column: $table.modifiedAt, builder: (column) => column);
+    column: $table.modifiedAt,
+    builder: (column) => column,
+  );
 }
 
-class $$CircuitsTableTableManager extends RootTableManager<
-    _$AppDatabase,
-    $CircuitsTable,
-    Circuit,
-    $$CircuitsTableFilterComposer,
-    $$CircuitsTableOrderingComposer,
-    $$CircuitsTableAnnotationComposer,
-    $$CircuitsTableCreateCompanionBuilder,
-    $$CircuitsTableUpdateCompanionBuilder,
-    (Circuit, BaseReferences<_$AppDatabase, $CircuitsTable, Circuit>),
-    Circuit,
-    PrefetchHooks Function()> {
+class $$CircuitsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CircuitsTable,
+          Circuit,
+          $$CircuitsTableFilterComposer,
+          $$CircuitsTableOrderingComposer,
+          $$CircuitsTableAnnotationComposer,
+          $$CircuitsTableCreateCompanionBuilder,
+          $$CircuitsTableUpdateCompanionBuilder,
+          (Circuit, BaseReferences<_$AppDatabase, $CircuitsTable, Circuit>),
+          Circuit,
+          PrefetchHooks Function()
+        > {
   $$CircuitsTableTableManager(_$AppDatabase db, $CircuitsTable table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -430,53 +514,56 @@ class $$CircuitsTableTableManager extends RootTableManager<
               $$CircuitsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $$CircuitsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<Uint8List> protoBytes = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime?> modifiedAt = const Value.absent(),
-          }) =>
-              CircuitsCompanion(
-            id: id,
-            name: name,
-            protoBytes: protoBytes,
-            createdAt: createdAt,
-            modifiedAt: modifiedAt,
-          ),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String name,
-            required Uint8List protoBytes,
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime?> modifiedAt = const Value.absent(),
-          }) =>
-              CircuitsCompanion.insert(
-            id: id,
-            name: name,
-            protoBytes: protoBytes,
-            createdAt: createdAt,
-            modifiedAt: modifiedAt,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<Uint8List> protoBytes = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> modifiedAt = const Value.absent(),
+              }) => CircuitsCompanion(
+                id: id,
+                name: name,
+                protoBytes: protoBytes,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required Uint8List protoBytes,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime?> modifiedAt = const Value.absent(),
+              }) => CircuitsCompanion.insert(
+                id: id,
+                name: name,
+                protoBytes: protoBytes,
+                createdAt: createdAt,
+                modifiedAt: modifiedAt,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $$CircuitsTableProcessedTableManager = ProcessedTableManager<
-    _$AppDatabase,
-    $CircuitsTable,
-    Circuit,
-    $$CircuitsTableFilterComposer,
-    $$CircuitsTableOrderingComposer,
-    $$CircuitsTableAnnotationComposer,
-    $$CircuitsTableCreateCompanionBuilder,
-    $$CircuitsTableUpdateCompanionBuilder,
-    (Circuit, BaseReferences<_$AppDatabase, $CircuitsTable, Circuit>),
-    Circuit,
-    PrefetchHooks Function()>;
+typedef $$CircuitsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CircuitsTable,
+      Circuit,
+      $$CircuitsTableFilterComposer,
+      $$CircuitsTableOrderingComposer,
+      $$CircuitsTableAnnotationComposer,
+      $$CircuitsTableCreateCompanionBuilder,
+      $$CircuitsTableUpdateCompanionBuilder,
+      (Circuit, BaseReferences<_$AppDatabase, $CircuitsTable, Circuit>),
+      Circuit,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;

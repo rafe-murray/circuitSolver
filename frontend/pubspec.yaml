@@ -10,20 +10,29 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.0.5
-  http: ^0.13.6
+  http: ^1.6.0
   drift: ^2.21.0
   sqlite3_flutter_libs: ^0.6.0
   path_provider: ^2.1.0
   path: ^1.9.0
-  protobuf: ^2.1.0
+  protobuf: ^6.0.0
+  ffi_bridge:
+    path: ../ffi_bridge
+  circuit_solver_proto:
+    path: ../circuit_solver_proto
+  uuid: ^4.6.0
+  freezed: ^4.0.0-dev.3
+  freezed_annotation: ^3.1.0
+  json_serializable: ^6.14.1
+  json_annotation: ^4.12.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
   build_runner: ^2.4.6
   drift_dev: ^2.21.0
-  protoc_plugin: ^20.0.0
+  protoc_plugin: ^25.0.0
 
 flutter:
   uses-material-design: true
