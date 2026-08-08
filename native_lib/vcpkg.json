@@ -2,9 +2,9 @@
   "name": "circuit-solver-lib",
   "version": "0.1.0",
   "dependencies": [
+    "ceres",
     "protobuf",
     "stduuid",
-    "ceres",
     {
       "name": "vcpkg-cmake",
       "host": true
@@ -12,7 +12,10 @@
     {
       "name": "vcpkg-cmake-config",
       "host": true
-    }
+    },
+    "spdlog",
+    "glog",
+    "abseil"
   ],
   "features": {
     "test": {

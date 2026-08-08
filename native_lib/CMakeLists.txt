@@ -23,22 +23,26 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
 add_library(circuitSolverLib STATIC)
 target_sources(
   circuitSolverLib
-  PRIVATE src/circuitGraph.cpp
-          src/expression.cpp
-          src/expressionNode.cpp
-          src/branch.cpp
-          src/edge.cpp
-          src/api.cpp
-          ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1alpha1/circuit_graph_message.proto)
+  PRIVATE
+    src/api.cpp
+    src/branch.cpp
+    src/circuitGraph.cpp
+    src/edge.cpp
+    src/expression.cpp
+    src/expressionNode.cpp
+    src/logging.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1alpha1/circuit_graph_message.proto
+)
 target_include_directories(circuitSolverLib PUBLIC include)
 
 include(FetchContent)
 
 find_package(Ceres CONFIG REQUIRED)
-
 find_package(Protobuf CONFIG REQUIRED)
-
 find_package(stduuid CONFIG REQUIRED)
+find_package(glog CONFIG REQUIRED)
+find_package(absl CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 # Generate protobuf code
 protobuf_generate(
@@ -55,7 +59,12 @@ set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 # TODO: make some headers private
 target_link_libraries(circuitSolverLib PRIVATE stduuid Ceres::ceres)
 
-target_link_libraries(circuitSolverLib PUBLIC protobuf::libprotobuf)
+target_link_libraries(circuitSolverLib PUBLIC
+  protobuf::libprotobuf
+  absl::log
+  glog::glog
+  spdlog::spdlog
+)
 
 # Compile the main executable add_executable(solver src/main.cpp)
 # target_link_libraries(solver PRIVATE circuitSolverLib)
