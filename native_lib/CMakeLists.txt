@@ -89,8 +89,12 @@ if(CIRCUITSOLVER_BUILD_TESTS)
 
   # configuration for the tests
   enable_testing()
-  add_executable(circuitsolverTests test/math.cpp test/circuit.cpp
-                                       test/utils.cpp)
+  add_executable(circuitsolverTests
+    test/api.cpp
+    test/circuit.cpp
+    test/math.cpp
+    test/utils.cpp
+  )
   target_compile_definitions(circuitsolverTests PRIVATE
       $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
       $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>

@@ -1,10 +1,16 @@
+#include <absl/status/status.h>
+#include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
 #include <stduuid/uuid.h>
 
+#include <string>
+
 #include "circuit_solver/branch.h"
 #include "circuit_solver/circuitGraph.h"
+#include "circuit_solver/edge.h"
 #include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
 #include "utils.h"
 
 TEST(CircuitTest, BuildBasicCircuit) {
@@ -163,4 +169,4 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   // std::cout << output << std::endl;
 }
 
-TEST(CircuitTest, LargeCircuit) {}
+// TEST(CircuitTest, LargeCircuit) {}
