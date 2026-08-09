@@ -1,6 +1,8 @@
+import 'dart:developer';
 import 'dart:ffi';
 import 'dart:typed_data';
 
+import 'package:circuit_solver_proto/circuit_solver_proto.dart';
 import 'package:ffi/ffi.dart';
 
 import 'circuit_solver_bindings_generated.dart';

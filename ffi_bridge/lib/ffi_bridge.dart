@@ -26,6 +26,10 @@ export 'src/circuit_solver_ffi.dart' show CircuitSolverException;
 /// - the result could not be serialized
 ///   ([CircuitSolverException.code] == [CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION]).
 Future<CircuitGraphMessage> solveCircuit(CircuitGraphMessage input) async {
+  // return await Isolate.run(() {
+  //   final resultBytes = solveCircuitSync(input.writeToBuffer());
+  //   return CircuitGraphMessage.fromBuffer(resultBytes);
+  // });
   final SendPort helperIsolateSendPort = await _helperIsolateSendPort;
   final int requestId = _nextRequestId++;
   final _SolveRequest request = _SolveRequest(requestId, input.writeToBuffer());
