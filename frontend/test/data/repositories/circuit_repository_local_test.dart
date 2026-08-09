@@ -9,8 +9,9 @@ import 'package:uuid/uuid.dart';
 void main() {
   group('CircuitRepositoryLocal', () {
     test('Circuit should be solved', () async {
+      final db = CircuitSolverDatabase.memory();
       final localSolverService = LocalSolverService();
-      final localStorageService = LocalStorageService();
+      final localStorageService = LocalStorageService(db: db);
       final circuitRepositoryLocal = CircuitRepositoryLocal(
         localSolverService: localSolverService,
         localStorageService: localStorageService,
@@ -108,12 +109,22 @@ void main() {
           );
 
           // ref
-          expect(resultVs.from.voltage, moreOrLessEquals(0, epsilon: rtol));
+          expect(
+            resultVs.from.voltage?.volts,
+            moreOrLessEquals(0, epsilon: rtol),
+          );
           // v1
-          expect(resultVs.to.voltage, moreOrLessEquals(5, epsilon: rtol));
+          expect(
+            resultVs.to.voltage?.volts,
+            moreOrLessEquals(5, epsilon: rtol),
+          );
           // v2
-          expect(resultR1.to.voltage, moreOrLessEquals(3, epsilon: rtol));
+          expect(
+            resultR1.to.voltage?.volts,
+            moreOrLessEquals(3, epsilon: rtol),
+          );
       }
+      await db.close();
     });
   });
 }
