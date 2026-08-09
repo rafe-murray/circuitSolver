@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/data/services/local/model/circuit_local_storage_model.dart';
+import 'package:frontend/utils/exceptions.dart';
 import 'package:frontend/utils/result.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -13,12 +14,17 @@ import 'package:uuid/uuid.dart';
 part 'local_storage_service.g.dart';
 
 class LocalStorageService {
+  LocalStorageService({required CircuitSolverDatabase db}) : _db = db;
+  final CircuitSolverDatabase _db;
   Future<Result<CircuitLocalStorageModel>> getCircuit(UuidValue id) async {
     try {
       final circuitRecord =
           await (_db.circuits.select()
                 ..where((circuit) => circuit.id.equals(id.toBytes())))
-              .getSingle();
+              .getSingleOrNull();
+      if (circuitRecord == null) {
+        return Result.error(NotFoundException('Id $id not found'));
+      }
       return Result.ok(_localStorageModelFromDatabaseModel(circuitRecord));
     } on Exception catch (error) {
       return Result.error(error);
@@ -59,8 +65,6 @@ class LocalStorageService {
       return Result.error(error);
     }
   }
-
-  final _CircuitSolverDatabase _db = _CircuitSolverDatabase();
 }
 
 extension on CircuitLocalStorageModel {
@@ -83,17 +87,19 @@ extension on CircuitLocalStorageModel {
 CircuitLocalStorageModel _localStorageModelFromDatabaseModel(
   _Circuit circuitRecord,
 ) {
-  final List<Map<String, dynamic>> jsonWires = jsonDecode(circuitRecord.wires);
-  final List<Map<String, dynamic>> jsonComponents = jsonDecode(
-    circuitRecord.components,
-  );
+  final List<dynamic> jsonWires = jsonDecode(circuitRecord.wires);
+  final List<dynamic> jsonComponents = jsonDecode(circuitRecord.components);
   return CircuitLocalStorageModel(
     id: UuidValue.fromByteList(circuitRecord.id),
     name: circuitRecord.name,
     created: circuitRecord.created,
     modified: circuitRecord.modified,
-    wires: jsonWires.map(WireModel.fromJson).toList(),
-    components: jsonComponents.map(ComponentModel.fromJson).toList(),
+    wires: jsonWires
+        .map((json) => WireModel.fromJson(json as Map<String, dynamic>))
+        .toList(),
+    components: jsonComponents
+        .map((json) => ComponentModel.fromJson(json as Map<String, dynamic>))
+        .toList(),
   );
 }
 
@@ -110,9 +116,9 @@ class _Circuits extends Table {
 }
 
 @DriftDatabase(tables: [_Circuits])
-class _CircuitSolverDatabase extends _$_CircuitSolverDatabase {
-  _CircuitSolverDatabase() : super(_db);
-
+class CircuitSolverDatabase extends _$_CircuitSolverDatabase {
+  CircuitSolverDatabase() : super(_db);
+  CircuitSolverDatabase.memory() : super(NativeDatabase.memory());
   @override
   int get schemaVersion => 1;
 
