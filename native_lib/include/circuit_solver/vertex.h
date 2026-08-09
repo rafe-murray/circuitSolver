@@ -1,7 +1,7 @@
 #ifndef VERTEX_H
 #define VERTEX_H
 
-#include <uuid.h>
+#include <stduuid/uuid.h>
 
 #include <memory>
 #include <optional>

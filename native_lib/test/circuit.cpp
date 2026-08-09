@@ -1,6 +1,6 @@
 #include <google/protobuf/util/json_util.h>
 #include <gtest/gtest.h>
-#include <uuid.h>
+#include <stduuid/uuid.h>
 
 #include "circuit_solver/branch.h"
 #include "circuit_solver/circuitGraph.h"
@@ -19,9 +19,9 @@ TEST(CircuitTest, BuildBasicCircuit) {
   Vertex ref(vertexId0, 0);
   Vertex v1(vertexId1);
   Vertex v2(vertexId2);
-  Edge vs = Edge(edgeId0, VoltageSource(ref, v1, 5));
-  Edge r1 = Edge(edgeId1, Resistor(v1, v2, 2));
-  Edge r2 = Edge(edgeId2, Resistor(v2, ref, 3));
+  Edge vs = Edge(edgeId0, VoltageSource({.from = ref, .to = v1}, 5));
+  Edge r1 = Edge(edgeId1, Resistor({.from = v1, .to = v2}, 2));
+  Edge r2 = Edge(edgeId2, Resistor({.from = v2, .to = ref}, 3));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
@@ -54,11 +54,12 @@ TEST(CircuitTest, RealDiode) {
   Vertex v1(vertexId1);
   Vertex v2(vertexId2);
   Vertex vcc(vertexId3, 15);
-  Edge d(edgeId0, RealDiode(v1, v2, 50e-12, 1.5, 25e-3));
-  Edge r1(edgeId1, Resistor(vcc, v1, 2000));
-  Edge r2(edgeId2, Resistor(vcc, v2, 3000));
-  Edge r3(edgeId3, Resistor(v1, ref, 3000));
-  Edge r4(edgeId4, Resistor(v2, ref, 3000));
+  Edge d(edgeId0, RealDiode({.from = v1, .to = v2},
+                            {.i0 = 50e-12, .n = 1.5, .vt = 25e-3}));
+  Edge r1(edgeId1, Resistor({.from = vcc, .to = v1}, 2000));
+  Edge r2(edgeId2, Resistor({.from = vcc, .to = v2}, 3000));
+  Edge r3(edgeId3, Resistor({.from = v1, .to = ref}, 3000));
+  Edge r4(edgeId4, Resistor({.from = v2, .to = ref}, 3000));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
@@ -91,11 +92,11 @@ TEST(CircuitTest, IdealDiode) {
   Vertex v1(vertexId1);
   Vertex v2(vertexId2);
   Vertex vcc(vertexId3, 15);
-  Edge d(edgeId0, IdealDiode(v1, v2, 0.7));
-  Edge r1(edgeId1, Resistor(vcc, v1, 2000));
-  Edge r2(edgeId2, Resistor(v1, ref, 3000));
-  Edge r3(edgeId3, Resistor(vcc, v2, 3000));
-  Edge r4(edgeId4, Resistor(v2, ref, 3000));
+  Edge d(edgeId0, IdealDiode({.from = v1, .to = v2}, {.voltage = 0.7}));
+  Edge r1(edgeId1, Resistor({.from = vcc, .to = v1}, 2000));
+  Edge r2(edgeId2, Resistor({.from = v1, .to = ref}, 3000));
+  Edge r3(edgeId3, Resistor({.from = vcc, .to = v2}, 3000));
+  Edge r4(edgeId4, Resistor({.from = v2, .to = ref}, 3000));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));
@@ -145,9 +146,9 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   Vertex ref(vertexId0, 0);
   Vertex v1(vertexId1);
   Vertex v2(vertexId2);
-  Edge vs = Edge(edgeId0, VoltageSource(ref, v1, 5));
-  Edge r1 = Edge(edgeId1, Resistor(v1, v2, 2));
-  Edge r2 = Edge(edgeId2, Resistor(v2, ref, 3));
+  Edge vs = Edge(edgeId0, VoltageSource({.from = ref, .to = v1}, 5));
+  Edge r1 = Edge(edgeId1, Resistor({.from = v1, .to = v2}, 2));
+  Edge r2 = Edge(edgeId2, Resistor({.from = v2, .to = ref}, 3));
   EXPECT_TRUE(cg.addVertex(ref));
   EXPECT_TRUE(cg.addVertex(v1));
   EXPECT_TRUE(cg.addVertex(v2));

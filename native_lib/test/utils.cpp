@@ -2,6 +2,7 @@
 
 #include <absl/status/status.h>
 #include <google/protobuf/util/json_util.h>
+#include <stduuid/uuid.h>
 
 #include <filesystem>
 #include <fstream>

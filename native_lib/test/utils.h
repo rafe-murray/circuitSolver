@@ -1,9 +1,9 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 #include <gtest/gtest.h>
+#include <stduuid/uuid.h>
 
 #include "circuit_solver/proto.h"
-#include "uuid.h"
 
 // Backup for if this is not defined in the cmake file
 #ifndef TEST_DATA_DIR

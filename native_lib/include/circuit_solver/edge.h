@@ -1,7 +1,7 @@
 #ifndef EDGE_H
 #define EDGE_H
 
-#include <uuid.h>
+#include <stduuid/uuid.h>
 
 #include <memory>
 

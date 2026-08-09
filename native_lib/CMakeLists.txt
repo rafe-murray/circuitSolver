@@ -87,7 +87,9 @@ if(CIRCUITSOLVER_BUILD_TESTS)
   add_executable(circuitsolverTests test/math.cpp test/circuit.cpp
                                        test/utils.cpp)
   target_link_libraries(circuitsolverTests PRIVATE GTest::gtest_main
-                                                      circuitsolver)
+                                                      circuitsolver
+                                                      Ceres::ceres
+                                                    )
 
   # Add a compiler macro for test data file directory
   set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/test/data")

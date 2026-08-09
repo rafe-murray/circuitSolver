@@ -54,7 +54,7 @@ TEST(MathTest, CeresOptimizationLarge) {
   Expression x, y, z;
   Expression a = (-x + 1) * (y - x + 1) - 10;
   Expression b = y - x * y * y * 3 - 60;
-  Expression c = exp(-y - 2.40797) - z;
+  Expression c = circuitsolver::expression::exp(-y - 2.40797) - z;
   ceres::Problem problem;
   a.addToProblem(problem);
   b.addToProblem(problem);
