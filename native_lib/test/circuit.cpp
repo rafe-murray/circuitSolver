@@ -32,7 +32,6 @@ TEST(CircuitTest, BuildBasicCircuit) {
   EXPECT_TRUE(IsWithinRelativeTolerance(ref.getVoltage().evaluate(), 0));
   EXPECT_TRUE(IsWithinRelativeTolerance(5, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(3, v2.getVoltage().evaluate()));
-  // TODO: find out why this fails
   EXPECT_TRUE(IsWithinRelativeTolerance(1, vs.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1, r1.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1, r2.getCurrent().evaluate()));
