@@ -3,9 +3,9 @@ import 'package:ffi_bridge/ffi_bridge.dart';
 import 'package:frontend/utils/result.dart';
 
 class LocalSolverService {
-  Future<Result<CircuitGraphMessage>> solve(CircuitGraphMessage input) async {
+  Future<Result<CircuitGraphMessage>> solve(CircuitGraphMessage circuit) async {
     try {
-      final solvedCircuit = await solveCircuit(input);
+      final solvedCircuit = await solveCircuit(circuit);
       return Result.ok(solvedCircuit);
     } on CircuitSolverException catch (error) {
       return Result.error(error);
