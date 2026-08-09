@@ -1,10 +1,13 @@
 #pragma once
 
+#include <expected>
+#include <functional>
 #include <memory>
 #include <ostream>
 #include <unordered_map>
 
 #include "circuit_solver/edge.h"
+#include "circuit_solver/errors.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
@@ -22,7 +25,8 @@ struct partitionSolution {
 
 class CircuitGraph {
  public:
-  auto solveCircuit() -> bool;
+  auto solveCircuit() -> std::expected<std::reference_wrapper<CircuitGraph>,
+                                       circuitsolver::CircuitSolverError>;
 
   /**
    * Creates a new graph instance

@@ -93,32 +93,10 @@ const char* getErrorMessage(int errorNumber);
 #include <string>
 #include <string_view>
 
+#include "circuit_solver/errors.h"
 #include "circuit_solver/proto.h"
 
 namespace circuitsolver {
-
-enum class ErrorType : int8_t {
-  NoSolution = CIRCUITSOLVER_ERROR_NO_SOLUTION,
-  FailedSerialization = CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION,
-  InvalidInput = CIRCUITSOLVER_ERROR_INVALID_INPUT,
-};
-
-// Class for errors from circuitsolver
-class CircuitSolverError {
-  // TODO: add helper constructors
-  // TODO: make message optional
-
- public:
-  explicit CircuitSolverError(ErrorType type, std::string_view message);
-
-  [[nodiscard]] auto message() const -> std::string;
-  [[nodiscard]] auto type() const -> ErrorType;
-
- private:
-  ErrorType _type;
-  std::string _message;
-};
-
 auto solveCircuit(const proto::CircuitGraph& input)
     -> std::expected<proto::CircuitGraph, CircuitSolverError>;
 

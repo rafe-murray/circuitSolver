@@ -1,25 +1,39 @@
 #include "circuit_solver/circuitGraph.h"
 
+#include <ceres/problem.h>
+#include <ceres/solver.h>
+#include <fmt/format.h>
+#include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
+#include <spdlog/spdlog.h>
 #include <uuid.h>
 
+#include <bitset>
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
+#include <expected>
+#include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <random>
+#include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/match.h"
 #include "circuit_solver/config.h"
 #include "circuit_solver/edge.h"
+#include "circuit_solver/errors.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 
+using circuitsolver::CircuitSolverError;
 using circuitsolver::constants::solutionCostThreshold;
 using circuitsolver::constants::unknownSeedStdDeviation;
 
@@ -84,23 +98,37 @@ auto CircuitGraph::solvePartition(const std::vector<double*>& basis,
  */
 
 // TODO: fix case of no discontinuities
-auto CircuitGraph::solveCircuit() -> bool {
+auto CircuitGraph::solveCircuit()
+    -> std::expected<std::reference_wrapper<CircuitGraph>, CircuitSolverError> {
+  // TODO: Find a non-exponential solution for discontinuities
+  constexpr int maxBasisSize = 32;
   std::vector<double*> basis = getDiscontinuities();
-  size_t basisSize = basis.size();
-  int numPartitions = 0;
+  int basisSize = static_cast<int>(basis.size());
+  if (basisSize >= maxBasisSize) {
+    return std::unexpected{CircuitSolverError{
+        circuitsolver::ErrorType::TooManyDiscontinuities,
+        fmt::format("Cannot solve circuit since it has too many elements with "
+                    "discontinuous behaviour. The max is {}; you had {}",
+                    maxBasisSize, basisSize)}};
+  }
+  uint32_t numPartitions = 0;
   if (basisSize > 0) {
-    numPartitions = 1 << basisSize;
+    // 2^n partitions: combinations for each discontinuity's high and low case
+    numPartitions = uint32_t{1} << basisSize;
   } else {
     numPartitions = 1;
   }
+  SPDLOG_DEBUG("numPartitions: {}, basisSize: {}", numPartitions, basisSize);
   std::vector<partitionSolution> solutions(numPartitions);
   std::vector<std::vector<bool>> isHigh;
-  for (int i = 0; i < numPartitions; i++) {
+  for (uint32_t i = 0; i < numPartitions; i++) {
     isHigh.emplace_back(basisSize);
-    for (size_t j = 0; j < basisSize; j++) {
-      isHigh.at(i).at(j) = (((i >> j) & 1) != 0);
+    for (int j = 0; j < basisSize; j++) {
+      auto bits = std::bitset<maxBasisSize>(i);
+      isHigh.at(i).at(j) = bits[j];
     }
-    solutions.at(i) = solvePartition(basis, isHigh.at(i));
+    solutions.insert(solutions.begin() + i,
+                     solvePartition(basis, isHigh.at(i)));
     resetUnknowns();
   }
   double minError = std::numeric_limits<double>::max();
@@ -118,7 +146,8 @@ auto CircuitGraph::solveCircuit() -> bool {
     }
   }
   if (!isSolutionUsable) {
-    return false;
+    return std::unexpected{CircuitSolverError{
+        circuitsolver::ErrorType::NoSolution, "No usable solution found"}};
   }
 
   partitionSolution solution = solutions.at(bestIndex);
@@ -129,7 +158,11 @@ auto CircuitGraph::solveCircuit() -> bool {
       resetUnknowns();
       return solveCircuit();
     }  // Exceeded max solve attempts
-    return false;
+    return std::unexpected{CircuitSolverError{
+        circuitsolver::ErrorType::NoSolution,
+        fmt::format("Exceeded maximum solve attempts of {}. No solution was "
+                    "within cost threshold {}",
+                    maxSolveAttempts, solutionCostThreshold)}};
   }
   assert(solution.expressions.size() == solution.parameters.size());
   for (size_t i = 0; i < solution.expressions.size(); i++) {
@@ -140,7 +173,7 @@ auto CircuitGraph::solveCircuit() -> bool {
     }
     solution.expressions.at(i).markKnown();
   }
-  return true;
+  return *this;
 }
 
 void CircuitGraph::resetUnknowns() {
@@ -212,8 +245,8 @@ auto CircuitGraph::hasEdge(const Edge& e) -> bool {
 auto CircuitGraph::addVertex(const Vertex& v) -> bool {
   // Only add the vertex if it doesn't already exist
   if (!hasVertex(v)) {
-    adjacencyList.at(v.getId()) = std::vector<uuids::uuid>();
-    vertices.at(v.getId()) = std::make_unique<Vertex>(v);
+    adjacencyList.insert_or_assign(v.getId(), std::vector<uuids::uuid>());
+    vertices.insert_or_assign(v.getId(), std::make_unique<Vertex>(v));
     return true;
   }
   return false;
@@ -244,7 +277,7 @@ auto CircuitGraph::addEdge(std::unique_ptr<Edge> e) -> bool {
   // Add the edge in both directions
   adjacencyList.at(from.getId()).push_back(e->getId());
   adjacencyList.at(to.getId()).push_back(e->getId());
-  edges.at(e->getId()) = std::move(e);
+  edges.insert_or_assign(e->getId(), std::move(e));
   return true;
 }
 
@@ -339,13 +372,13 @@ auto CircuitGraph::toProto() const -> proto::CircuitGraph {
   proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
     const std::string vertexId = uuids::to_string(vertex.getId());
-    (*proto.mutable_vertices()).at(vertexId) = proto::Vertex();
+    (*proto.mutable_vertices()).insert({vertexId, proto::Vertex()});
     auto* protoVertex = &proto.mutable_vertices()->at(vertexId);
     vertex.toProto(protoVertex);
   }
   for (auto& edge : getEdges()) {
     const std::string edgeId = uuids::to_string(edge.getId());
-    (*proto.mutable_edges()).at(edgeId) = proto::Edge();
+    (*proto.mutable_edges()).insert({edgeId, proto::Edge()});
     auto* protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge);
   }
@@ -356,13 +389,13 @@ auto CircuitGraph::toProto(std::span<const double> parameters) const
   proto::CircuitGraph proto;
   for (auto& vertex : getVertices()) {
     const std::string vertexId = uuids::to_string(vertex.getId());
-    (*proto.mutable_vertices()).at(vertexId) = proto::Vertex();
+    (*proto.mutable_vertices()).insert({vertexId, proto::Vertex()});
     auto* protoVertex = &proto.mutable_vertices()->at(vertexId);
     vertex.toProto(protoVertex, parameters);
   }
   for (auto& edge : getEdges()) {
     const std::string edgeId = uuids::to_string(edge.getId());
-    (*proto.mutable_edges()).at(edgeId) = proto::Edge();
+    (*proto.mutable_edges()).insert({edgeId, proto::Edge()});
     auto* protoEdge = &proto.mutable_edges()->at(edgeId);
     edge.toProto(protoEdge, parameters);
   }

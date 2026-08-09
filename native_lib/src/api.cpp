@@ -2,6 +2,7 @@
 
 #include <absl/status/status.h>
 #include <fmt/format.h>
+#include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
 
 #include <cstddef>
@@ -9,10 +10,15 @@
 #include <expected>
 #include <limits>
 #include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
+#include "circuit_solver/c_errors.h"
 #include "circuit_solver/circuitGraph.h"
+#include "circuit_solver/errors.h"
 #include "circuit_solver/proto.h"
 
 void destroyGraphBuffer(void* graphBuffer) { operator delete(graphBuffer); }
@@ -91,12 +97,6 @@ auto solveGraphFromJson(const char* inputJson, char** outputJson) -> int {
 
 namespace circuitsolver {
 
-CircuitSolverError::CircuitSolverError(ErrorType type, std::string_view message)
-    : _type(type), _message(message) {}
-
-auto CircuitSolverError::message() const -> std::string { return _message; }
-auto CircuitSolverError::type() const -> ErrorType { return _type; }
-
 auto solveCircuit(const proto::CircuitGraph& input)
     -> std::expected<proto::CircuitGraph, CircuitSolverError> {
   std::optional<std::unique_ptr<CircuitGraph>> optionalCircuitGraph =
@@ -108,12 +108,10 @@ auto solveCircuit(const proto::CircuitGraph& input)
   }
   std::unique_ptr<CircuitGraph> circuitGraph =
       std::move(optionalCircuitGraph.value());
-  bool solved = circuitGraph->solveCircuit();
-  if (!solved) {
-    return std::unexpected{
-        CircuitSolverError{ErrorType::NoSolution, "No solution found"}};
-  }
-  return circuitGraph->toProto();
+  return circuitGraph->solveCircuit().transform(
+      [](const CircuitGraph& graph) -> proto::CircuitGraph {
+        return graph.toProto();
+      });
 }
 auto solveGraphFromJson(std::string_view input)
     -> std::expected<std::string, CircuitSolverError> {

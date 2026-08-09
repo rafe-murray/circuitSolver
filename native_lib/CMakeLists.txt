@@ -28,6 +28,7 @@ target_sources(
     src/branch.cpp
     src/circuitGraph.cpp
     src/edge.cpp
+    src/errors.cpp
     src/expression.cpp
     src/expressionNode.cpp
     src/logging.cpp
@@ -66,6 +67,11 @@ target_link_libraries(circuitsolver PUBLIC
   spdlog::spdlog
 )
 
+target_compile_definitions(circuitsolver PRIVATE
+    $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
+    $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
+)
+
 install(TARGETS circuitsolver
     ARCHIVE DESTINATION lib    # For static libraries (.a, .lib)
     LIBRARY DESTINATION lib    # For shared libraries (.so, .dylib)
@@ -83,9 +89,13 @@ if(CIRCUITSOLVER_BUILD_TESTS)
 
   # configuration for the tests
   enable_testing()
-
   add_executable(circuitsolverTests test/math.cpp test/circuit.cpp
                                        test/utils.cpp)
+  target_compile_definitions(circuitsolverTests PRIVATE
+      $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
+      $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
+  )
+
   target_link_libraries(circuitsolverTests PRIVATE GTest::gtest_main
                                                       circuitsolver
                                                       Ceres::ceres
