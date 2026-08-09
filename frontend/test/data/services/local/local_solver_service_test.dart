@@ -51,9 +51,30 @@ void main() {
             'Circuit should solve correctly: Error: ${result.error.toString()}',
           );
         case Ok():
+          final rtol = 1e-4;
           expect(
             result.value.vertices[ref.id]?.voltage,
-            moreOrLessEquals(0, epsilon: 1e-4),
+            moreOrLessEquals(0, epsilon: rtol),
+          );
+          expect(
+            result.value.vertices[v1.id]?.voltage,
+            moreOrLessEquals(5, epsilon: rtol),
+          );
+          expect(
+            result.value.vertices[v2.id]?.voltage,
+            moreOrLessEquals(3, epsilon: rtol),
+          );
+          expect(
+            result.value.edges[vs.id]?.current,
+            moreOrLessEquals(1, epsilon: rtol),
+          );
+          expect(
+            result.value.edges[r1.id]?.current,
+            moreOrLessEquals(1, epsilon: rtol),
+          );
+          expect(
+            result.value.edges[r2.id]?.current,
+            moreOrLessEquals(1, epsilon: rtol),
           );
       }
     });
