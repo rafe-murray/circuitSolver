@@ -27,17 +27,18 @@ class CircuitRepositoryLocal implements CircuitRepository {
 
   @override
   Future<Result<List<CircuitModel>>> getAllCircuits() async {
-    return (await _localStorageService.getCircuits()).transform(
-      (localStorageCircuitList) => localStorageCircuitList
-          .map(
-            (localStorageCircuit) => CircuitModel(
-              id: localStorageCircuit.id,
-              components: components,
-              wires: wires,
-            ),
-          )
-          .toList(),
-    );
+    // return (await _localStorageService.getCircuits()).transform(
+    //   (localStorageCircuitList) => localStorageCircuitList
+    //       .map(
+    //         (localStorageCircuit) => CircuitModel(
+    //           id: localStorageCircuit.id,
+    //           components: components,
+    //           wires: wires,
+    //         ),
+    //       )
+    //       .toList(),
+    // );
+    throw UnimplementedError();
   }
 
   @override
@@ -65,7 +66,7 @@ extension on EndpointModel {
   }
 
   EndpointModel copyWithVertex(CircuitGraphMessage_Vertex vertex) {
-    return copyWith(voltage: Voltage(v: vertex.voltage));
+    return copyWith(voltage: Voltage(volts: vertex.voltage));
   }
 }
 
@@ -120,13 +121,15 @@ extension on ComponentModel {
     BranchModel branch;
     switch (edge.whichSpecificBranch()) {
       case CircuitGraphMessage_Edge_SpecificBranch.currentSource:
-        branch = CurrentSource(voltage: Voltage(v: edge.currentSource.voltage));
+        branch = CurrentSource(
+          voltage: Voltage(volts: edge.currentSource.voltage),
+        );
       case CircuitGraphMessage_Edge_SpecificBranch.idealDiode:
-        branch = IdealDiode(voltage: Voltage(v: edge.idealDiode.voltage));
+        branch = IdealDiode(voltage: Voltage(volts: edge.idealDiode.voltage));
       case CircuitGraphMessage_Edge_SpecificBranch.realDiode:
         branch = RealDiode(
           i0: Current(a: edge.realDiode.i0),
-          vt: Voltage(v: edge.realDiode.vt),
+          vt: Voltage(volts: edge.realDiode.vt),
           n: edge.realDiode.n,
         );
       case CircuitGraphMessage_Edge_SpecificBranch.resistor:
@@ -134,10 +137,12 @@ extension on ComponentModel {
           resistance: Resistance(ohms: edge.resistor.resistance),
         );
       case CircuitGraphMessage_Edge_SpecificBranch.voltageSource:
-        branch = VoltageSource(voltage: Voltage(v: edge.voltageSource.voltage));
+        branch = VoltageSource(
+          voltage: Voltage(volts: edge.voltageSource.voltage),
+        );
       case CircuitGraphMessage_Edge_SpecificBranch.zenerDiode:
         branch = ZenerDiode(
-          vzt: Voltage(v: edge.zenerDiode.vzt),
+          vzt: Voltage(volts: edge.zenerDiode.vzt),
           izt: Current(a: edge.zenerDiode.izt),
           rzt: Resistance(ohms: edge.zenerDiode.rzt),
         );

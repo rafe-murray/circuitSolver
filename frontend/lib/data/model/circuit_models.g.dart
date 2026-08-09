@@ -176,10 +176,10 @@ Map<String, dynamic> _$ResistanceToJson(_Resistance instance) =>
     <String, dynamic>{'ohms': instance.ohms};
 
 _Voltage _$VoltageFromJson(Map<String, dynamic> json) =>
-    _Voltage(v: (json['v'] as num).toDouble());
+    _Voltage(volts: (json['volts'] as num).toDouble());
 
 Map<String, dynamic> _$VoltageToJson(_Voltage instance) => <String, dynamic>{
-  'v': instance.v,
+  'volts': instance.volts,
 };
 
 _Current _$CurrentFromJson(Map<String, dynamic> json) =>

@@ -2294,7 +2294,7 @@ as double,
 /// @nodoc
 mixin _$Voltage {
 
- double get v;
+ double get volts;
 /// Create a copy of Voltage
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -2307,16 +2307,16 @@ $VoltageCopyWith<Voltage> get copyWith => _$VoltageCopyWithImpl<Voltage>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Voltage&&(identical(other.v, v) || other.v == v));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Voltage&&(identical(other.volts, volts) || other.volts == volts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,v);
+int get hashCode => Object.hash(runtimeType,volts);
 
 @override
 String toString() {
-  return 'Voltage(v: $v)';
+  return 'Voltage(volts: $volts)';
 }
 
 
@@ -2327,7 +2327,7 @@ abstract mixin class $VoltageCopyWith<$Res>  {
   factory $VoltageCopyWith(Voltage value, $Res Function(Voltage) _then) = _$VoltageCopyWithImpl;
 @useResult
 $Res call({
- double v
+ double volts
 });
 
 
@@ -2344,9 +2344,9 @@ class _$VoltageCopyWithImpl<$Res>
 
 /// Create a copy of Voltage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? v = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? volts = null,}) {
   return _then(Voltage(
-v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
+volts: null == volts ? _self.volts : volts // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }
@@ -2432,10 +2432,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double v)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( double volts)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Voltage() when $default != null:
-return $default(_that.v);case _:
+return $default(_that.volts);case _:
   return orElse();
 
 }
@@ -2453,10 +2453,10 @@ return $default(_that.v);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double v)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( double volts)  $default,) {final _that = this;
 switch (_that) {
 case _Voltage():
-return $default(_that.v);case _:
+return $default(_that.volts);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2473,10 +2473,10 @@ return $default(_that.v);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double v)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( double volts)?  $default,) {final _that = this;
 switch (_that) {
 case _Voltage() when $default != null:
-return $default(_that.v);case _:
+return $default(_that.volts);case _:
   return null;
 
 }
@@ -2488,10 +2488,10 @@ return $default(_that.v);case _:
 @JsonSerializable()
 
 class _Voltage extends Voltage {
-  const _Voltage({required this.v}): super._();
+  const _Voltage({required this.volts}): super._();
   factory _Voltage.fromJson(Map<String, dynamic> json) => _$VoltageFromJson(json);
 
-@override final  double v;
+@override final  double volts;
 
 /// Create a copy of Voltage
 /// with the given fields replaced by the non-null parameter values.
@@ -2506,16 +2506,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Voltage&&(identical(other.v, v) || other.v == v));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Voltage&&(identical(other.volts, volts) || other.volts == volts));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,v);
+int get hashCode => Object.hash(runtimeType,volts);
 
 @override
 String toString() {
-  return 'Voltage(v: $v)';
+  return 'Voltage(volts: $volts)';
 }
 
 
@@ -2526,7 +2526,7 @@ abstract mixin class _$VoltageCopyWith<$Res> implements $VoltageCopyWith<$Res> {
   factory _$VoltageCopyWith(_Voltage value, $Res Function(_Voltage) _then) = __$VoltageCopyWithImpl;
 @override @useResult
 $Res call({
- double v
+ double volts
 });
 
 
@@ -2543,9 +2543,9 @@ class __$VoltageCopyWithImpl<$Res>
 
 /// Create a copy of Voltage
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? v = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? volts = null,}) {
   return _then(_Voltage(
-v: null == v ? _self.v : v // ignore: cast_nullable_to_non_nullable
+volts: null == volts ? _self.volts : volts // ignore: cast_nullable_to_non_nullable
 as double,
   ));
 }

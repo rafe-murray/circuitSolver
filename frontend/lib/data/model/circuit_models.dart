@@ -88,9 +88,8 @@ abstract class Resistance with _$Resistance {
 @freezed
 abstract class Voltage with _$Voltage {
   const Voltage._();
-  const factory Voltage({required double v}) = _Voltage;
-  double get volts => v;
-  double get milliVolts => v * 1000;
+  const factory Voltage({required double volts}) = _Voltage;
+  double get milliVolts => volts * 1000;
   factory Voltage.fromJson(Map<String, dynamic> json) =>
       _$VoltageFromJson(json);
 }
