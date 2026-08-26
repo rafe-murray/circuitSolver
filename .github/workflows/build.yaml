@@ -27,7 +27,7 @@ jobs:
         id: restore-build-cache
         uses: actions/cache/restore@v6
         with:
-          path: native_lib/build/vcpkg_installed"
+          path: native_lib/build/vcpkg_installed
           key: ${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
 
       - name: Configure CMake
