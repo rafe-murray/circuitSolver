@@ -95,7 +95,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/circuit_solver/v1alpha1/circuit_graph
 # target_link_libraries(solver PRIVATE circuitsolver)
 
 if(CIRCUITSOLVER_BUILD_TESTS)
-  find_package(gtest CONFIG REQUIRED)
+  find_package(GTest CONFIG REQUIRED)
 
   # configuration for the tests
   enable_testing()
