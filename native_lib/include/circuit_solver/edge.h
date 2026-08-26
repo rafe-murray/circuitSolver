@@ -4,14 +4,19 @@
 #include <stduuid/uuid.h>
 
 #include <memory>
+#include <optional>
+#include <span>
+#include <unordered_map>
 
 #include "circuit_solver/branch.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 
+/// Represents a circuit component
 class Edge {
  public:
+  /// Creates a new `Edge`
   Edge(uuids::uuid id, std::unique_ptr<Branch> branch);
   template <typename T>
   Edge(uuids::uuid id, const T& branch)

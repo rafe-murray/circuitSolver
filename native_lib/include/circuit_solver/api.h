@@ -97,13 +97,24 @@ const char* getErrorMessage(int errorNumber);
 #include "circuit_solver/proto.h"
 
 namespace circuitsolver {
+/// Solve a circuit
+///
+/// @param input the circuit to solve
+/// @return the solved circuit or an error
 auto solveCircuit(const proto::CircuitGraph& input)
     -> std::expected<proto::CircuitGraph, CircuitSolverError>;
 
-// Gets and returns a string version of a protocol buffer
+/// Solves a circuit from the string representation of its protobuf
+///
+/// @param input the circuit to solve
+/// @return the solved circuit, serialized from a protobuf, or an error
 auto solveGraphFromString(std::string_view input)
     -> std::expected<std::string, CircuitSolverError>;
 
+/// Solves a circuit from its JSON representation
+///
+/// @param input the circuit to solve
+/// @return the solved circuit, serialized as JSON, or an error
 auto solveGraphFromJson(std::string_view input)
     -> std::expected<std::string, CircuitSolverError>;
 
