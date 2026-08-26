@@ -3,8 +3,6 @@ name: Build with CMake
 on:
   push:
     branches: ["flutter-app"]
-    paths:
-      - native_lib
   pull_request:
     branches: ["main"]
     paths:
