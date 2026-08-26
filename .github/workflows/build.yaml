@@ -19,6 +19,8 @@ jobs:
       - uses: lukka/get-cmake@latest
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
