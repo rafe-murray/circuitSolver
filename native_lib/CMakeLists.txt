@@ -3,9 +3,13 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # For clangd support
 
-project(circuitsolver)
-
+# This needs to be before the call to project() so vcpkg can include the correct manifests
 option(CIRCUITSOLVER_BUILD_TESTS "Compile a test executable" OFF)
+if (CIRCUITSOLVER_BUILD_TESTS)
+  list(APPEND VCPKG_MANIFEST_FEATURES "test")
+endif()
+option(CIRCUITSOLVER_TEST_COVERAGE "Build targets with coverage included" OFF)
+project(circuitsolver)
 
 # Build and link to static libraries only
 # set(BUILD_SHARED_LIBS
@@ -17,6 +21,11 @@ add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
   # abseil generates a lot of warnings with nullability extensions but it is
   # fine as they are gated behind compiler-specific macros
   -Wno-nullability-extension)
+
+if(CIRCUITSOLVER_TEST_COVERAGE)
+  add_compile_options(--coverage)
+  add_link_options(--coverage)
+endif()
 
 # Add the source code as a library so it is exposed to both main executable and
 # tests
@@ -58,13 +67,14 @@ protobuf_generate(
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 # TODO: make some headers private
-target_link_libraries(circuitsolver PRIVATE stduuid Ceres::ceres)
+target_link_libraries(circuitsolver PRIVATE Ceres::ceres)
 
 target_link_libraries(circuitsolver PUBLIC
   protobuf::libprotobuf
   absl::log
   glog::glog
   spdlog::spdlog
+  stduuid
 )
 
 target_compile_definitions(circuitsolver PRIVATE
@@ -99,6 +109,8 @@ if(CIRCUITSOLVER_BUILD_TESTS)
       $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG>
       $<$<NOT:$<CONFIG:Debug>>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO>
   )
+  find_program(GCOV NAMES gcov)
+  set(CTEST_COVERAGE_COMMAND "${GCOV}")
 
   target_link_libraries(circuitsolverTests PRIVATE GTest::gtest_main
                                                       circuitsolver
