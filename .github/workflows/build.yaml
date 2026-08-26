@@ -31,7 +31,7 @@ jobs:
           key: ${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
 
       - name: Configure CMake
-        run: cmake native_lib --preset vcpkg -DCIRCUITSOLVER_BUILD_TEST=ON -DCIRCUITSOLVER_TEST_COVERAGE=ON
+        run: cmake native_lib --preset vcpkg -DCIRCUITSOLVER_BUILD_TESTS=ON -DCIRCUITSOLVER_TEST_COVERAGE=ON
 
       - name: Save Vcpkg Cache
         uses: actions/cache/save@v6
