@@ -25,5 +25,5 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           cmakeListsTxtPath: "${{ github.workspace }}/native_lib/CMakeLists.txt"
-          workflowPreset: vcpkg
+          configurePreset: vcpkg
           configurePresetAdditionalArgs: "['-DCIRCUITSOLVER_BUILD_TESTS=ON', '-DCIRCUITSOLVER_TEST_COVERAGE=ON']"
