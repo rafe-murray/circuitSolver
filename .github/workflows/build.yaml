@@ -21,9 +21,50 @@ jobs:
         uses: lukka/run-vcpkg@v11
         with:
           vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+          doNotCache: false
       - name: Run CMake
         uses: lukka/run-cmake@v10
         with:
           cmakeListsTxtPath: "${{ github.workspace }}/native_lib/CMakeLists.txt"
           configurePreset: vcpkg
           configurePresetAdditionalArgs: "['-DCIRCUITSOLVER_BUILD_TESTS=ON', '-DCIRCUITSOLVER_TEST_COVERAGE=ON']"
+          buildPreset: vcpkg
+          testPreset: vcpkg
+      - name: Generate Cobertura Report
+        uses: threeal/gcovr-action@v1.2.0
+        with:
+          root: native_lib
+          xml-out: cobertura.xml
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        with:
+          name: cobertura-report
+          path: cobertura.xml
+      # This needs compile_commands.json to already be generated
+      - uses: ZedThree/clang-tidy-review@v0.22.0
+        id: review
+
+      # Uploads an artefact containing clang_fixes.json
+      - uses: ZedThree/clang-tidy-review/upload@v0.22.0
+        id: upload-review
+
+      # If there are any comments, fail the check
+      - if: steps.review.outputs.total_comments > 0
+        run: exit 1
+  upload-coverage:
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      code-quality: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cobertura-report
+
+      - uses: actions/upload-code-coverage@v1
+        with:
+          file: cobertura.xml
+          language: C++
+          label: code-coverage/gcovr
