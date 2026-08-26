@@ -75,11 +75,10 @@ jobs:
         with:
           name: cobertura-report
 
-      - uses: actions/upload-code-coverage@v1
+      - uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: cobertura.xml
-          language: C++
-          label: code-coverage/gcovr
   review:
     needs: build
     runs-on: ubuntu-latest
