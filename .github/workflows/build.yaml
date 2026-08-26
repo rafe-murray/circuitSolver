@@ -39,6 +39,12 @@ jobs:
           path: native_lib/build/vcpkg_installed
           key: ${{ steps.restore-build-cache.outputs.cache-primary-key }}
 
+      - uses: actions/upload-artifact@v4
+        name: Upload compile_commands.json
+        with:
+          name: native-lib-compile-commands
+          path: native_lib/build/compile_commands.json
+
       - name: Build with CMake
         run: cmake --build native_lib/build
 
@@ -57,17 +63,6 @@ jobs:
           name: cobertura-report
           path: cobertura.xml
 
-      # This needs compile_commands.json to already be generated
-      - uses: ZedThree/clang-tidy-review@v0.23.1
-        id: review
-
-      # Uploads an artefact containing clang_fixes.json
-      - uses: ZedThree/clang-tidy-review/upload@v0.23.1
-        id: upload-review
-
-      # If there are any comments, fail the check
-      - if: steps.review.outputs.total_comments > 0
-        run: exit 1
   upload-coverage:
     needs: build
     if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
@@ -85,3 +80,26 @@ jobs:
           file: cobertura.xml
           language: C++
           label: code-coverage/gcovr
+  review:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-lib-compile-commands
+      # This needs compile_commands.json to already be generated
+      - uses: ZedThree/clang-tidy-review@v0.23.1
+        if: github.event_name == 'pull_request'
+        id: review
+        with:
+          build_dir: ./build
+          base_dir: ${{ github.workspace }}/native_lib
+
+      # Uploads an artefact containing clang_fixes.json
+      - uses: ZedThree/clang-tidy-review/upload@v0.23.1
+        if: github.event_name == 'pull_request'
+        id: upload-review
+
+      # If there are any comments, fail the check
+      - if: steps.review.outputs.total_comments > 0
+        run: exit 1
