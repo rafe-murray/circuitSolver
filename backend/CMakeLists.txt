@@ -40,7 +40,7 @@ add_executable(circuit-solver
 target_include_directories(circuit-solver PRIVATE ../native_lib/build)
 target_link_libraries(circuit-solver PRIVATE
   PkgConfig::Pistache
-  circuitSolverLib
+  circuitsolver
   opentelemetry-cpp::api
   opentelemetry-cpp::ext
   opentelemetry-cpp::logs
