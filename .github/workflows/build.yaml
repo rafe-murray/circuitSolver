@@ -22,37 +22,43 @@ jobs:
         with:
           vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
           doNotCache: false
-      - name: Restore Build Cache
+
+      - name: Restore Vcpkg Cache
         id: restore-build-cache
         uses: actions/cache/restore@v6
         with:
           path: |
-            "${{ github.workspace }}/native_lib/build"
+            "${{ github.workspace }}/native_lib/build/vcpkg_installed"
           key: ${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
-      - name: Run CMake
-        uses: lukka/run-cmake@v10
-        with:
-          cmakeListsTxtPath: "${{ github.workspace }}/native_lib/CMakeLists.txt"
-          configurePreset: vcpkg
-          configurePresetAdditionalArgs: "['-DCIRCUITSOLVER_BUILD_TESTS=ON', '-DCIRCUITSOLVER_TEST_COVERAGE=ON']"
-          buildPreset: vcpkg
-          testPreset: vcpkg
-      - name: Save Build Cache
+
+      - name: Configure CMake
+        run: cmake native_lib --preset vcpkg -DCIRCUITSOLVER_BUILD_TEST=ON -DCIRCUITSOLVER_TEST_COVERAGE=ON
+
+      - name: Save Vcpkg Cache
         uses: actions/cache/save@v6
         with:
           path: |
-            "${{ github.workspace }}/native_lib/build"
+            "${{ github.workspace }}/native_lib/build/vcpkg_installed"
           key: ${{ steps.restore-build-cache.outputs.cache-primary-key }}
+
+      - name: Build with CMake
+        run: cmake --build native_lib/build
+
+      - name: Test
+        run: ctest native_lib
+
       - name: Generate Cobertura Report
         uses: threeal/gcovr-action@v1.2.0
         with:
           root: native_lib
           xml-out: cobertura.xml
+
       - uses: actions/upload-artifact@v4
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         with:
           name: cobertura-report
           path: cobertura.xml
+
       # This needs compile_commands.json to already be generated
       - uses: ZedThree/clang-tidy-review@v0.23.1
         id: review
