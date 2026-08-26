@@ -41,11 +41,11 @@ jobs:
           name: cobertura-report
           path: cobertura.xml
       # This needs compile_commands.json to already be generated
-      - uses: ZedThree/clang-tidy-review@v0.22.0
+      - uses: ZedThree/clang-tidy-review@v0.23.1
         id: review
 
       # Uploads an artefact containing clang_fixes.json
-      - uses: ZedThree/clang-tidy-review/upload@v0.22.0
+      - uses: ZedThree/clang-tidy-review/upload@v0.23.1
         id: upload-review
 
       # If there are any comments, fail the check
