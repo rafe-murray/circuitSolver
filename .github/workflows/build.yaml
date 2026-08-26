@@ -1,0 +1,28 @@
+# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml for multi-platform support
+name: Build with CMake
+on:
+  push:
+    branches: ["flutter-app"]
+    paths:
+      - native_lib
+  pull_request:
+    branches: ["main"]
+    paths:
+      - native_lib
+env:
+  # CMake build type
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: lukka/get-cmake@latest
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: Run CMake
+        uses: lukka/run-cmake@v10
+        with:
+          cmakeListsTxtPath: "${{ github.workspace }}/native_lib/CMakeLists.txt"
+          configurePresetAdditionalArgs: "['-DCIRCUITSOLVER_BUILD_TESTS=ON', '-DCIRCUITSOLVER_TEST_COVERAGE=ON']"
