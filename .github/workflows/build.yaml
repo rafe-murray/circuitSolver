@@ -5,8 +5,6 @@ on:
     branches: ["flutter-app"]
   pull_request:
     branches: ["main"]
-    paths:
-      - native_lib
 env:
   # CMake build type
   BUILD_TYPE: Debug
