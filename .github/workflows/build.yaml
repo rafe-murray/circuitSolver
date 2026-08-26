@@ -2,41 +2,27 @@
 name: Build with CMake
 on:
   push:
-    branches: ["main"]
+    branches: ["flutter-app"]
     paths:
-      - backend
       - native_lib
   pull_request:
     branches: ["main"]
     paths:
-      - backend
       - native_lib
 env:
   # CMake build type
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
 
 jobs:
-  install-dependencies:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Install dependencies
-        run: |
-          # No point installing protobuf - the version on apt is too old
-          sudo apt-get install -y libceres-dev
-          sudo apt-get install -y libpistache-dev
-        # TODO: compile, install, and cache protobuf
-      - name: Configure CMake
-        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-        run: cmake -B ${{github.workspace}}/backend/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} ${{github.workspace}}/backend
-
-      - name: Build
-        # Build your program with the given configuration
-        run: cmake --build ${{github.workspace}}/backend/build --config ${{env.BUILD_TYPE}}
-
-      - name: Test
-        working-directory: ${{github.workspace}}/backend/build
-        # Execute tests defined by the CMake configuration.
-        # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-        run: ctest -C ${{env.BUILD_TYPE}}
+      - uses: actions/checkout@v7
+      - uses: lukka/get-cmake@latest
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: Run CMake
+        uses: lukka/run-cmake@v10
+        with:
+          cmakeListsTxtPath: "${{ github.workspace }}/native_lib/CMakeLists.txt"
+          configurePresetAdditionalArgs: "['-DCIRCUITSOLVER_BUILD_TESTS=ON', '-DCIRCUITSOLVER_TEST_COVERAGE=ON']"
