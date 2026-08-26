@@ -75,10 +75,10 @@ jobs:
         with:
           name: cobertura-report
 
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: cobertura.xml
+          files: cobertura.xml
   review:
     needs: build
     runs-on: ubuntu-latest
