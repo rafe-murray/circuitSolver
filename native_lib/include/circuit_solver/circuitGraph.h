@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ceres/solver.h>
-#include <uuid/uuid.h>
+#include <stduuid/uuid.h>
 
 #include <expected>
 #include <functional>
