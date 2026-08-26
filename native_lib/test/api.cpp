@@ -74,12 +74,12 @@ TEST(ApiTest, EdgesKeepIds) {
   outputGraph.ParseFromArray(outputBuffer, outputLength);
 
   EXPECT_TRUE(outputGraph.edges().at(vs.id()).id() != "");
-  EXPECT_TRUE(outputGraph.edges().at(vs.id()).id() !=
+  EXPECT_TRUE(outputGraph.edges().at(vs.id()).id() ==
               uuids::to_string(edgeId0));
   EXPECT_TRUE(outputGraph.edges().at(r1.id()).id() != "");
-  EXPECT_TRUE(outputGraph.edges().at(r1.id()).id() !=
+  EXPECT_TRUE(outputGraph.edges().at(r1.id()).id() ==
               uuids::to_string(edgeId1));
   EXPECT_TRUE(outputGraph.edges().at(r2.id()).id() != "");
-  EXPECT_TRUE(outputGraph.edges().at(r2.id()).id() !=
+  EXPECT_TRUE(outputGraph.edges().at(r2.id()).id() ==
               uuids::to_string(edgeId2));
 }
