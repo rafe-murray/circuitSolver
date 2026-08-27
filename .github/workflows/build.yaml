@@ -19,7 +19,7 @@ jobs:
       - uses: aminya/setup-cpp@v1
         with:
           compiler: llvm-22
-          cmake: 4.4
+          cmake: 4.4.0
           ninja: true
           vcpkg: true
       - name: Restore Vcpkg Cache
