@@ -49,7 +49,7 @@ jobs:
         run: cmake --build native_lib/build
 
       - name: Test
-        run: ctest native_lib
+        run: ctest --test-dir native_lib
 
       - name: Generate Cobertura Report
         uses: threeal/gcovr-action@v1.2.0
