@@ -68,7 +68,7 @@ jobs:
       #     path: cobertura.xml
       - uses: codecov/codecov-action@v7
         with:
-          gcov_executable: ${{ env.LLVM_PATH }}/bin/${{ env.GCOV }}
+          gcov_executable: ${{ env.GCOV }}
           gcov_include: native_lib/src,native_lib/include
           token: ${{ secrets.CODECOV_TOKEN }}
 
