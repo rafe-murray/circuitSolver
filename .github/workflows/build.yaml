@@ -16,12 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+          doNotCache: false
       - uses: aminya/setup-cpp@v1
         with:
           compiler: llvm-22
           cmake: 4.4.0
           ninja: true
-          vcpkg: true
       - name: Restore Vcpkg Cache
         id: restore-build-cache
         uses: actions/cache/restore@v6
