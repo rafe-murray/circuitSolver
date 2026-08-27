@@ -19,11 +19,9 @@ jobs:
       - uses: aminya/setup-cpp@v1
         with:
           compiler: llvm-22
-          cmake: true
+          cmake: 4.4
           ninja: true
           vcpkg: true
-      - name: Source C++ Build Environment
-        run: source ~/.cpprc # activate cpp environment variables
       - name: Restore Vcpkg Cache
         id: restore-build-cache
         uses: actions/cache/restore@v6
