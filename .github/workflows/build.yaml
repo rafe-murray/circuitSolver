@@ -57,7 +57,7 @@ jobs:
       - name: Generate Cobertura Report
         uses: threeal/gcovr-action@v1.2.0
         with:
-          gcov-executable: ${{ env.GCOV }}
+          gcov-executable: ${{ env.LLVM_PATH }}/${{ env.GCOV }}
           root: native_lib
           xml-out: cobertura.xml
 
