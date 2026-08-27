@@ -54,35 +54,40 @@ jobs:
       - name: Test
         run: ctest --test-dir native_lib/build
 
-      - name: Generate Cobertura Report
-        uses: threeal/gcovr-action@v1.2.0
-        with:
-          gcov-executable: ${{ env.LLVM_PATH }}/bin/${{ env.GCOV }}
-          root: native_lib
-          xml-out: cobertura.xml
-
-      - uses: actions/upload-artifact@v4
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        with:
-          name: cobertura-report
-          path: cobertura.xml
-
-  upload-coverage:
-    needs: build
-    if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      code-quality: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: cobertura-report
-
+      # - name: Generate Cobertura Report
+      #   uses: threeal/gcovr-action@v1.2.0
+      #   with:
+      #     gcov-executable: ${{ env.LLVM_PATH }}/bin/${{ env.GCOV }}
+      #     root: native_lib
+      #     xml-out: cobertura.xml
+      #
+      # - uses: actions/upload-artifact@v4
+      #   if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+      #   with:
+      #     name: cobertura-report
+      #     path: cobertura.xml
       - uses: codecov/codecov-action@v7
         with:
+          gcov_executable: ${{ env.LLVM_PATH }}/bin/${{ env.GCOV }}
+          gcov_include: native_lib/src,native_lib/include
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: cobertura.xml
+
+  # upload-coverage:
+  #   needs: build
+  #   if: ${{ !cancelled() && needs.build.result == 'success' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     code-quality: write
+  #   steps:
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         name: cobertura-report
+  #
+  #     - uses: codecov/codecov-action@v7
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         files: cobertura.xml
   review:
     needs: build
     runs-on: ubuntu-latest
