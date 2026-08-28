@@ -16,15 +16,43 @@ project(circuitsolver)
 #     OFF
 #     CACHE BOOL "Build all libraries as static" FORCE)
 
-add_compile_options(-Wall -Wextra -Wpedantic -Wconversion -Wno-sign-conversion
+add_compile_options(
+  -Wall
+  -Wextra
+  -Wpedantic
+  -Wconversion
+  -Wno-sign-conversion
   -Wno-missing-field-initializers
-  # abseil generates a lot of warnings with nullability extensions but it is
-  # fine as they are gated behind compiler-specific macros
-  -Wno-nullability-extension)
+)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+  add_compile_options(
+      # abseil generates a lot of warnings with nullability extensions but it is
+      # fine as they are gated behind compiler-specific macros
+      -Wno-nullability-extension
+  )
+endif()
 
 if(CIRCUITSOLVER_TEST_COVERAGE)
-  add_compile_options(--coverage)
-  add_link_options(--coverage)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # Flags specific to GCC
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    # Flags specific to Clang or Apple Clang
+    add_compile_options(
+      -fprofile-instr-generate
+      -fcoverage-mapping
+      -fcoverage-compilation-dir=native_lib/..
+      -fcoverage-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=./circuitsolver/native_lib
+    )
+    add_link_options(
+      -fprofile-instr-generate
+      -fcoverage-mapping
+      -fcoverage-compilation-dir=native_lib/..
+      -fcoverage-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=./circuitsolver/native_lib
+    )
+  endif()
 endif()
 
 # Add the source code as a library so it is exposed to both main executable and

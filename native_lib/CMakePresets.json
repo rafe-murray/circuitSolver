@@ -8,6 +8,14 @@
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
       }
+    },
+    {
+      "name": "tests",
+      "inherits": "vcpkg",
+      "cacheVariables": {
+        "CIRCUITSOLVER_BUILD_TESTS": "ON",
+        "CIRCUITSOLVER_TEST_COVERAGE": true
+      }
     }
   ]
 }
