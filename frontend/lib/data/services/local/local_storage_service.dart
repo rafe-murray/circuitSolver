@@ -72,14 +72,9 @@ extension on CircuitLocalStorageModel {
     return _CircuitsCompanion(
       id: Value(id.toBytes()),
       name: Value(name),
-      wires: Value(
-        '[${wires.map((wire) => jsonEncode(wire.toJson())).join(',')}]',
-      ),
-      components: Value(
-        '[${components.map((component) => jsonEncode(component.toJson())).join(',')}]',
-      ),
       created: Value(created),
       modified: Value(modified),
+      circuit: Value(jsonEncode(circuit)),
     );
   }
 }
@@ -87,36 +82,30 @@ extension on CircuitLocalStorageModel {
 CircuitLocalStorageModel _localStorageModelFromDatabaseModel(
   _Circuit circuitRecord,
 ) {
-  final List<dynamic> jsonWires = jsonDecode(circuitRecord.wires);
-  final List<dynamic> jsonComponents = jsonDecode(circuitRecord.components);
+  // final List<dynamic> jsonWires = jsonDecode(circuitRecord.wires);
+  // final List<dynamic> jsonComponents = jsonDecode(circuitRecord.components);
   return CircuitLocalStorageModel(
     id: UuidValue.fromByteList(circuitRecord.id),
     name: circuitRecord.name,
     created: circuitRecord.created,
     modified: circuitRecord.modified,
-    wires: jsonWires
-        .map((json) => WireModel.fromJson(json as Map<String, dynamic>))
-        .toList(),
-    components: jsonComponents
-        .map((json) => ComponentModel.fromJson(json as Map<String, dynamic>))
-        .toList(),
+    circuit: jsonDecode(circuitRecord.circuit),
   );
 }
 
 class _Circuits extends Table {
   BlobColumn get id => blob()();
   TextColumn get name => text()();
-  TextColumn get wires => text()();
-  TextColumn get components => text()();
   DateTimeColumn get created => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get modified => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get circuit => text()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
 @DriftDatabase(tables: [_Circuits])
-class CircuitSolverDatabase extends _$_CircuitSolverDatabase {
+class CircuitSolverDatabase extends _$CircuitSolverDatabase {
   CircuitSolverDatabase() : super(_db);
   CircuitSolverDatabase.memory() : super(NativeDatabase.memory());
   @override

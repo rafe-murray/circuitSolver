@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
+// ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'circuit_local_storage_model.dart';
@@ -9,13 +9,12 @@ part of 'circuit_local_storage_model.dart';
 // FreezedGenerator
 // **************************************************************************
 
-// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$CircuitLocalStorageModel {
 
-@UuidValueConverter() UuidValue get id; String get name; DateTime get created; DateTime get modified; List<WireModel> get wires; List<ComponentModel> get components;
+@UuidValueConverter() UuidValue get id; String get name; DateTime get created; DateTime get modified; CircuitModel get circuit;
 /// Create a copy of CircuitLocalStorageModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +25,16 @@ $CircuitLocalStorageModelCopyWith<CircuitLocalStorageModel> get copyWith => _$Ci
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CircuitLocalStorageModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.created, created) || other.created == created)&&(identical(other.modified, modified) || other.modified == modified)&&const DeepCollectionEquality().equals(other.wires, wires)&&const DeepCollectionEquality().equals(other.components, components));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CircuitLocalStorageModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.created, created) || other.created == created)&&(identical(other.modified, modified) || other.modified == modified)&&(identical(other.circuit, circuit) || other.circuit == circuit));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,created,modified,const DeepCollectionEquality().hash(wires),const DeepCollectionEquality().hash(components));
+int get hashCode => Object.hash(runtimeType,id,name,created,modified,circuit);
 
 @override
 String toString() {
-  return 'CircuitLocalStorageModel(id: $id, name: $name, created: $created, modified: $modified, wires: $wires, components: $components)';
+  return 'CircuitLocalStorageModel(id: $id, name: $name, created: $created, modified: $modified, circuit: $circuit)';
 }
 
 
@@ -46,7 +45,7 @@ abstract mixin class $CircuitLocalStorageModelCopyWith<$Res>  {
   factory $CircuitLocalStorageModelCopyWith(CircuitLocalStorageModel value, $Res Function(CircuitLocalStorageModel) _then) = _$CircuitLocalStorageModelCopyWithImpl;
 @useResult
 $Res call({
-@UuidValueConverter() UuidValue id, String name, DateTime created, DateTime modified, List<WireModel> wires, List<ComponentModel> components
+@UuidValueConverter() UuidValue id, String name, DateTime created, DateTime modified, CircuitModel circuit
 });
 
 
@@ -63,15 +62,14 @@ class _$CircuitLocalStorageModelCopyWithImpl<$Res>
 
 /// Create a copy of CircuitLocalStorageModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? created = null,Object? modified = null,Object? wires = null,Object? components = null,}) {
-  return _then(CircuitLocalStorageModel(
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? created = null,Object? modified = null,Object? circuit = null,}) {
+  return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as UuidValue,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,modified: null == modified ? _self.modified : modified // ignore: cast_nullable_to_non_nullable
-as DateTime,wires: null == wires ? _self.wires : wires // ignore: cast_nullable_to_non_nullable
-as List<WireModel>,components: null == components ? _self.components : components // ignore: cast_nullable_to_non_nullable
-as List<ComponentModel>,
+as DateTime,circuit: null == circuit ? _self.circuit : circuit // ignore: cast_nullable_to_non_nullable
+as CircuitModel,
   ));
 }
 
@@ -156,10 +154,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  List<WireModel> wires,  List<ComponentModel> components)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  CircuitModel circuit)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CircuitLocalStorageModel() when $default != null:
-return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_that.components);case _:
+return $default(_that.id,_that.name,_that.created,_that.modified,_that.circuit);case _:
   return orElse();
 
 }
@@ -177,10 +175,10 @@ return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  List<WireModel> wires,  List<ComponentModel> components)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  CircuitModel circuit)  $default,) {final _that = this;
 switch (_that) {
 case _CircuitLocalStorageModel():
-return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_that.components);case _:
+return $default(_that.id,_that.name,_that.created,_that.modified,_that.circuit);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +195,10 @@ return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  List<WireModel> wires,  List<ComponentModel> components)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@UuidValueConverter()  UuidValue id,  String name,  DateTime created,  DateTime modified,  CircuitModel circuit)?  $default,) {final _that = this;
 switch (_that) {
 case _CircuitLocalStorageModel() when $default != null:
-return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_that.components);case _:
+return $default(_that.id,_that.name,_that.created,_that.modified,_that.circuit);case _:
   return null;
 
 }
@@ -212,27 +210,14 @@ return $default(_that.id,_that.name,_that.created,_that.modified,_that.wires,_th
 
 
 class _CircuitLocalStorageModel implements CircuitLocalStorageModel {
-  const _CircuitLocalStorageModel({@UuidValueConverter() required this.id, required this.name, required this.created, required this.modified, required  List<WireModel> wires, required  List<ComponentModel> components}): _wires = wires,_components = components;
+  const _CircuitLocalStorageModel({@UuidValueConverter() required this.id, required this.name, required this.created, required this.modified, required this.circuit});
   
 
 @override@UuidValueConverter() final  UuidValue id;
 @override final  String name;
 @override final  DateTime created;
 @override final  DateTime modified;
- final  List<WireModel> _wires;
-@override List<WireModel> get wires {
-  if (_wires is EqualUnmodifiableListView) return _wires;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_wires);
-}
-
- final  List<ComponentModel> _components;
-@override List<ComponentModel> get components {
-  if (_components is EqualUnmodifiableListView) return _components;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_components);
-}
-
+@override final  CircuitModel circuit;
 
 /// Create a copy of CircuitLocalStorageModel
 /// with the given fields replaced by the non-null parameter values.
@@ -244,16 +229,16 @@ _$CircuitLocalStorageModelCopyWith<_CircuitLocalStorageModel> get copyWith => __
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CircuitLocalStorageModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.created, created) || other.created == created)&&(identical(other.modified, modified) || other.modified == modified)&&const DeepCollectionEquality().equals(other._wires, _wires)&&const DeepCollectionEquality().equals(other._components, _components));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CircuitLocalStorageModel&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.created, created) || other.created == created)&&(identical(other.modified, modified) || other.modified == modified)&&(identical(other.circuit, circuit) || other.circuit == circuit));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,created,modified,const DeepCollectionEquality().hash(_wires),const DeepCollectionEquality().hash(_components));
+int get hashCode => Object.hash(runtimeType,id,name,created,modified,circuit);
 
 @override
 String toString() {
-  return 'CircuitLocalStorageModel(id: $id, name: $name, created: $created, modified: $modified, wires: $wires, components: $components)';
+  return 'CircuitLocalStorageModel(id: $id, name: $name, created: $created, modified: $modified, circuit: $circuit)';
 }
 
 
@@ -264,7 +249,7 @@ abstract mixin class _$CircuitLocalStorageModelCopyWith<$Res> implements $Circui
   factory _$CircuitLocalStorageModelCopyWith(_CircuitLocalStorageModel value, $Res Function(_CircuitLocalStorageModel) _then) = __$CircuitLocalStorageModelCopyWithImpl;
 @override @useResult
 $Res call({
-@UuidValueConverter() UuidValue id, String name, DateTime created, DateTime modified, List<WireModel> wires, List<ComponentModel> components
+@UuidValueConverter() UuidValue id, String name, DateTime created, DateTime modified, CircuitModel circuit
 });
 
 
@@ -281,15 +266,14 @@ class __$CircuitLocalStorageModelCopyWithImpl<$Res>
 
 /// Create a copy of CircuitLocalStorageModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? created = null,Object? modified = null,Object? wires = null,Object? components = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? created = null,Object? modified = null,Object? circuit = null,}) {
   return _then(_CircuitLocalStorageModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as UuidValue,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,created: null == created ? _self.created : created // ignore: cast_nullable_to_non_nullable
 as DateTime,modified: null == modified ? _self.modified : modified // ignore: cast_nullable_to_non_nullable
-as DateTime,wires: null == wires ? _self._wires : wires // ignore: cast_nullable_to_non_nullable
-as List<WireModel>,components: null == components ? _self._components : components // ignore: cast_nullable_to_non_nullable
-as List<ComponentModel>,
+as DateTime,circuit: null == circuit ? _self.circuit : circuit // ignore: cast_nullable_to_non_nullable
+as CircuitModel,
   ));
 }
 

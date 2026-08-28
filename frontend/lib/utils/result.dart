@@ -11,11 +11,21 @@ sealed class Result<T> {
   Result<U> transform<U>(U Function(T) f) {
     Result<T> localThis = this;
     switch (localThis) {
-      case Ok<T>():
+      case Ok():
         final test = f(localThis.value);
         return Result.ok(test);
-      case Error<T>():
+      case Error():
         return Result.error(localThis.error);
+    }
+  }
+
+  T valueOrThrow() {
+    Result<T> localThis = this;
+    switch (localThis) {
+      case Ok():
+        return localThis.value;
+      case Error():
+        throw localThis.error;
     }
   }
 }

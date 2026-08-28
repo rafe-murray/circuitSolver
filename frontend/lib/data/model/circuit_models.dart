@@ -1,3 +1,4 @@
+import 'package:dart_mappable/dart_mappable.dart';
 import 'package:frontend/utils/json.dart';
 import 'package:uuid/uuid_value.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -5,56 +6,120 @@ import 'dart:ui';
 
 part 'circuit_models.freezed.dart';
 part 'circuit_models.g.dart';
+part 'circuit_models.mapper.dart';
 
-@freezed
-abstract class CircuitModel with _$CircuitModel {
-  const factory CircuitModel({
-    @UuidValueConverter() required UuidValue id,
-    String? name,
-    required List<ComponentModel> components,
-    required List<WireModel> wires,
-  }) = _CircuitModel;
+// TODO: use a separate List<EndpointModel> for the endpoints.
+//
+// This will allow us to reference them by id only in the components and wires,
+// and thus make updates to endpoints easy - which is important for UI responsiveness
 
-  factory CircuitModel.fromJson(Map<String, dynamic> json) =>
-      _$CircuitModelFromJson(json);
+@MappableClass()
+class CircuitModel with CircuitModelMappable {
+  final UuidValue id;
+  final String? name;
+  final List<ComponentModel> components;
+  final List<WireModel> wires;
+  final Map<UuidValue, EndpointModel> endpoints;
+  const CircuitModel({
+    required this.id,
+    required this.name,
+    required this.components,
+    required this.wires,
+    required this.endpoints,
+  });
 }
 
-@freezed
-abstract class WireModel with _$WireModel {
-  const factory WireModel({
-    @UuidValueConverter() required UuidValue id,
-    // not named from and to since not meaningful in this context
-    required EndpointModel endpoint1,
-    required EndpointModel endpoint2,
-  }) = _WireModel;
-  factory WireModel.fromJson(Map<String, dynamic> json) =>
-      _$WireModelFromJson(json);
+@MappableClass(discriminatorKey: 'type')
+sealed class Patch<K, V> with PatchMappable<K, V> {
+  @MappableConstructor()
+  const Patch._();
+
+  // const factory Patch.add({required Iterable<(K, V)> value}) = Add<K, V>;
+  // const factory Patch.remove({required K position}) = Remove<K, V>;
+  // const factory Patch.change({required K position, required V value}) =
+  //     Change<K, V>;
+  // const factory Patch.replace({required Iterable<(K, V)> values}) =
+  //     Replace<K, V>;
 }
 
-@freezed
-abstract class ComponentModel with _$ComponentModel {
-  const factory ComponentModel({
-    @UuidValueConverter() required UuidValue id,
-    required EndpointModel from,
-    required EndpointModel to,
-    required BranchModel branch,
-    Current? current,
-  }) = _ComponentModel;
-
-  factory ComponentModel.fromJson(Map<String, dynamic> json) =>
-      _$ComponentModelFromJson(json);
+@MappableClass(discriminatorValue: 'add')
+class Add<K, V> extends Patch<K, V> with AddMappable<K, V> {
+  final Iterable<(K, V)> value;
+  const Add({required this.value}) : super._();
 }
 
-@freezed
-abstract class EndpointModel with _$EndpointModel {
-  const factory EndpointModel({
-    @OffsetConverter() required Offset pos,
-    @UuidValueConverter() required UuidValue id,
-    Voltage? voltage,
-  }) = _EndpointModel;
+@MappableClass(discriminatorValue: 'remove')
+class Remove<K, V> extends Patch<K, V> with RemoveMappable<K, V> {
+  final K position;
+  const Remove({required this.position}) : super._();
+}
 
-  factory EndpointModel.fromJson(Map<String, dynamic> json) =>
-      _$EndpointModelFromJson(json);
+@MappableClass(discriminatorValue: 'change')
+class Change<K, V> extends Patch<K, V> with ChangeMappable<K, V> {
+  final K position;
+  final V value;
+  const Change({required this.position, required this.value}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'replace')
+class Replace<K, V> extends Patch<K, V> with ReplaceMappable<K, V> {
+  final Iterable<(K, V)> values;
+  const Replace({required this.values}) : super._();
+}
+
+@MappableClass()
+class PatchCircuitModel with PatchCircuitModelMappable {
+  final UuidValue id;
+  final Patch<void, String?>? name;
+  final Patch<int, ComponentModel>? components;
+  final Patch<int, WireModel>? wires;
+  final Patch<UuidValue, EndpointModel>? endpoints;
+  const PatchCircuitModel({
+    required this.id,
+    this.name,
+    this.components,
+    this.wires,
+    this.endpoints,
+  });
+}
+
+@MappableClass()
+class WireModel with WireModelMappable {
+  final UuidValue id;
+  // not named from and to since not meaningful in this context
+  final UuidValue endpoint1Id;
+  final UuidValue endpoint2Id;
+
+  const WireModel({
+    required this.id,
+    required this.endpoint1Id,
+    required this.endpoint2Id,
+  });
+}
+
+@MappableClass()
+class ComponentModel with ComponentModelMappable {
+  final UuidValue id;
+  final UuidValue fromId;
+  final UuidValue toId;
+  final BranchModel branch;
+  final Current? current;
+
+  const ComponentModel({
+    required this.id,
+    required this.fromId,
+    required this.toId,
+    required this.branch,
+    this.current,
+  });
+}
+
+@MappableClass()
+class EndpointModel with EndpointModelMappable {
+  final Offset pos;
+  final UuidValue id;
+  final Voltage? voltage;
+  const EndpointModel({required this.pos, required this.id, this.voltage});
 }
 
 @freezed

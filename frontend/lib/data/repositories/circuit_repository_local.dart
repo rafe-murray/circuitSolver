@@ -3,6 +3,8 @@ import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/data/repositories/circuit_repository.dart';
 import 'package:frontend/data/services/local/local_solver_service.dart';
 import 'package:frontend/data/services/local/local_storage_service.dart';
+import 'package:frontend/data/services/local/model/circuit_local_storage_model.dart';
+import 'package:frontend/utils/exceptions.dart';
 import 'package:frontend/utils/result.dart';
 import 'package:uuid/uuid.dart';
 import 'package:uuid/uuid_value.dart';
@@ -27,30 +29,136 @@ class CircuitRepositoryLocal implements CircuitRepository {
 
   @override
   Future<Result<List<CircuitModel>>> getAllCircuits() async {
-    // return (await _localStorageService.getCircuits()).transform(
-    //   (localStorageCircuitList) => localStorageCircuitList
-    //       .map(
-    //         (localStorageCircuit) => CircuitModel(
-    //           id: localStorageCircuit.id,
-    //           components: components,
-    //           wires: wires,
-    //         ),
-    //       )
-    //       .toList(),
-    // );
-    throw UnimplementedError();
+    return (await _localStorageService.getCircuits()).transform(
+      (localStorageCircuitList) => localStorageCircuitList
+          .map((localStorageCircuit) => localStorageCircuit.circuit)
+          .toList(),
+    );
   }
 
   @override
-  Future<Result<CircuitModel>> getCircuit(UuidValue id) {
-    // TODO: implement getCircuit
-    throw UnimplementedError();
+  Future<Result<CircuitModel>> getCircuit(UuidValue id) async {
+    return (await _localStorageService.getCircuit(id)).transform(
+      (circuitLocalStorageModel) => circuitLocalStorageModel.circuit,
+    );
   }
 
   @override
-  Future<Result<void>> saveCircuit(CircuitModel circuit) {
-    // TODO: implement saveCircuit
-    throw UnimplementedError();
+  Future<Result<void>> saveCircuit(CircuitModel circuit) async {
+    final oldCircuit = await _localStorageService.getCircuit(circuit.id);
+    switch (oldCircuit) {
+      case Ok<CircuitLocalStorageModel>():
+        _localStorageService.putCircuit(
+          CircuitLocalStorageModel(
+            id: circuit.id,
+            name: circuit.name ?? "",
+            created: oldCircuit.value.created,
+            modified: DateTime.now(),
+            circuit: circuit,
+          ),
+        );
+        return Result.ok(null);
+      case Error<CircuitLocalStorageModel>():
+        if (oldCircuit.error is NotFoundException) {
+          _localStorageService.putCircuit(
+            CircuitLocalStorageModel(
+              id: circuit.id,
+              name: circuit.name ?? "",
+              created: DateTime.now(),
+              modified: DateTime.now(),
+              circuit: circuit,
+            ),
+          );
+          return Result.ok(null);
+        }
+        return Result.error(oldCircuit.error);
+    }
+  }
+
+  @override
+  Future<Result<void>> patchCircuit(PatchCircuitModel circuit) async {
+    final oldCircuitResult = await _localStorageService.getCircuit(circuit.id);
+    if (oldCircuitResult is Error) {
+      return oldCircuitResult;
+    }
+    final oldCircuitLocalStorageModel = oldCircuitResult.valueOrThrow();
+    final oldCircuit = oldCircuitLocalStorageModel.circuit;
+    final endpointsPatch = circuit.endpoints;
+    final Map<UuidValue, EndpointModel>? newEndpoints;
+    switch (endpointsPatch) {
+      case Add():
+        oldCircuit.endpoints.addEntries(
+          endpointsPatch.value.map((record) => MapEntry(record.$1, record.$2)),
+        );
+        newEndpoints = oldCircuit.endpoints;
+        break;
+      case Remove():
+        oldCircuit.endpoints.remove(endpointsPatch.position);
+        newEndpoints = oldCircuit.endpoints;
+        break;
+      case Change():
+        oldCircuit.endpoints[endpointsPatch.position] = endpointsPatch.value;
+        newEndpoints = oldCircuit.endpoints;
+        break;
+      case Replace():
+        newEndpoints = Map.fromEntries(
+          endpointsPatch.values.map((record) => MapEntry(record.$1, record.$2)),
+        );
+        break;
+      case null:
+        newEndpoints = null;
+        break;
+    }
+
+    final componentsPatch = circuit.components;
+    final List<ComponentModel>? newComponents;
+    switch (componentsPatch) {
+      case null:
+        newComponents = null;
+      case Add<int, ComponentModel>():
+        oldCircuit.components.addAll(
+          componentsPatch.value.map((record) => record.$2),
+        );
+        newComponents = oldCircuit.components;
+      case Remove<int, ComponentModel>():
+        oldCircuit.components.removeAt(componentsPatch.position);
+        newComponents = oldCircuit.components;
+      case Change<int, ComponentModel>():
+        oldCircuit.components[componentsPatch.position] = componentsPatch.value;
+        newComponents = oldCircuit.components;
+      case Replace<int, ComponentModel>():
+        newComponents = componentsPatch.values
+            .map((record) => record.$2)
+            .toList();
+    }
+
+    final wiresPatch = circuit.wires;
+    final List<WireModel>? newWires;
+    switch (wiresPatch) {
+      case null:
+        newWires = null;
+      case Add<int, WireModel>():
+        oldCircuit.wires.addAll(wiresPatch.value.map((record) => record.$2));
+        newWires = oldCircuit.wires;
+      case Remove<int, WireModel>():
+        oldCircuit.wires.removeAt(wiresPatch.position);
+        newWires = oldCircuit.wires;
+      case Change<int, WireModel>():
+        oldCircuit.wires[wiresPatch.position] = wiresPatch.value;
+        newWires = oldCircuit.wires;
+      case Replace<int, WireModel>():
+        newWires = wiresPatch.values.map((record) => record.$2).toList();
+    }
+
+    final newCircuitLocalStorageModel = oldCircuitLocalStorageModel.copyWith(
+      modified: DateTime.now(),
+      circuit: oldCircuit.copyWith(
+        endpoints: newEndpoints,
+        components: newComponents,
+        wires: newWires,
+      ),
+    );
+    return _localStorageService.putCircuit(newCircuitLocalStorageModel);
   }
 }
 
@@ -74,12 +182,12 @@ extension on ComponentModel {
   CircuitGraphMessage_Edge toEdge(
     Map<UuidValue, UuidValue> removedToReplacementVertexIds,
   ) {
-    final toId = removedToReplacementVertexIds[to.id] ?? to.id;
-    final fromId = removedToReplacementVertexIds[from.id] ?? from.id;
+    final edgeToId = removedToReplacementVertexIds[toId] ?? toId;
+    final edgeFromId = removedToReplacementVertexIds[fromId] ?? fromId;
     final edge = CircuitGraphMessage_Edge(
       id: id.toString(),
-      fromId: fromId.toString(),
-      toId: toId.toString(),
+      fromId: edgeFromId.toString(),
+      toId: edgeToId.toString(),
       current: current?.amps,
     );
     final currentBranch = branch;
@@ -163,13 +271,17 @@ extension on CircuitModel {
     CircuitGraphMessage circuitGraph = CircuitGraphMessage();
     final Map<UuidValue, UuidValue> removedToReplacementVertexIds = {};
     for (WireModel wire in wires) {
-      removedToReplacementVertexIds[wire.endpoint1.id] = wire.id;
-      removedToReplacementVertexIds[wire.endpoint2.id] = wire.id;
+      removedToReplacementVertexIds[wire.endpoint1Id] = wire.id;
+      removedToReplacementVertexIds[wire.endpoint2Id] = wire.id;
     }
 
     for (ComponentModel component in components) {
-      final toVertex = component.to.toVertex(removedToReplacementVertexIds);
-      final fromVertex = component.from.toVertex(removedToReplacementVertexIds);
+      final toVertex = endpoints[component.toId]!.toVertex(
+        removedToReplacementVertexIds,
+      );
+      final fromVertex = endpoints[component.fromId]!.toVertex(
+        removedToReplacementVertexIds,
+      );
       circuitGraph.vertices[toVertex.id] = toVertex;
       circuitGraph.vertices[fromVertex.id] = fromVertex;
 
@@ -181,49 +293,30 @@ extension on CircuitModel {
   }
 
   CircuitModel copyWithGraph(CircuitGraphMessage circuitGraph) {
-    final newWires = <WireModel>[];
     final Map<UuidValue, UuidValue> endpointToWireIds = {};
     for (WireModel wire in wires) {
-      endpointToWireIds[wire.endpoint1.id] = wire.id;
-      endpointToWireIds[wire.endpoint2.id] = wire.id;
-      final vertex1 = circuitGraph.vertices[wire.endpoint1.id.toString()];
-      final EndpointModel endpoint1;
-      if (vertex1 == null) {
-        endpoint1 = wire.endpoint1;
+      endpointToWireIds[wire.endpoint1Id] = wire.id;
+      endpointToWireIds[wire.endpoint2Id] = wire.id;
+    }
+
+    final Map<UuidValue, EndpointModel> newEndpoints = {};
+    for (MapEntry<UuidValue, EndpointModel> endpointMapEntry
+        in endpoints.entries) {
+      final vertex = circuitGraph.vertices[endpointMapEntry.key.toString()];
+      final EndpointModel newEndpoint;
+      if (vertex == null) {
+        newEndpoint = endpointMapEntry.value;
       } else {
-        endpoint1 = wire.endpoint1.copyWithVertex(vertex1);
+        newEndpoint = endpointMapEntry.value.copyWithVertex(vertex);
       }
-      final vertex2 = circuitGraph.vertices[wire.endpoint2.id.toString()];
-      final EndpointModel endpoint2;
-      if (vertex2 == null) {
-        endpoint2 = wire.endpoint2;
-      } else {
-        endpoint2 = wire.endpoint2.copyWithVertex(vertex2);
-      }
-      newWires.add(wire.copyWith(endpoint1: endpoint1, endpoint2: endpoint2));
+      newEndpoints[endpointMapEntry.key] = newEndpoint;
     }
 
     final newComponents = <ComponentModel>[];
     for (ComponentModel component in components) {
       // Use the wire id if one matches up
-      final toId = endpointToWireIds[component.to.id] ?? component.to.id;
-      final fromId = endpointToWireIds[component.from.id] ?? component.from.id;
-      final toVertex = circuitGraph.vertices[toId.toString()];
-      final fromVertex = circuitGraph.vertices[fromId.toString()];
-      final EndpointModel to;
-      final EndpointModel from;
-
-      if (toVertex == null) {
-        to = component.to;
-      } else {
-        to = component.to.copyWithVertex(toVertex);
-      }
-
-      if (fromVertex == null) {
-        from = component.from;
-      } else {
-        from = component.from.copyWithVertex(fromVertex);
-      }
+      final toId = endpointToWireIds[component.toId] ?? component.toId;
+      final fromId = endpointToWireIds[component.fromId] ?? component.fromId;
 
       final edge = circuitGraph.edges[component.id.toString()];
       final ComponentModel componentWithEdge;
@@ -232,8 +325,8 @@ extension on CircuitModel {
       } else {
         componentWithEdge = component.copyWithEdge(edge);
       }
-      newComponents.add(componentWithEdge.copyWith(from: from, to: to));
+      newComponents.add(componentWithEdge.copyWith(toId: toId, fromId: fromId));
     }
-    return copyWith(wires: newWires, components: newComponents);
+    return copyWith(endpoints: newEndpoints, components: newComponents);
   }
 }

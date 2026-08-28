@@ -12,7 +12,6 @@ abstract class CircuitLocalStorageModel with _$CircuitLocalStorageModel {
     required String name,
     required DateTime created,
     required DateTime modified,
-    required List<WireModel> wires,
-    required List<ComponentModel> components,
+    required CircuitModel circuit,
   }) = _CircuitLocalStorageModel;
 }
