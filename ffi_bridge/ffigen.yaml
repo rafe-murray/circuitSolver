@@ -14,8 +14,6 @@ output:
 headers:
   entry-points:
     - "../native_lib/include/circuit_solver/api.h"
-  include-directives:
-    - "../native_lib/include/circuit_solver/api.h"
 ffi-native:
   asset-id: "package:ffi_bridge/ffi_bridge.dart"
 preamble: |

@@ -3,3 +3,4 @@ frontend
 ffi_bridge
 gen
 **/Dockerfile
+**/compile_commands.json
