@@ -1,12 +1,15 @@
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml for multi-platform support
-name: Build with CMake
+name: Build C++ Library
 on:
   push:
     branches: ["main"]
+    paths:
+      - native_lib/**/*.cpp
+      - native_lib/**/*.h
   pull_request:
     branches: ["main"]
     paths:
-      - native_lib
+      - native_lib/**/*.cpp
+      - native_lib/**/*.h
 env:
   # CMake build type
   BUILD_TYPE: Debug
