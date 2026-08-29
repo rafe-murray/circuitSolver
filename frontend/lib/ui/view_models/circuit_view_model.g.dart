@@ -170,7 +170,7 @@ final class CircuitViewModelProvider
   }
 }
 
-String _$circuitViewModelHash() => r'3fd981a4c696be0ffa2ab0b952a3cf112238cf15';
+String _$circuitViewModelHash() => r'db267e2564d516b70814ab40917e514cd3c772ce';
 
 final class CircuitViewModelFamily extends $Family
     with

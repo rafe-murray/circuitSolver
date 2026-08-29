@@ -70,7 +70,7 @@ class CircuitViewModel extends _$CircuitViewModel {
     await action();
     final afterMutation = await circuitModel;
     _manager.pushChange(beforeMutation, afterMutation);
-    ref.invalidateSelf();
+    ref.invalidate(circuitRepositoryProvider);
   }
 
   Future<EndpointModel> _createEndpoint(Offset position) async {
