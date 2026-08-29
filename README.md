@@ -1,5 +1,7 @@
 # Circuit Solver
 
+[![codecov](https://codecov.io/github/rafe-murray/circuitsolver/graph/badge.svg?token=E7B6WRPST1)](https://codecov.io/github/rafe-murray/circuitsolver)
+
 Circuit Solver is a cross-platform app to solve circuits
 
 ## Components
