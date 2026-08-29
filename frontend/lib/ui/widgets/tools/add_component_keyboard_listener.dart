@@ -16,6 +16,7 @@ class AddComponentKeyboardListener extends StatelessWidget {
   Widget build(BuildContext context) {
     return KeyboardListener(
       focusNode: focusNode,
+      autofocus: true,
       onKeyEvent: (KeyEvent event) {
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.enter) {

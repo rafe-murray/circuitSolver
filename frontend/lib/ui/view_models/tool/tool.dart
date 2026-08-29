@@ -36,8 +36,11 @@ sealed class Tool {
   }
 }
 
-Map<String, Tool Function({required Uuid uuid, required CircuitModel circuit})>
-_toolsById = Map.fromIterable(
+final Map<
+  String,
+  Tool Function({required Uuid uuid, required CircuitModel circuit})
+>
+_toolsById = Map.fromEntries(
   componentToolIdToBranch.entries.map(
     (entry) => MapEntry(
       entry.key,

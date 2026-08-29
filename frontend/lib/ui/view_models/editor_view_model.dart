@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../data/model/circuit_models.dart';
 import '../../diff/circuit_diff.dart';
+import 'tool/tool.dart';
 
 part 'editor_view_model.g.dart';
 
@@ -27,7 +28,18 @@ Uuid uuid(Ref ref) {
 
 typedef CommandAction = Future<void> Function();
 
-typedef UpdateAction = Future<CircuitModel> Function();
+typedef UpdateAction = CircuitModel Function();
+
+/// The tool currently active in the editor's tool bank for [circuitId], or
+/// `null` when no tool is selected and canvas input is inert.
+@riverpod
+class SelectedTool extends _$SelectedTool {
+  @override
+  ToolMeta? build({required UuidValue circuitId}) => null;
+
+  /// Sets [meta] as the active tool, or clears the selection when `null`.
+  void select(ToolMeta? meta) => state = meta;
+}
 
 @riverpod
 class EditorViewModel extends _$EditorViewModel {
@@ -109,8 +121,8 @@ class EditorViewModel extends _$EditorViewModel {
 
   Future<void> updateCircuit(UpdateAction action) async {
     final beforeUpdate = await circuitModel;
-    final afterUpdate = await action();
-    ref.read(circuitRepositoryProvider).saveCircuit(afterUpdate);
+    final afterUpdate = action();
+    await ref.read(circuitRepositoryProvider).saveCircuit(afterUpdate);
     _manager.pushChange(beforeUpdate, afterUpdate);
     ref.invalidate(circuitRepositoryProvider);
   }

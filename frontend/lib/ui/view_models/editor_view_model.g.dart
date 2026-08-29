@@ -129,6 +129,119 @@ final class UuidProvider extends $FunctionalProvider<Uuid, Uuid, Uuid>
 
 String _$uuidHash() => r'705956b657aa32243556b044bffa026ae299734c';
 
+/// The tool currently active in the editor's tool bank for [circuitId], or
+/// `null` when no tool is selected and canvas input is inert.
+
+@ProviderFor(SelectedTool)
+final selectedToolProvider = SelectedToolFamily._();
+
+/// The tool currently active in the editor's tool bank for [circuitId], or
+/// `null` when no tool is selected and canvas input is inert.
+final class SelectedToolProvider
+    extends $NotifierProvider<SelectedTool, ToolMeta?> {
+  /// The tool currently active in the editor's tool bank for [circuitId], or
+  /// `null` when no tool is selected and canvas input is inert.
+  SelectedToolProvider._({
+    required SelectedToolFamily super.from,
+    required UuidValue super.argument,
+  }) : super(
+         retry: null,
+         name: r'selectedToolProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$selectedToolHash();
+
+  @override
+  String toString() {
+    return r'selectedToolProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  SelectedTool create() => SelectedTool();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ToolMeta? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ToolMeta?>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SelectedToolProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$selectedToolHash() => r'717df89f7d27285055ac2b310ed18b17e1c218d2';
+
+/// The tool currently active in the editor's tool bank for [circuitId], or
+/// `null` when no tool is selected and canvas input is inert.
+
+final class SelectedToolFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          SelectedTool,
+          ToolMeta?,
+          ToolMeta?,
+          ToolMeta?,
+          UuidValue
+        > {
+  SelectedToolFamily._()
+    : super(
+        retry: null,
+        name: r'selectedToolProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The tool currently active in the editor's tool bank for [circuitId], or
+  /// `null` when no tool is selected and canvas input is inert.
+
+  SelectedToolProvider call({required UuidValue circuitId}) =>
+      SelectedToolProvider._(argument: circuitId, from: this);
+
+  @override
+  String toString() => r'selectedToolProvider';
+}
+
+/// The tool currently active in the editor's tool bank for [circuitId], or
+/// `null` when no tool is selected and canvas input is inert.
+
+abstract class _$SelectedTool extends $Notifier<ToolMeta?> {
+  late final _$args = ref.$arg as UuidValue;
+  UuidValue get circuitId => _$args;
+
+  ToolMeta? build({required UuidValue circuitId});
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<ToolMeta?, ToolMeta?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ToolMeta?, ToolMeta?>,
+              ToolMeta?,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(circuitId: _$args));
+  }
+}
+
 @ProviderFor(EditorViewModel)
 final editorViewModelProvider = EditorViewModelFamily._();
 
@@ -170,7 +283,7 @@ final class EditorViewModelProvider
   }
 }
 
-String _$editorViewModelHash() => r'9de09c83f40894e1315c8a3a564d1d9429a0d010';
+String _$editorViewModelHash() => r'de3b43bb0881990f3164f97c2164210fe8bae5cd';
 
 final class EditorViewModelFamily extends $Family
     with

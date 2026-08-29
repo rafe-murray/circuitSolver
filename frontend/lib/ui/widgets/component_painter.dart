@@ -35,11 +35,13 @@ class BranchPainter extends CustomPainter {
         _paintCurrentSource(canvas, size, from, to, localBranch, theme);
         break;
       case IdealDiode():
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        // TODO: draw the real ideal-diode symbol.
+        _paintPlaceholder(canvas, size, from, to, theme);
+        break;
       case RealDiode():
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        // TODO: draw the real diode symbol.
+        _paintPlaceholder(canvas, size, from, to, theme);
+        break;
       case Resistor():
         _paintResistor(canvas, size, from, to, localBranch, theme);
         break;
@@ -47,8 +49,9 @@ class BranchPainter extends CustomPainter {
         _paintVoltageSource(canvas, size, from, to, localBranch, theme);
         break;
       case ZenerDiode():
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        // TODO: draw the real Zener-diode symbol.
+        _paintPlaceholder(canvas, size, from, to, theme);
+        break;
     }
   }
 
@@ -122,6 +125,26 @@ void _paintVoltageSource(
       centre + plusDirectionOffset - direction * radius * widthProportion;
   canvas.drawLine(plusTop, plusBottom, circuitPaint);
 
+  canvas.restore();
+}
+
+/// Draws leads plus a generic box for branch types that do not yet have a
+/// dedicated symbol, so they still render instead of throwing.
+void _paintPlaceholder(
+  Canvas canvas,
+  Size size,
+  Offset from,
+  Offset to,
+  CircuitTheme theme,
+) {
+  canvas.save();
+  _paintLeads(canvas, size, from, to, theme.componentRadius);
+  final centre = (from + to) / 2;
+  final side = theme.componentRadius * 1.6;
+  canvas.drawRect(
+    Rect.fromCenter(center: centre, width: side, height: side),
+    circuitPaint,
+  );
   canvas.restore();
 }
 
