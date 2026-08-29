@@ -417,8 +417,15 @@ class BranchModelMapper extends ClassMapperBase<BranchModel> {
   @override
   final String id = 'BranchModel';
 
+  static String _$kind(BranchModel v) => v.kind;
+  static const Field<BranchModel, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
+
   @override
-  final MappableFields<BranchModel> fields = const {};
+  final MappableFields<BranchModel> fields = const {#kind: _f$kind};
 
   static BranchModel _instantiate(DecodingData data) {
     throw MapperException.missingSubclass(
@@ -1758,9 +1765,18 @@ class CurrentSourceMapper extends SubClassMapperBase<CurrentSource> {
     _$voltage,
     opt: true,
   );
+  static String _$kind(CurrentSource v) => v.kind;
+  static const Field<CurrentSource, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
-  final MappableFields<CurrentSource> fields = const {#voltage: _f$voltage};
+  final MappableFields<CurrentSource> fields = const {
+    #voltage: _f$voltage,
+    #kind: _f$kind,
+  };
 
   @override
   final String discriminatorKey = 'type';
@@ -1888,9 +1904,18 @@ class IdealDiodeMapper extends SubClassMapperBase<IdealDiode> {
     _$voltage,
     opt: true,
   );
+  static String _$kind(IdealDiode v) => v.kind;
+  static const Field<IdealDiode, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
-  final MappableFields<IdealDiode> fields = const {#voltage: _f$voltage};
+  final MappableFields<IdealDiode> fields = const {
+    #voltage: _f$voltage,
+    #kind: _f$kind,
+  };
 
   @override
   final String discriminatorKey = 'type';
@@ -2016,9 +2041,18 @@ class ResistorMapper extends SubClassMapperBase<Resistor> {
     _$resistance,
     opt: true,
   );
+  static String _$kind(Resistor v) => v.kind;
+  static const Field<Resistor, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
-  final MappableFields<Resistor> fields = const {#resistance: _f$resistance};
+  final MappableFields<Resistor> fields = const {
+    #resistance: _f$resistance,
+    #kind: _f$kind,
+  };
 
   @override
   final String discriminatorKey = 'type';
@@ -2252,12 +2286,19 @@ class RealDiodeMapper extends SubClassMapperBase<RealDiode> {
   static const Field<RealDiode, Voltage> _f$vt = Field('vt', _$vt, opt: true);
   static double? _$n(RealDiode v) => v.n;
   static const Field<RealDiode, double> _f$n = Field('n', _$n, opt: true);
+  static String _$kind(RealDiode v) => v.kind;
+  static const Field<RealDiode, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
   final MappableFields<RealDiode> fields = const {
     #i0: _f$i0,
     #vt: _f$vt,
     #n: _f$n,
+    #kind: _f$kind,
   };
 
   @override
@@ -2400,9 +2441,18 @@ class VoltageSourceMapper extends SubClassMapperBase<VoltageSource> {
     _$voltage,
     opt: true,
   );
+  static String _$kind(VoltageSource v) => v.kind;
+  static const Field<VoltageSource, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
-  final MappableFields<VoltageSource> fields = const {#voltage: _f$voltage};
+  final MappableFields<VoltageSource> fields = const {
+    #voltage: _f$voltage,
+    #kind: _f$kind,
+  };
 
   @override
   final String discriminatorKey = 'type';
@@ -2544,12 +2594,19 @@ class ZenerDiodeMapper extends SubClassMapperBase<ZenerDiode> {
     _$izt,
     opt: true,
   );
+  static String _$kind(ZenerDiode v) => v.kind;
+  static const Field<ZenerDiode, String> _f$kind = Field(
+    'kind',
+    _$kind,
+    mode: FieldMode.member,
+  );
 
   @override
   final MappableFields<ZenerDiode> fields = const {
     #vzt: _f$vzt,
     #rzt: _f$rzt,
     #izt: _f$izt,
+    #kind: _f$kind,
   };
 
   @override

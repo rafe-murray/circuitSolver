@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/data/model/circuit_models.dart';
-import 'package:frontend/ui/core/themes/circuit_theme.dart';
-import 'package:frontend/ui/widgets/component_painter.dart';
+import 'package:frontend/ui/widgets/component_icon.dart';
 
 class AddComponentButton extends StatelessWidget {
   final void Function()? onPressed;
@@ -29,15 +28,7 @@ class AddComponentButton extends StatelessWidget {
       onPressed: onPressed,
       child: Row(
         children: [
-          CustomPaint(
-            painter: BranchPainter(
-              branch: branch,
-              from: Offset(0.0, 1.0),
-              to: Offset(1.0, 0.0),
-              theme: CircuitTheme.icon(),
-            ),
-            size: Size.square(6.0),
-          ),
+          ComponentIcon(branch: branch),
           Text("Add $branchType"),
         ],
       ),

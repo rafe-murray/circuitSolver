@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'circuit_view_model.dart';
+part of 'editor_view_model.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -129,39 +129,39 @@ final class UuidProvider extends $FunctionalProvider<Uuid, Uuid, Uuid>
 
 String _$uuidHash() => r'705956b657aa32243556b044bffa026ae299734c';
 
-@ProviderFor(CircuitViewModel)
-final circuitViewModelProvider = CircuitViewModelFamily._();
+@ProviderFor(EditorViewModel)
+final editorViewModelProvider = EditorViewModelFamily._();
 
-final class CircuitViewModelProvider
-    extends $AsyncNotifierProvider<CircuitViewModel, CircuitModel> {
-  CircuitViewModelProvider._({
-    required CircuitViewModelFamily super.from,
+final class EditorViewModelProvider
+    extends $AsyncNotifierProvider<EditorViewModel, CircuitModel> {
+  EditorViewModelProvider._({
+    required EditorViewModelFamily super.from,
     required UuidValue super.argument,
   }) : super(
          retry: null,
-         name: r'circuitViewModelProvider',
+         name: r'editorViewModelProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$circuitViewModelHash();
+  String debugGetCreateSourceHash() => _$editorViewModelHash();
 
   @override
   String toString() {
-    return r'circuitViewModelProvider'
+    return r'editorViewModelProvider'
         ''
         '($argument)';
   }
 
   @$internal
   @override
-  CircuitViewModel create() => CircuitViewModel();
+  EditorViewModel create() => EditorViewModel();
 
   @override
   bool operator ==(Object other) {
-    return other is CircuitViewModelProvider && other.argument == argument;
+    return other is EditorViewModelProvider && other.argument == argument;
   }
 
   @override
@@ -170,34 +170,34 @@ final class CircuitViewModelProvider
   }
 }
 
-String _$circuitViewModelHash() => r'db267e2564d516b70814ab40917e514cd3c772ce';
+String _$editorViewModelHash() => r'9de09c83f40894e1315c8a3a564d1d9429a0d010';
 
-final class CircuitViewModelFamily extends $Family
+final class EditorViewModelFamily extends $Family
     with
         $ClassFamilyOverride<
-          CircuitViewModel,
+          EditorViewModel,
           AsyncValue<CircuitModel>,
           CircuitModel,
           FutureOr<CircuitModel>,
           UuidValue
         > {
-  CircuitViewModelFamily._()
+  EditorViewModelFamily._()
     : super(
         retry: null,
-        name: r'circuitViewModelProvider',
+        name: r'editorViewModelProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  CircuitViewModelProvider call({required UuidValue circuitId}) =>
-      CircuitViewModelProvider._(argument: circuitId, from: this);
+  EditorViewModelProvider call({required UuidValue circuitId}) =>
+      EditorViewModelProvider._(argument: circuitId, from: this);
 
   @override
-  String toString() => r'circuitViewModelProvider';
+  String toString() => r'editorViewModelProvider';
 }
 
-abstract class _$CircuitViewModel extends $AsyncNotifier<CircuitModel> {
+abstract class _$EditorViewModel extends $AsyncNotifier<CircuitModel> {
   late final _$args = ref.$arg as UuidValue;
   UuidValue get circuitId => _$args;
 

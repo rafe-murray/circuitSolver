@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/model/circuit_models.dart';
 import '../../diff/circuit_diff.dart';
 
-part 'circuit_view_model.g.dart';
+part 'editor_view_model.g.dart';
 
 @riverpod
 Offset nextFrom(Ref ref) {
@@ -30,7 +30,7 @@ typedef CommandAction = Future<void> Function();
 typedef UpdateAction = Future<CircuitModel> Function();
 
 @riverpod
-class CircuitViewModel extends _$CircuitViewModel {
+class EditorViewModel extends _$EditorViewModel {
   final _manager = UndoManager();
   bool get canRedo => _manager.canRedo;
   bool get canUndo => _manager.canUndo;

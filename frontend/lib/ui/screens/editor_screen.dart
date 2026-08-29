@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/data/model/circuit_models.dart';
-import 'package:frontend/ui/view_models/circuit_view_model.dart';
+import 'package:frontend/ui/view_models/editor_view_model.dart';
 import 'package:frontend/ui/widgets/add_component_button.dart';
 import 'package:frontend/ui/widgets/edit_circuit_widget.dart';
 import 'package:uuid/uuid_value.dart';
@@ -20,7 +20,7 @@ class EditorScreen extends ConsumerWidget {
             branch: Resistor(),
             onPressed: () {
               ref
-                  .read(circuitViewModelProvider(circuitId: circuitId).notifier)
+                  .read(editorViewModelProvider(circuitId: circuitId).notifier)
                   .addComponent(Resistor());
             },
           ),
@@ -28,7 +28,7 @@ class EditorScreen extends ConsumerWidget {
             branch: VoltageSource(),
             onPressed: () {
               ref
-                  .read(circuitViewModelProvider(circuitId: circuitId).notifier)
+                  .read(editorViewModelProvider(circuitId: circuitId).notifier)
                   .addComponent(VoltageSource());
             },
           ),

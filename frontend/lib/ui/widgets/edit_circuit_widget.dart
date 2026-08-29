@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/data/model/circuit_models.dart';
-import 'package:frontend/ui/view_models/circuit_view_model.dart';
+import 'package:frontend/ui/view_models/editor_view_model.dart';
 import 'package:frontend/ui/widgets/circuit_view.dart';
 import 'package:uuid/uuid_value.dart';
 
@@ -11,7 +11,7 @@ class EditCircuitWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final circuit = ref.watch(circuitViewModelProvider(circuitId: circuitId));
+    final circuit = ref.watch(editorViewModelProvider(circuitId: circuitId));
     switch (circuit) {
       case AsyncLoading<CircuitModel>():
         return const Center(child: CircularProgressIndicator());
