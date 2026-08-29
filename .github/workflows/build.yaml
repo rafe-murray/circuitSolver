@@ -56,8 +56,8 @@ jobs:
 
       - name: Generate Coverage Report
         run: |
-          "$LLVM_PATH/llvm-profdata" merge -sparse native_lib/build/*.profraw -o coverage.profdata
-          "$LLVM_PATH/llvm-cov" export -format=lcov -instr-profile=coverage.profdata ./native_lib/build/circuitsolverTests > coverage.info
+          "llvm-profdata" merge -sparse native_lib/build/*.profraw -o coverage.profdata
+          "llvm-cov" export -format=lcov -instr-profile=coverage.profdata ./native_lib/build/circuitsolverTests > coverage.info
 
       - uses: codecov/codecov-action@v7
         with:
