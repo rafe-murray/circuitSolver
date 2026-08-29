@@ -19,7 +19,4 @@ class Logging {
 };
 /// name is the name of the global logger
 inline const std::string name = "CircuitSolverLogger";
-
-/// init initializes the logger
-void init(const config::Config& config);
 }  // namespace circuitsolver::server::observability::logger

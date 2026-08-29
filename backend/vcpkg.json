@@ -28,6 +28,8 @@
     }
   },
   "default-features": [
-    "grpc"
+    "otlp",
+    "grpc",
+    "http"
   ]
 }

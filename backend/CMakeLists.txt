@@ -23,6 +23,7 @@ pkg_check_modules(Pistache REQUIRED IMPORTED_TARGET libpistache)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(opentelemetry_spdlog_sink REQUIRED)
+# find_package(circuitsolverLib REQUIRED)
 
 # build dir is relative to the build dir of this target
 add_subdirectory(../native_lib ../../native_lib/build)

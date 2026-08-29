@@ -23,6 +23,6 @@ class EndpointHandler {
 
  private:
   /// endpoint is the endpoint being managed
-  static std::unique_ptr<Pistache::Http::Endpoint> endpoint;
+  static inline std::unique_ptr<Pistache::Http::Endpoint> endpoint = nullptr;
 };
 }  // namespace circuitsolver::server

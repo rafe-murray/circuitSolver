@@ -1,10 +1,11 @@
 ARG VCPKG_CACHE_DIR=/cache/vcpkg
 
-FROM ubuntu:26.10 AS builder
+# TODO: use debian 13
+FROM ubuntu:26.10 AS deps
 
 ARG VCPKG_CACHE_DIR
 ENV VCPKG_DOWNLOADS=${VCPKG_CACHE_DIR}
-
+ARG TARGETARCH
 # TODO: improve caching
 
 RUN set -eux; \
@@ -25,11 +26,16 @@ RUN set -eux; \
   ; \
   git clone https://github.com/microsoft/vcpkg.git --depth 1; \
   ./vcpkg/bootstrap-vcpkg.sh; \
-  mkdir -p /circuitsolver;
+  mkdir -p /circuitsolver/backend /circuitsolver/native_lib;
 
-COPY . /circuitsolver
+COPY ./backend/vcpkg.json ./backend/vcpkg-configuration.json /circuitsolver/backend/
+COPY ./backend/external /circuitsolver/backend/external/
+COPY ./native_lib/vcpkg.json ./native_lib/vcpkg-configuration.json /circuitsolver/native_lib/
+COPY ./native_lib/vcpkg_port /circuitsolver/native_lib/vcpkg_port/
 
 WORKDIR /circuitsolver/backend
+
+FROM deps as builder
 
 RUN \
   --mount=type=cache,target=/circuitsolver/backend/build \
@@ -38,12 +44,33 @@ RUN \
   export VCPKG_ROOT="/vcpkg"; \
   mkdir -p build; \
   cd build; \
+  if [ "$TARGETARCH" = "amd64" ]; then \
+    triplet='x64-linux-release'; \
+  elif [ "$TARGETARCH" = "arm64" ]; then \
+    triplet='arm64-linux-release'; \
+  else \
+    echo 'Unknown target architecture. Supported architectures: [amd64, arm64]'; \
+    exit 1; \
+  fi; \
+  /vcpkg/vcpkg install --triplet="$triplet" --x-feature="otlp";
+  
+COPY ./backend/CMakeLists.txt /circuitsolver/backend/
+COPY ./native_lib/CMakeLists.txt /circuitsolver/native_lib/
+
+RUN  \
+  --mount=type=cache,target=/circuitsolver/backend/build \
+  --mount=type=cache,target="$VCPKG_CACHE_DIR" \
+  set -eux; \
   cmake .. \
-  --preset=vcpkg \
-  -DVCPKG_MANIFEST_FEATURES="otlp" \
   -DCMAKE_BUILD_TYPE=Release \
-  -DVCPKG_BUILD_TYPE=release \
-  ; \
+  ;
+
+COPY backend native_lib /circuitsolver/
+
+RUN \
+  --mount=type=cache,target=/circuitsolver/backend/build \
+  --mount=type=cache,target="$VCPKG_CACHE_DIR" \
+  set -eux; \
   cmake --build . ;
 
 FROM gcr.io/distroless/cc-debian13 AS base

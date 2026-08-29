@@ -71,7 +71,7 @@ auto main() -> int {
   auto config = Config::mergeFromAllSources();
 
   otel::init(config);
-  logger::init(config);
+  auto logging = logger::Logging{config};
 
   spdlog::info("Starting up circuitsolver server");
 
