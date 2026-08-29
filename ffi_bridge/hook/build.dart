@@ -16,6 +16,20 @@ void main(List<String> args) async {
         );
       }
       final config = await getUserEnvConfig(input: input, envFile: envFile);
+
+      // Escape hatch for consumers that never exercise the native solver (e.g.
+      // the frontend unit-test suite, which mocks it out). Set
+      // SKIP_NATIVE_BUILD=1 in the env file to skip the CMake/vcpkg build: no
+      // code asset is registered, so any FFI call into libcircuitsolver will
+      // fail at runtime with an unresolved-symbol error.
+      if (config['SKIP_NATIVE_BUILD'] == '1') {
+        stdout.writeln(
+          'ffi_bridge: SKIP_NATIVE_BUILD=1 in $envFile, skipping the native '
+          'libcircuitsolver build.',
+        );
+        return;
+      }
+
       final vcpkgRoot = config['VCPKG_ROOT'];
       if (vcpkgRoot == null) {
         throw Exception(

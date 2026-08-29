@@ -1,0 +1,88 @@
+name: ffi_bridge Tests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ffi_bridge/**
+      - native_lib/src/api.cpp
+      - native_lib/include/circuit_solver/api.h
+      - native_lib/include/circuit_solver/c_errors.h
+      - circuit_solver_proto/**
+      - proto/**
+      - .github/workflows/ffi_bridge_test.yaml
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ffi_bridge/**
+      - native_lib/src/api.cpp
+      - native_lib/include/circuit_solver/api.h
+      - native_lib/include/circuit_solver/c_errors.h
+      - circuit_solver_proto/**
+      - proto/**
+      - .github/workflows/ffi_bridge_test.yaml
+
+env:
+  FLUTTER_VERSION: "3.44.8"
+  # vcpkg reads this to populate/restore its binary cache; see actions/cache below.
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: ${{ github.workspace }}/.vcpkg-cache
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('native_lib/vcpkg.json', 'native_lib/vcpkg-configuration.json') }}-llvm22
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - run: mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+          doNotCache: false
+
+      - uses: aminya/setup-cpp@v1
+        with:
+          compiler: llvm-22
+          cmake: 4.4.0
+          ninja: true
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # ffi_bridge/hook/build.dart reads VCPKG_ROOT from this file (not the env var).
+      - name: Write .env
+        run: echo "VCPKG_ROOT=$VCPKG_ROOT" > ffi_bridge/.env
+
+      - name: Install dependencies
+        working-directory: ffi_bridge
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: ffi_bridge
+        run: dart test --coverage=coverage
+
+      - name: Format coverage
+        working-directory: ffi_bridge
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --report-on=lib --packages=.dart_tool/package_config.json
+
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ffi_bridge/coverage/lcov.info
+          flags: ffi_bridge

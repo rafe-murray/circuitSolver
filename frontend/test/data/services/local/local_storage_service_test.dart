@@ -8,11 +8,15 @@ import 'package:uuid/uuid.dart';
 void main() {
   group('LocalStorageService', () {
     late CircuitSolverDatabase db;
+    late LocalStorageService storage;
     late DateTime startTime;
+    final uuid = Uuid();
+
     setUp(() {
       db = CircuitSolverDatabase.memory();
+      storage = LocalStorageService(db: db);
       final now = DateTime.now();
-      // Ignore milliseconds since SQLite doesn't store them
+      // SQLite does not preserve sub-second precision, so truncate up front.
       startTime = DateTime(
         now.year,
         now.month,
@@ -22,165 +26,127 @@ void main() {
         now.second,
       );
     });
+
     tearDown(() async {
       await db.close();
     });
 
-    test('Saved circuits should be retrievable', () async {
-      expect(db, isNotNull);
-      final localStorageService = LocalStorageService(db: db);
-      final uuid = Uuid();
-      final ep1 = EndpointModel(pos: Offset(0, 1), id: uuid.v7obj());
-      final ep2 = EndpointModel(pos: Offset(1, 0), id: uuid.v7obj());
-      final ep3 = EndpointModel(pos: Offset(0, -1), id: uuid.v7obj());
-      final wires = <WireModel>[
-        WireModel(id: uuid.v7obj(), endpoint1: ep1, endpoint2: ep2),
-      ];
-
-      final components = <ComponentModel>[
-        ComponentModel(
-          id: uuid.v7obj(),
-          from: ep1,
-          to: ep3,
-          branch: Resistor(resistance: Resistance(ohms: 5)),
-        ),
-      ];
-
-      final circuit = CircuitLocalStorageModel(
+    /// Builds a minimal but structurally complete circuit: two endpoints joined
+    /// by a wire and a third endpoint wired to the first through a resistor.
+    CircuitModel buildCircuit({required String name, BranchModel? branch}) {
+      final ep1 = EndpointModel(pos: const Offset(0, 1), id: uuid.v7obj());
+      final ep2 = EndpointModel(pos: const Offset(1, 0), id: uuid.v7obj());
+      final ep3 = EndpointModel(pos: const Offset(0, -1), id: uuid.v7obj());
+      return CircuitModel(
         id: uuid.v7obj(),
-        name: "Test circuit",
-        created: startTime,
-        modified: startTime,
-        wires: wires,
-        components: components,
+        name: name,
+        endpoints: {ep1.id: ep1, ep2.id: ep2, ep3.id: ep3},
+        wires: [
+          WireModel(id: uuid.v7obj(), endpoint1Id: ep1.id, endpoint2Id: ep2.id),
+        ],
+        components: [
+          ComponentModel(
+            id: uuid.v7obj(),
+            fromId: ep1.id,
+            toId: ep3.id,
+            branch: branch ?? Resistor(resistance: const Resistance(ohms: 5)),
+          ),
+        ],
       );
+    }
 
-      final putResult = await localStorageService.putCircuit(circuit);
-      expect(putResult, isA<Ok>());
-      final getResult = await localStorageService.getCircuit(circuit.id);
+    CircuitLocalStorageModel wrap(
+      CircuitModel circuit, {
+      DateTime? created,
+      DateTime? modified,
+    }) {
+      return CircuitLocalStorageModel(
+        id: circuit.id,
+        name: circuit.name ?? '',
+        created: created ?? startTime,
+        modified: modified ?? startTime,
+        circuit: circuit,
+      );
+    }
+
+    test('a saved circuit can be read back unchanged', () async {
+      final stored = wrap(buildCircuit(name: 'Test circuit'));
+
+      expect(await storage.putCircuit(stored), isA<Ok<void>>());
+
+      final getResult = await storage.getCircuit(stored.id);
       switch (getResult) {
         case Error():
-          fail("getting a circuit after saving it should succeed");
+          fail('reading a circuit after saving it should succeed');
         case Ok():
-          expect(
-            getResult.value,
-            circuit,
-            reason: "circuit should not change when saving/retrieving",
-          );
+          expect(getResult.value, stored);
       }
-      final getAllResult = await localStorageService.getCircuits();
+
+      final getAllResult = await storage.getCircuits();
       switch (getAllResult) {
         case Error():
-          fail("getting all circuits should succeed");
+          fail('reading all circuits should succeed');
         case Ok():
-          expect(getAllResult.value.length, 1);
-          expect(
-            getAllResult.value.first,
-            circuit,
-            reason:
-                "getting all circuits should contain the original saved circuit",
-          );
+          expect(getAllResult.value, [stored]);
       }
     });
-    test('Retrieving a fake id should fail', () async {
-      expect(db, isNotNull);
-      final localStorageService = LocalStorageService(db: db);
-      final result = await localStorageService.getCircuit(Uuid().v7obj());
-      expect(result, isA<Error>());
-      final getAllResult = await localStorageService.getCircuits();
+
+    test('reading an unknown id returns an error', () async {
+      final result = await storage.getCircuit(uuid.v7obj());
+      expect(result, isA<Error<CircuitLocalStorageModel>>());
+
+      final getAllResult = await storage.getCircuits();
       switch (getAllResult) {
         case Ok():
-          expect(getAllResult.value.isEmpty, isTrue);
+          expect(getAllResult.value, isEmpty);
         case Error():
-          fail(
-            "getting all circuits when none are saved should return an empty list",
-          );
+          fail('reading all circuits when none are saved should succeed');
       }
     });
-    test('Saving multiple circuits should allow all to be retrieved', () async {
-      final localStorageService = LocalStorageService(db: db);
-      final uuid = Uuid();
-      final ep1 = EndpointModel(pos: Offset(0, 1), id: uuid.v7obj());
-      final ep2 = EndpointModel(pos: Offset(1, 0), id: uuid.v7obj());
-      final ep3 = EndpointModel(pos: Offset(0, -1), id: uuid.v7obj());
-      final wires1 = <WireModel>[
-        WireModel(id: uuid.v7obj(), endpoint1: ep1, endpoint2: ep2),
-      ];
 
-      final wires2 = <WireModel>[
-        WireModel(id: uuid.v7obj(), endpoint1: ep2, endpoint2: ep3),
-      ];
-
-      final components1 = <ComponentModel>[
-        ComponentModel(
-          id: uuid.v7obj(),
-          from: ep1,
-          to: ep3,
-          branch: Resistor(resistance: Resistance(ohms: 5)),
+    test('multiple circuits are all retrievable', () async {
+      final circuit1 = wrap(buildCircuit(name: 'Test circuit'));
+      final circuit2 = wrap(
+        buildCircuit(
+          name: 'Test circuit 2',
+          branch: const VoltageSource(voltage: Voltage(volts: 1.5)),
         ),
-      ];
-
-      final components2 = <ComponentModel>[
-        ComponentModel(
-          id: uuid.v7obj(),
-          from: ep1,
-          to: ep2,
-          branch: VoltageSource(voltage: Voltage(volts: 1.5)),
-        ),
-      ];
-
-      final circuit1 = CircuitLocalStorageModel(
-        id: uuid.v7obj(),
-        name: "Test circuit",
-        created: startTime,
-        modified: startTime,
-        wires: wires1,
-        components: components1,
-      );
-
-      final circuit2 = CircuitLocalStorageModel(
-        id: uuid.v7obj(),
-        name: "Test circuit 2",
         created: DateTime(2026, DateTime.august, 9),
-        modified: startTime,
-        wires: wires2,
-        components: components2,
       );
 
-      final putResult1 = await localStorageService.putCircuit(circuit1);
-      expect(putResult1, isA<Ok>());
-      final putResult2 = await localStorageService.putCircuit(circuit2);
-      expect(putResult2, isA<Ok>());
-      final getAllResult = await localStorageService.getCircuits();
+      expect(await storage.putCircuit(circuit1), isA<Ok<void>>());
+      expect(await storage.putCircuit(circuit2), isA<Ok<void>>());
+
+      final getAllResult = await storage.getCircuits();
       switch (getAllResult) {
         case Error():
-          fail("getting all circuits should succeed");
+          fail('reading all circuits should succeed');
         case Ok():
-          expect(getAllResult.value.length, 2);
+          expect(getAllResult.value, hasLength(2));
           expect(
-            getAllResult.value.singleWhere(
-              (circuit) => circuit.id == circuit1.id,
-            ),
+            getAllResult.value.singleWhere((c) => c.id == circuit1.id),
             circuit1,
           );
           expect(
-            getAllResult.value.singleWhere(
-              (circuit) => circuit.id == circuit2.id,
-            ),
+            getAllResult.value.singleWhere((c) => c.id == circuit2.id),
             circuit2,
           );
       }
-      final getResult1 = (await localStorageService.getCircuit(circuit1.id))
-          .transform((c) {
-            expect(c, circuit1);
-          });
-      expect(getResult1, isA<Ok>());
 
-      final getResult2 = (await localStorageService.getCircuit(circuit2.id))
-          .transform((c) {
-            expect(c, circuit2);
-          });
-      expect(getResult2, isA<Ok>());
+      expect((await storage.getCircuit(circuit1.id)).valueOrThrow(), circuit1);
+      expect((await storage.getCircuit(circuit2.id)).valueOrThrow(), circuit2);
+    });
+
+    test('deleting a circuit removes it', () async {
+      final stored = wrap(buildCircuit(name: 'Test circuit'));
+      expect(await storage.putCircuit(stored), isA<Ok<void>>());
+
+      expect(await storage.deleteCircuit(stored.id), isA<Ok<void>>());
+      expect(
+        await storage.getCircuit(stored.id),
+        isA<Error<CircuitLocalStorageModel>>(),
+      );
+      expect(await storage.deleteCircuit(stored.id), isA<Error<void>>());
     });
   });
 }
