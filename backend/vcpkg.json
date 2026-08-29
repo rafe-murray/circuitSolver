@@ -1,0 +1,35 @@
+{
+  "dependencies": [
+    "circuit-solver-lib",
+    "spdlog",
+    "opentelemetry-spdlog-sink"
+  ],
+  "features": {
+    "otlp": {
+      "description": "Whether to include OpenTelemetry logs, metrics, and traces",
+      "dependencies": [
+        {
+          "name": "opentelemetry-cpp",
+          "features": [
+            "otlp-grpc"
+          ]
+        },
+        "grpc"
+      ]
+    },
+    "http": {
+      "description": "Whether to include support for handling HTTP requests using pistache. At least one of http and grpc should be built"
+    },
+    "grpc": {
+      "description": "Whether to include support for handling grpc requests. At least one of http and grpc should be built",
+      "dependencies": [
+        "grpc"
+      ]
+    }
+  },
+  "default-features": [
+    "otlp",
+    "grpc",
+    "http"
+  ]
+}

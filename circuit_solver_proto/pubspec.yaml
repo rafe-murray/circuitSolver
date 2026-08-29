@@ -1,0 +1,14 @@
+name: circuit_solver_proto
+description: >-
+  Generated Dart protobuf classes for the circuit solver schema.
+  Shared between the FFI bridge and network client packages.
+version: 0.0.1
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  protobuf: ^6.0.0
+
+dev_dependencies:
+  protoc_plugin: ^25.0.0

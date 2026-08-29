@@ -1,0 +1,4 @@
+Checks: "modernize-*,bugprone-*,readability-*,clang-analyzer-*,performance-*,cppcoreguidelines-*,abseil-*,-readability-identifier-length"
+HeaderFilterRegex: "*.h"
+ExcludeHeaderFilterRegex: "*.pb.h"
+FormatStyle: google

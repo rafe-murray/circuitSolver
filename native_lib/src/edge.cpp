@@ -1,0 +1,187 @@
+#include "circuit_solver/edge.h"
+
+#include <uuid.h>
+
+#include <optional>
+
+#include "circuit_solver/branch.h"
+#include "circuit_solver/proto.h"
+#include "circuit_solver/vertex.h"
+
+Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
+    : id(id), branch(std::move(branch)) {}
+// template<typename T>
+// Edge::Edge(int id, const T& branch)
+//     : id(id), branch(std::make_unique<T>(branch)) {}
+// For hash map; do not use
+Edge::Edge() = default;
+
+// NOTE: these might not be correct
+Edge::Edge(const Edge& other) : id(other.id), branch(other.branch->copy()) {}
+auto Edge::operator=(const Edge& other) -> Edge& {
+  if (this == &other) {
+    return *this;
+  }
+  this->id = other.id;
+  this->branch = other.branch->copy();
+  return *this;
+}
+// Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
+//   rhs.branch = nullptr;
+// }
+// auto Edge::operator=(Edge&& other) noexcept -> Edge& {
+//   if (this == &other) {
+//     return *this;
+//   }
+//   this->id = other.id;
+//   this->branch = std::move(other.branch);
+//   return *this;
+// }
+
+auto Edge::getId() const -> uuids::uuid { return id; };
+auto Edge::getFrom() const -> Vertex { return branch->getFrom(); };
+auto Edge::getTo() const -> Vertex { return branch->getTo(); };
+/**
+ * Returns an expression that represents the current through this branch, in
+ * Amps
+ */
+auto Edge::getCurrent() const -> Expression { return branch->getCurrent(); }
+
+auto Edge::getConstraint() const -> Expression {
+  return branch->getConstraint();
+}
+auto Edge::operator==(const Edge& rhs) const -> bool { return id == rhs.id; }
+// Edge& operator=(const Edge& other);
+
+void Edge::toProto(proto::Edge* proto) {
+  branch->toProto(proto);
+  proto->set_id(uuids::to_string(id));
+}
+void Edge::toProto(proto::Edge* proto, std::span<const double> parameters) {
+  branch->toProto(proto, parameters);
+  proto->set_id(uuids::to_string(id));
+}
+
+inline auto parseCurrentSource(const proto::Edge& proto, const Vertex& from,
+                               const Vertex& to)
+    -> std::unique_ptr<CurrentSource> {
+  assert(proto.specific_branch_case() == proto::Edge::kCurrentSource);
+  Expression current{};
+  if (proto.has_current()) {
+    current = proto.current();
+  }
+  return std::make_unique<CurrentSource>(
+      BranchConnections{.from = from, .to = to}, current);
+}
+
+inline auto parseIdealDiode(const proto::Edge& proto, const Vertex& from,
+                            const Vertex& to) {
+  assert(proto.specific_branch_case() == proto::Edge::kIdealDiode);
+  Expression current{};
+  Expression voltage{};
+  if (proto.has_current()) {
+    current = proto.current();
+  }
+  if (proto.ideal_diode().has_voltage()) {
+    voltage = proto.ideal_diode().voltage();
+  }
+  return std::make_unique<IdealDiode>(
+      BranchConnections{.from = from, .to = to},
+      IdealDiodeParameters{.voltage = voltage, .current = current});
+}
+
+inline auto parseRealDiode(const proto::Edge& proto, const Vertex& from,
+                           const Vertex& to) -> std::unique_ptr<RealDiode> {
+  assert(proto.specific_branch_case() == proto::Edge::kRealDiode);
+  Expression i0{};
+  Expression n{};
+  Expression vt{};
+  if (proto.real_diode().has_i0()) {
+    i0 = proto.real_diode().i0();
+  }
+  if (proto.real_diode().has_n()) {
+    n = proto.real_diode().n();
+  }
+  if (proto.real_diode().has_vt()) {
+    vt = proto.real_diode().vt();
+  }
+  return std::make_unique<RealDiode>(
+      BranchConnections{.from = from, .to = to},
+      RealDiodeParameters{.i0 = i0, .n = n, .vt = vt});
+}
+
+auto Edge::fromProto(const proto::Edge& proto, const VertexMap& vertices)
+    -> std::optional<Edge> {
+  if (!proto.has_from_id() || !proto.has_to_id() || !proto.has_id()) {
+    return std::nullopt;
+  }
+  std::optional<uuids::uuid> optionalFromId =
+      uuids::uuid::from_string(proto.from_id());
+  std::optional<uuids::uuid> optionalToId =
+      uuids::uuid::from_string(proto.to_id());
+  std::optional<uuids::uuid> optionalId = uuids::uuid::from_string(proto.id());
+  if (!optionalId.has_value() || !optionalToId.has_value() ||
+      !optionalFromId.has_value()) {
+    return std::nullopt;
+  }
+  uuids::uuid id = optionalId.value();
+  uuids::uuid fromId = optionalFromId.value();
+  uuids::uuid toId = optionalToId.value();
+
+  std::unique_ptr<Branch> newBranch;
+  const Vertex& from = *vertices.at(fromId);
+  const Vertex& to = *vertices.at(toId);
+  switch (proto.specific_branch_case()) {
+    case proto::Edge::kCurrentSource: {
+      newBranch = parseCurrentSource(proto, from, to);
+      break;
+    }
+    case proto::Edge::kIdealDiode: {
+      newBranch = parseIdealDiode(proto, from, to);
+      break;
+    }
+    case proto::Edge::kRealDiode: {
+      newBranch = parseRealDiode(proto, from, to);
+      break;
+    }
+    case proto::Edge::kResistor: {
+      Expression resistance;
+      if (proto.resistor().has_resistance()) {
+        resistance = proto.resistor().resistance();
+      }
+      newBranch = std::make_unique<Resistor>(
+          BranchConnections{.from = from, .to = to}, resistance);
+      break;
+    }
+    case proto::Edge::kVoltageSource: {
+      Expression voltage;
+      if (proto.voltage_source().has_voltage()) {
+        voltage = proto.voltage_source().voltage();
+      }
+      newBranch = std::make_unique<VoltageSource>(
+          BranchConnections{.from = from, .to = to}, voltage);
+      break;
+    }
+    case proto::Edge::kZenerDiode: {
+      Expression izt;
+      Expression rzt;
+      Expression vzt;
+      if (proto.zener_diode().has_izt()) {
+        izt = proto.zener_diode().izt();
+      }
+      if (proto.zener_diode().has_rzt()) {
+        rzt = proto.zener_diode().rzt();
+      }
+      if (proto.zener_diode().has_vzt()) {
+        vzt = proto.zener_diode().vzt();
+      }
+      newBranch = std::make_unique<ZenerDiode>(
+          BranchConnections{.from = from, .to = to},
+          ZenerDiodeParameters{.izt = izt, .rzt = rzt, .vzt = vzt});
+      break;
+    }
+    case proto::Edge::SPECIFIC_BRANCH_NOT_SET:
+      return std::nullopt;
+  }
+  return Edge(id, std::move(newBranch));
+}

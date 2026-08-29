@@ -1,0 +1,339 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "circuit_graph_message",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/v1/echo": {
+      "post": {
+        "tags": [
+          "CircuitSolverService"
+        ],
+        "operationId": "CircuitSolverService_Solve",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "description": "An unexpected error response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/google.rpc.Status"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "A successful response.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/circuit_solver.v1alpha1.SolveResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "circuit_solver.v1alpha1.CircuitGraphMessage": {
+        "type": "object",
+        "properties": {
+          "edges": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge"
+            }
+          },
+          "vertices": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Vertex"
+            }
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "number",
+            "format": "double"
+          },
+          "currentSource": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.CurrentSource"
+          },
+          "fromId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "idealDiode": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.IdealDiode"
+          },
+          "realDiode": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.RealDiode"
+          },
+          "resistor": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.Resistor"
+          },
+          "toId": {
+            "type": "string"
+          },
+          "voltageSource": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.VoltageSource"
+          },
+          "zenerDiode": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.ZenerDiode"
+          }
+        },
+        "oneOf": [
+          {
+            "type": "object",
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "currentSource"
+                  ]
+                },
+                {
+                  "required": [
+                    "idealDiode"
+                  ]
+                },
+                {
+                  "required": [
+                    "realDiode"
+                  ]
+                },
+                {
+                  "required": [
+                    "resistor"
+                  ]
+                },
+                {
+                  "required": [
+                    "voltageSource"
+                  ]
+                },
+                {
+                  "required": [
+                    "zenerDiode"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "currentSource": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.CurrentSource"
+              }
+            },
+            "required": [
+              "currentSource"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "idealDiode": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.IdealDiode"
+              }
+            },
+            "required": [
+              "idealDiode"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "realDiode": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.RealDiode"
+              }
+            },
+            "required": [
+              "realDiode"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "resistor": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.Resistor"
+              }
+            },
+            "required": [
+              "resistor"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "voltageSource": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.VoltageSource"
+              }
+            },
+            "required": [
+              "voltageSource"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "zenerDiode": {
+                "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage.Edge.ZenerDiode"
+              }
+            },
+            "required": [
+              "zenerDiode"
+            ]
+          }
+        ]
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.CurrentSource": {
+        "type": "object",
+        "properties": {
+          "voltage": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.IdealDiode": {
+        "type": "object",
+        "properties": {
+          "voltage": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.RealDiode": {
+        "type": "object",
+        "properties": {
+          "i0": {
+            "type": "number",
+            "format": "double"
+          },
+          "n": {
+            "type": "number",
+            "format": "double"
+          },
+          "vt": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.Resistor": {
+        "type": "object",
+        "properties": {
+          "resistance": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.VoltageSource": {
+        "type": "object",
+        "properties": {
+          "voltage": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Edge.ZenerDiode": {
+        "type": "object",
+        "properties": {
+          "izt": {
+            "type": "number",
+            "format": "double"
+          },
+          "rzt": {
+            "type": "number",
+            "format": "double"
+          },
+          "vzt": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.CircuitGraphMessage.Vertex": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "voltage": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "circuit_solver.v1alpha1.SolveResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/circuit_solver.v1alpha1.CircuitGraphMessage"
+          }
+        }
+      },
+      "google.rpc.Status": {
+        "type": "object",
+        "description": "The Status type defines a logical error model suitable for different programming environments.",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32",
+            "description": "The status code, which should be an enum value of google.rpc.Code."
+          },
+          "details": {
+            "type": "array",
+            "description": "A list of messages that carry the error details.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "@type": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "message": {
+            "type": "string",
+            "description": "A developer-facing error message."
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "CircuitSolverService"
+    }
+  ]
+}

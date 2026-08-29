@@ -1,0 +1,388 @@
+#ifndef EXPRESSIONNODE_H
+#define EXPRESSIONNODE_H
+
+#include <cstdint>
+#include <memory>
+#include <ostream>
+#include <span>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+struct BinaryOpNode;
+struct ExpressionNode;
+struct TernaryOpNode;
+struct UnaryOpNode;
+struct VariableNode;
+
+// NOTE: if this class needs to have improved performance, we can do the
+// following:
+//  - Make all std::shared_ptr std::unique_ptr or raw pointers with a recursive
+//    destructor for ExpressionNodes
+//  - Switch double value in VariableNodes to std::shared_ptr<double> value
+//  - That way we have many fewer reference counted pointers using atomic
+//    operations while preserving the desired behaviour for unknowns
+
+using ExpressionMap = std::unordered_map<const double*, size_t>;
+using ExpressionNodePtr = std::shared_ptr<ExpressionNode>;
+
+namespace expressionNode {
+template <typename T>
+auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
+              const ExpressionMap& map) -> T;
+}
+
+/// A single node in the AST of an `Expression`
+struct ExpressionNode {
+  /// virtual destructor to enable dynamic dispatch
+  virtual ~ExpressionNode() = default;
+
+  /// Stores const pointers to all unknown values in the AST with `this` as a
+  /// root in `unknowns`
+  ///
+  /// @param unknowns a set of unknown values to add the unknowns in this AST
+  /// to. Unknowns in this AST may or may not be already present already;
+  virtual void getUnknowns(
+      std::unordered_set<const double*>& unknowns) const = 0;
+
+  /// Stores pointers to all unknown values in the AST with `this` as a root in
+  /// `unknowns`
+  ///
+  /// @param unknowns a set of unknown values to add the unknowns in this AST
+  /// to. Unknowns in this AST may or may not be already present already;
+  virtual void getUnknowns(std::unordered_set<double*>& unknowns) = 0;
+
+  /// Prints the node to `out`
+  /// @param out the stream to print to
+  /// @return `out`
+  virtual auto serialize(std::ostream& out) const -> std::ostream& = 0;
+
+  /// Marks the subtree of this node as known. This should be a no-op for node
+  /// type that are not VariableNodes
+  virtual void markKnown() = 0;
+
+  // TODO: find a better name for discontinuities
+
+  /// gets a list of discontinuities for this subtree and stores it in
+  /// `discontinuities`
+  ///
+  /// A discontinuity is defined here to be a constraint on a conditional
+  /// branch. I.e., a conditional path will change when the value passes zero,
+  /// causing the cost function we are optimizing to be discontinuous at that
+  /// point
+  /// @param discontinuities the set to store the discontinuities in
+  virtual void getDiscontinuities(
+      std::unordered_set<double*>& discontinuities) = 0;
+
+  /// gets a list of `Expressions` that represent the error for all of the
+  /// discontinuities in this subtree
+  ///
+  /// @param error the list of errors to insert into
+  virtual void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) = 0;
+
+ protected:
+  ExpressionNode() = default;
+  ExpressionNode(const ExpressionNode& other) = default;
+  auto operator=(const ExpressionNode& other) -> ExpressionNode& = default;
+  ExpressionNode(ExpressionNode&& other) = default;
+  auto operator=(ExpressionNode&& other) -> ExpressionNode& = default;
+};
+
+/// Types of binary operations
+enum class BinaryOp : uint8_t { MUL, DIV, ADD, SUB };
+
+/// A Binary operation node in the AST
+struct BinaryOpNode : ExpressionNode {
+  /// Creates a `BinaryOpNode`
+  ///
+  /// @param lhs the left hand side of the operation
+  /// @param rhs the right hand side of the operation
+  /// @param op the type of operation
+  BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BinaryOp op);
+
+  /// Evaluates this node in the AST
+  ///
+  /// @param parameters an array of values to be used for the unknowns
+  /// @param map a mapping from pointers to the unknown values to the index of
+  /// the corresponding value to use in `parameters`
+  /// @return the value of the AST with `this` as a root
+  template <typename T>
+  auto evaluateImplementation(std::span<T> parameters,
+                              const ExpressionMap& map) const -> T {
+    switch (op) {
+      case BinaryOp::MUL:
+        return expressionNode::evaluate(lhs, parameters, map) *
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::DIV:
+        return expressionNode::evaluate(lhs, parameters, map) /
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::ADD:
+        return expressionNode::evaluate(lhs, parameters, map) +
+               expressionNode::evaluate(rhs, parameters, map);
+      case BinaryOp::SUB:
+        return expressionNode::evaluate(lhs, parameters, map) -
+               expressionNode::evaluate(rhs, parameters, map);
+    }
+  }
+
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
+
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  auto serialize(std::ostream& out) const -> std::ostream& override;
+
+  void markKnown() override;
+
+  void getDiscontinuities(
+      std::unordered_set<double*>& discontinuities) override;
+
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+
+  /// The left hand side of the operation
+  ExpressionNodePtr lhs;
+
+  /// The right hand side of the operation
+  ExpressionNodePtr rhs;
+
+  /// The type of operation
+  BinaryOp op;
+};
+
+/// Types of binary operations that return booleans
+enum class BooleanBinaryOp : uint8_t { LT, LEQ, GT, GEQ };
+
+/// A Binary operation node in the AST that return a boolean value.
+/// NOTE: all other nodes return `double` values
+struct Condition {
+  /// Creates a `Condition`
+  ///
+  /// @param lhs the left hand side of the operation
+  /// @param rhs the right hand side of the operation
+  /// @param op the type of operation
+  Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
+            BooleanBinaryOp op);
+
+  /// Evaluates the AST with `this` as a root.
+  ///
+  /// Note that this is templated so that `ceres` can do automatic
+  /// differentiation
+  /// @param parameters an array of values to be used for the unknowns
+  /// @param map a mapping from pointers to the unknown values to the index of
+  /// the corresponding value to use in `parameters`
+  /// @return a curve between 0 and 1 centered around
+  /// lhs->evaluate()==rhs->evaluate() such that it goes to 0 when the condition
+  /// is false and it goes to 1 when the condition is true
+  template <typename T>
+  auto evaluate(std::span<const T> parameters, const ExpressionMap& map) const
+      -> bool {
+    if (includeZero) {
+      return expressionNode::evaluate(val, parameters, map) >= 0;
+    }
+    return expressionNode::evaluate(val, parameters, map) > 0;
+  }
+
+  [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
+
+  /// Stores pointers to all unknown values in the AST with `this` as a root in
+  /// `unknowns`
+  ///
+  /// @param unknowns a set of unknown values to add the unknowns in this AST
+  /// to. Unknowns in this AST may or may not be already present already;
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const;
+
+  void getUnknowns(std::unordered_set<double*>& unknowns) const;
+
+  /// Prints the node to `out`
+  ///
+  /// @param out the stream to print to
+  /// @return `out`
+  auto serialize(std::ostream& out) const -> std::ostream&;
+
+  void markKnown() const;
+  void getDiscontinuities(std::unordered_set<double*>& discontinuities) const;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) const;
+
+  /// Value of the condition. The condition is true if this is greater than zero
+  ExpressionNodePtr val;
+
+  /// A variable node that should be equal in value to val. This allows us to
+  /// put constraints on val during optimization
+  std::shared_ptr<VariableNode> constraint;
+
+  /// Whether to consider the condition true if val == 0
+  bool includeZero;
+};
+
+/// A Ternary operation node in the AST
+struct TernaryOpNode : ExpressionNode {
+  /// Creates a `TernaryOpNode`
+  ///
+  /// @param condition what to test to determine which expression to use
+  /// @param valIfTrue expression to use if `condition` is true
+  /// @param valIfFalse expression to use if `condition` is false
+  TernaryOpNode(std::shared_ptr<Condition> condition,
+                ExpressionNodePtr valIfTrue, ExpressionNodePtr valIfFalse);
+
+  /// Evaluates this node in the AST
+  ///
+  /// @param parameters an array of values to be used for the unknowns
+  /// @param map a mapping from pointers to the unknown values to the index of
+  /// the corresponding value to use in `parameters`
+  /// @return the value of the AST with `this` as a root
+  template <typename T>
+  auto evaluateImplementation(std::span<T> parameters,
+                              const ExpressionMap& map) const -> T {
+    return condition->evaluate(parameters, map)
+               ? expressionNode::evaluate(valIfTrue, parameters, map)
+               : expressionNode::evaluate(valIfFalse, parameters, map);
+  }
+
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
+
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  auto serialize(std::ostream& out) const -> std::ostream& override;
+
+  /// The condition used to determine which expression to evaluate
+  std::shared_ptr<Condition> condition;
+
+  void markKnown() override;
+
+  void getDiscontinuities(
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+
+  /// The expression to evaluate if `condition` is true
+  ExpressionNodePtr valIfTrue;
+
+  /// The expression to evaluate if `condition` is false
+  ExpressionNodePtr valIfFalse;
+};
+
+/// Types of unary operations
+enum class UnaryOp : uint8_t { EXP, NEG };
+
+/// A Unary operation node in the AST
+struct UnaryOpNode : ExpressionNode {
+  /// Creates a `UnaryOpNode`
+  ///
+  /// @param operand the operand for the operation
+  /// @param op the type of operation
+  UnaryOpNode(ExpressionNodePtr operand, UnaryOp op);
+
+  /// Evaluates this node in the AST
+  ///
+  /// @param parameters an array of values to be used for the unknowns
+  /// @param map a mapping from pointers to the unknown values to the index of
+  /// the corresponding value to use in `parameters`
+  /// @return the value of the AST with `this` as a root
+  template <typename T>
+  auto evaluateImplementation(std::span<T> parameters,
+                              const ExpressionMap& map) const -> T {
+    switch (op) {
+      case UnaryOp::EXP:
+        return exp(expressionNode::evaluate(operand, parameters, map));
+      case UnaryOp::NEG:
+        return -(expressionNode::evaluate(operand, parameters, map));
+    }
+  }
+
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
+
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  auto serialize(std::ostream& out) const -> std::ostream& override;
+
+  void markKnown() override;
+
+  void getDiscontinuities(
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+
+  /// The operand for the operation
+  ExpressionNodePtr operand;
+
+  /// The type of operation
+  UnaryOp op;
+};
+
+/// A node representing a single known or unknown value in the AST
+struct VariableNode : ExpressionNode {
+  /// Creates a `VariableNode` representing an unknown
+  VariableNode();
+
+  /// Creates a `VariableNode` representing a known value
+  ///
+  /// @param value the value of the node
+  explicit VariableNode(double value);
+
+  /// Evaluates this node in the AST
+  ///
+  /// @param parameters an array of values to be used for the unknowns
+  /// @param map a mapping from pointers to the unknown values to the index of
+  /// the corresponding value to use in `parameters`
+  /// @return the value of the AST with `this` as a root
+  template <typename T>
+  auto evaluateImplementation(std::span<T> parameters,
+                              const ExpressionMap& map) const -> T {
+    if (known) {
+      return T(value);
+    }
+    return parameters[map.at(&value)];
+  }
+
+  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
+
+  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+
+  auto serialize(std::ostream& out) const -> std::ostream& override;
+
+  void markKnown() override;
+
+  void getDiscontinuities(
+      std::unordered_set<double*>& discontinuities) override;
+  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+
+  /// The value of this node
+  double value;
+
+  /// Is the value known or does this node represent an unknown
+  bool known;
+};
+
+namespace expressionNode {
+
+/// Evaluates the AST with `root` as a root.
+///
+/// Note that this is templated so that `ceres` can do automatic
+/// differentiation
+/// @param parameters an array of values to be used for the unknowns
+/// @param map a mapping from pointers to the unknown values to the index of
+/// the corresponding value to use in `parameters`
+/// @return the value of the AST with `root` as a root
+template <typename T>
+auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
+              const ExpressionMap& map) -> T {
+  if (std::shared_ptr<VariableNode> node =
+          std::dynamic_pointer_cast<VariableNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
+  }
+  if (std::shared_ptr<BinaryOpNode> node =
+          std::dynamic_pointer_cast<BinaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
+  }
+  if (std::shared_ptr<UnaryOpNode> node =
+          std::dynamic_pointer_cast<UnaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
+  }
+  if (std::shared_ptr<TernaryOpNode> node =
+          std::dynamic_pointer_cast<TernaryOpNode>(root)) {
+    return node->evaluateImplementation(parameters, map);
+  }
+  return T();
+}
+}  // namespace expressionNode
+
+auto operator<<(std::ostream& out, const ExpressionNodePtr& node)
+    -> std::ostream&;
+#endif

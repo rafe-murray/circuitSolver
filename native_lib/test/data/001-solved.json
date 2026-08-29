@@ -1,0 +1,45 @@
+{
+  "edges": {
+    "1be73b48-3f37-4682-bfb9-48690b26ebcb": {
+      "id": "1be73b48-3f37-4682-bfb9-48690b26ebcb",
+      "fromId": "a1d85336-6690-4d4b-b078-dd94535c09c2",
+      "toId": "dbc3e7a0-ae65-40df-922b-03d0ca22dbad",
+      "current": 1,
+      "voltageSource": {
+        "voltage": 5
+      }
+    },
+    "8a898c82-14d1-4bcc-8cd0-e362fbf58ad2": {
+      "id": "8a898c82-14d1-4bcc-8cd0-e362fbf58ad2",
+      "fromId": "dbc3e7a0-ae65-40df-922b-03d0ca22dbad",
+      "toId": "c08296bf-db45-44fd-a2c1-339d2061a2c7",
+      "current": 1,
+      "resistor": {
+        "resistance": 2
+      }
+    },
+    "519569b9-9987-4b2e-8aeb-9a5ac17a0881": {
+      "id": "519569b9-9987-4b2e-8aeb-9a5ac17a0881",
+      "fromId": "c08296bf-db45-44fd-a2c1-339d2061a2c7",
+      "toId": "a1d85336-6690-4d4b-b078-dd94535c09c2",
+      "current": 1,
+      "resistor": {
+        "resistance": 3
+      }
+    }
+  },
+  "vertices": {
+    "a1d85336-6690-4d4b-b078-dd94535c09c2": {
+      "id": "a1d85336-6690-4d4b-b078-dd94535c09c2",
+      "voltage": 0
+    },
+    "dbc3e7a0-ae65-40df-922b-03d0ca22dbad": {
+      "id": "dbc3e7a0-ae65-40df-922b-03d0ca22dbad",
+      "voltage": 5
+    },
+    "c08296bf-db45-44fd-a2c1-339d2061a2c7": {
+      "id": "c08296bf-db45-44fd-a2c1-339d2061a2c7",
+      "voltage": 3
+    }
+  }
+}

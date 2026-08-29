@@ -1,0 +1,20 @@
+{
+  "name": "opentelemetry-spdlog-sink",
+  "description": [
+    "OpenTelemetry-compatible sink for spdlog"
+  ],
+  "version-date": "2026-07-20",
+  "homepage": "https://github.com/open-telemetry/opentelemetry-cpp-contrib/tree/main/instrumentation/spdlog",
+  "dependencies": [
+    "spdlog",
+    "opentelemetry-cpp",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ]
+}
