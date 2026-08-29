@@ -1,11 +1,8 @@
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:frontend/utils/json.dart';
 import 'package:uuid/uuid_value.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'dart:ui';
 
-part 'circuit_models.freezed.dart';
-part 'circuit_models.g.dart';
 part 'circuit_models.mapper.dart';
 
 // TODO: use a separate List<EndpointModel> for the endpoints.
@@ -13,7 +10,7 @@ part 'circuit_models.mapper.dart';
 // This will allow us to reference them by id only in the components and wires,
 // and thus make updates to endpoints easy - which is important for UI responsiveness
 
-@MappableClass()
+@MappableClass(includeCustomMappers: [UuidValueMapper()])
 class CircuitModel with CircuitModelMappable {
   final UuidValue id;
   final String? name;
@@ -33,13 +30,6 @@ class CircuitModel with CircuitModelMappable {
 sealed class Patch<K, V> with PatchMappable<K, V> {
   @MappableConstructor()
   const Patch._();
-
-  // const factory Patch.add({required Iterable<(K, V)> value}) = Add<K, V>;
-  // const factory Patch.remove({required K position}) = Remove<K, V>;
-  // const factory Patch.change({required K position, required V value}) =
-  //     Change<K, V>;
-  // const factory Patch.replace({required Iterable<(K, V)> values}) =
-  //     Replace<K, V>;
 }
 
 @MappableClass(discriminatorValue: 'add')
@@ -114,7 +104,7 @@ class ComponentModel with ComponentModelMappable {
   });
 }
 
-@MappableClass()
+@MappableClass(includeCustomMappers: [OffsetMapper()])
 class EndpointModel with EndpointModelMappable {
   final Offset pos;
   final UuidValue id;
@@ -122,49 +112,71 @@ class EndpointModel with EndpointModelMappable {
   const EndpointModel({required this.pos, required this.id, this.voltage});
 }
 
-@freezed
-sealed class BranchModel with _$BranchModel {
-  // TODO: should these be private classes?
-  const factory BranchModel.currentSource({Voltage? voltage}) = CurrentSource;
-  const factory BranchModel.idealDiode({Voltage? voltage}) = IdealDiode;
-  const factory BranchModel.realDiode({Current? i0, Voltage? vt, double? n}) =
-      RealDiode;
-  const factory BranchModel.resistor({Resistance? resistance}) = Resistor;
-  const factory BranchModel.voltageSource({Voltage? voltage}) = VoltageSource;
-  const factory BranchModel.zenerDiode({
-    Voltage? vzt,
-    Resistance? rzt,
-    Current? izt,
-  }) = ZenerDiode;
-  factory BranchModel.fromJson(Map<String, dynamic> json) =>
-      _$BranchModelFromJson(json);
+@MappableClass(discriminatorKey: 'type')
+sealed class BranchModel with BranchModelMappable {
+  const BranchModel._();
 }
 
-@freezed
-abstract class Resistance with _$Resistance {
-  const Resistance._();
-  const factory Resistance({required double ohms}) = _Resistance;
+@MappableClass(discriminatorValue: 'currentSource')
+class CurrentSource extends BranchModel with CurrentSourceMappable {
+  final Voltage? voltage;
+  const CurrentSource({this.voltage}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'idealDiode')
+class IdealDiode extends BranchModel with IdealDiodeMappable {
+  final Voltage? voltage;
+  const IdealDiode({this.voltage}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'resistor')
+class Resistor extends BranchModel with ResistorMappable {
+  final Resistance? resistance;
+  Resistor({this.resistance}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'realDiode')
+class RealDiode extends BranchModel with RealDiodeMappable {
+  final Current? i0;
+  final Voltage? vt;
+  final double? n;
+  const RealDiode({this.i0, this.vt, this.n}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'voltageSource')
+class VoltageSource extends BranchModel with VoltageSourceMappable {
+  final Voltage? voltage;
+  const VoltageSource({this.voltage}) : super._();
+}
+
+@MappableClass(discriminatorValue: 'zenerDiode')
+class ZenerDiode extends BranchModel with ZenerDiodeMappable {
+  final Voltage? vzt;
+  final Resistance? rzt;
+  final Current? izt;
+
+  const ZenerDiode({this.vzt, this.rzt, this.izt}) : super._();
+}
+
+@MappableClass()
+class Resistance with ResistanceMappable {
+  final double ohms;
+  const Resistance({required this.ohms});
   double get milliOhms => ohms * 1000;
   double get kiloOhms => ohms / 1000;
-  factory Resistance.fromJson(Map<String, dynamic> json) =>
-      _$ResistanceFromJson(json);
 }
 
-@freezed
-abstract class Voltage with _$Voltage {
-  const Voltage._();
-  const factory Voltage({required double volts}) = _Voltage;
+@MappableClass()
+class Voltage with VoltageMappable {
+  final double volts;
+  const Voltage({required this.volts});
   double get milliVolts => volts * 1000;
-  factory Voltage.fromJson(Map<String, dynamic> json) =>
-      _$VoltageFromJson(json);
 }
 
-@freezed
-abstract class Current with _$Current {
-  const Current._();
-  const factory Current({required double a}) = _Current;
+@MappableClass()
+class Current with CurrentMappable {
+  final double a;
+  const Current({required this.a});
   double get amps => a;
   double get milliAmps => a * 1000;
-  factory Current.fromJson(Map<String, dynamic> json) =>
-      _$CurrentFromJson(json);
 }

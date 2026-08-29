@@ -15,6 +15,7 @@ class CircuitModelMapper extends ClassMapperBase<CircuitModel> {
   static CircuitModelMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = CircuitModelMapper._());
+      MapperContainer.globals.useAll([UuidValueMapper()]);
       ComponentModelMapper.ensureInitialized();
       WireModelMapper.ensureInitialized();
       EndpointModelMapper.ensureInitialized();
@@ -226,6 +227,8 @@ class ComponentModelMapper extends ClassMapperBase<ComponentModel> {
   static ComponentModelMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = ComponentModelMapper._());
+      BranchModelMapper.ensureInitialized();
+      CurrentMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -335,6 +338,8 @@ extension ComponentModelValueCopy<$R, $Out>
 
 abstract class ComponentModelCopyWith<$R, $In extends ComponentModel, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  BranchModelCopyWith<$R, BranchModel, BranchModel> get branch;
+  CurrentCopyWith<$R, Current, Current>? get current;
   $R call({
     UuidValue? id,
     UuidValue? fromId,
@@ -355,6 +360,12 @@ class _ComponentModelCopyWithImpl<$R, $Out>
   @override
   late final ClassMapperBase<ComponentModel> $mapper =
       ComponentModelMapper.ensureInitialized();
+  @override
+  BranchModelCopyWith<$R, BranchModel, BranchModel> get branch =>
+      $value.branch.copyWith.$chain((v) => call(branch: v));
+  @override
+  CurrentCopyWith<$R, Current, Current>? get current =>
+      $value.current?.copyWith.$chain((v) => call(current: v));
   @override
   $R call({
     UuidValue? id,
@@ -384,6 +395,164 @@ class _ComponentModelCopyWithImpl<$R, $Out>
   ComponentModelCopyWith<$R2, ComponentModel, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   ) => _ComponentModelCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class BranchModelMapper extends ClassMapperBase<BranchModel> {
+  BranchModelMapper._();
+
+  static BranchModelMapper? _instance;
+  static BranchModelMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = BranchModelMapper._());
+      CurrentSourceMapper.ensureInitialized();
+      IdealDiodeMapper.ensureInitialized();
+      ResistorMapper.ensureInitialized();
+      RealDiodeMapper.ensureInitialized();
+      VoltageSourceMapper.ensureInitialized();
+      ZenerDiodeMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'BranchModel';
+
+  @override
+  final MappableFields<BranchModel> fields = const {};
+
+  static BranchModel _instantiate(DecodingData data) {
+    throw MapperException.missingSubclass(
+      'BranchModel',
+      'type',
+      '${data.value['type']}',
+    );
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static BranchModel fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<BranchModel>(map);
+  }
+
+  static BranchModel fromJson(String json) {
+    return ensureInitialized().decodeJson<BranchModel>(json);
+  }
+}
+
+mixin BranchModelMappable {
+  String toJson();
+  Map<String, dynamic> toMap();
+  BranchModelCopyWith<BranchModel, BranchModel, BranchModel> get copyWith;
+}
+
+abstract class BranchModelCopyWith<$R, $In extends BranchModel, $Out>
+    implements ClassCopyWith<$R, $In, $Out> {
+  $R call();
+  BranchModelCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class CurrentMapper extends ClassMapperBase<Current> {
+  CurrentMapper._();
+
+  static CurrentMapper? _instance;
+  static CurrentMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = CurrentMapper._());
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'Current';
+
+  static double _$a(Current v) => v.a;
+  static const Field<Current, double> _f$a = Field('a', _$a);
+
+  @override
+  final MappableFields<Current> fields = const {#a: _f$a};
+
+  static Current _instantiate(DecodingData data) {
+    return Current(a: data.dec(_f$a));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static Current fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<Current>(map);
+  }
+
+  static Current fromJson(String json) {
+    return ensureInitialized().decodeJson<Current>(json);
+  }
+}
+
+mixin CurrentMappable {
+  String toJson() {
+    return CurrentMapper.ensureInitialized().encodeJson<Current>(
+      this as Current,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return CurrentMapper.ensureInitialized().encodeMap<Current>(
+      this as Current,
+    );
+  }
+
+  CurrentCopyWith<Current, Current, Current> get copyWith =>
+      _CurrentCopyWithImpl<Current, Current>(
+        this as Current,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return CurrentMapper.ensureInitialized().stringifyValue(this as Current);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return CurrentMapper.ensureInitialized().equalsValue(
+      this as Current,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return CurrentMapper.ensureInitialized().hashValue(this as Current);
+  }
+}
+
+extension CurrentValueCopy<$R, $Out> on ObjectCopyWith<$R, Current, $Out> {
+  CurrentCopyWith<$R, Current, $Out> get $asCurrent =>
+      $base.as((v, t, t2) => _CurrentCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class CurrentCopyWith<$R, $In extends Current, $Out>
+    implements ClassCopyWith<$R, $In, $Out> {
+  $R call({double? a});
+  CurrentCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _CurrentCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, Current, $Out>
+    implements CurrentCopyWith<$R, Current, $Out> {
+  _CurrentCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<Current> $mapper =
+      CurrentMapper.ensureInitialized();
+  @override
+  $R call({double? a}) => $apply(FieldCopyWithData({if (a != null) #a: a}));
+  @override
+  Current $make(CopyWithData data) => Current(a: data.get(#a, or: $value.a));
+
+  @override
+  CurrentCopyWith<$R2, Current, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+      _CurrentCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
 
 class WireModelMapper extends ClassMapperBase<WireModel> {
@@ -528,6 +697,8 @@ class EndpointModelMapper extends ClassMapperBase<EndpointModel> {
   static EndpointModelMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = EndpointModelMapper._());
+      MapperContainer.globals.useAll([OffsetMapper()]);
+      VoltageMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -623,6 +794,7 @@ extension EndpointModelValueCopy<$R, $Out>
 
 abstract class EndpointModelCopyWith<$R, $In extends EndpointModel, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage;
   $R call({Offset? pos, UuidValue? id, Voltage? voltage});
   EndpointModelCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -635,6 +807,9 @@ class _EndpointModelCopyWithImpl<$R, $Out>
   @override
   late final ClassMapperBase<EndpointModel> $mapper =
       EndpointModelMapper.ensureInitialized();
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage =>
+      $value.voltage?.copyWith.$chain((v) => call(voltage: v));
   @override
   $R call({Offset? pos, UuidValue? id, Object? voltage = $none}) => $apply(
     FieldCopyWithData({
@@ -654,6 +829,111 @@ class _EndpointModelCopyWithImpl<$R, $Out>
   EndpointModelCopyWith<$R2, EndpointModel, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   ) => _EndpointModelCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class VoltageMapper extends ClassMapperBase<Voltage> {
+  VoltageMapper._();
+
+  static VoltageMapper? _instance;
+  static VoltageMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = VoltageMapper._());
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'Voltage';
+
+  static double _$volts(Voltage v) => v.volts;
+  static const Field<Voltage, double> _f$volts = Field('volts', _$volts);
+
+  @override
+  final MappableFields<Voltage> fields = const {#volts: _f$volts};
+
+  static Voltage _instantiate(DecodingData data) {
+    return Voltage(volts: data.dec(_f$volts));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static Voltage fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<Voltage>(map);
+  }
+
+  static Voltage fromJson(String json) {
+    return ensureInitialized().decodeJson<Voltage>(json);
+  }
+}
+
+mixin VoltageMappable {
+  String toJson() {
+    return VoltageMapper.ensureInitialized().encodeJson<Voltage>(
+      this as Voltage,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return VoltageMapper.ensureInitialized().encodeMap<Voltage>(
+      this as Voltage,
+    );
+  }
+
+  VoltageCopyWith<Voltage, Voltage, Voltage> get copyWith =>
+      _VoltageCopyWithImpl<Voltage, Voltage>(
+        this as Voltage,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return VoltageMapper.ensureInitialized().stringifyValue(this as Voltage);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return VoltageMapper.ensureInitialized().equalsValue(
+      this as Voltage,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return VoltageMapper.ensureInitialized().hashValue(this as Voltage);
+  }
+}
+
+extension VoltageValueCopy<$R, $Out> on ObjectCopyWith<$R, Voltage, $Out> {
+  VoltageCopyWith<$R, Voltage, $Out> get $asVoltage =>
+      $base.as((v, t, t2) => _VoltageCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class VoltageCopyWith<$R, $In extends Voltage, $Out>
+    implements ClassCopyWith<$R, $In, $Out> {
+  $R call({double? volts});
+  VoltageCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _VoltageCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, Voltage, $Out>
+    implements VoltageCopyWith<$R, Voltage, $Out> {
+  _VoltageCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<Voltage> $mapper =
+      VoltageMapper.ensureInitialized();
+  @override
+  $R call({double? volts}) =>
+      $apply(FieldCopyWithData({if (volts != null) #volts: volts}));
+  @override
+  Voltage $make(CopyWithData data) =>
+      Voltage(volts: data.get(#volts, or: $value.volts));
+
+  @override
+  VoltageCopyWith<$R2, Voltage, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t) =>
+      _VoltageCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
 
 class PatchMapper extends ClassMapperBase<Patch> {
@@ -1459,6 +1739,945 @@ class _PatchCircuitModelCopyWithImpl<$R, $Out>
   PatchCircuitModelCopyWith<$R2, PatchCircuitModel, $Out2> $chain<$R2, $Out2>(
     Then<$Out2, $R2> t,
   ) => _PatchCircuitModelCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class CurrentSourceMapper extends SubClassMapperBase<CurrentSource> {
+  CurrentSourceMapper._();
+
+  static CurrentSourceMapper? _instance;
+  static CurrentSourceMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = CurrentSourceMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      VoltageMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'CurrentSource';
+
+  static Voltage? _$voltage(CurrentSource v) => v.voltage;
+  static const Field<CurrentSource, Voltage> _f$voltage = Field(
+    'voltage',
+    _$voltage,
+    opt: true,
+  );
+
+  @override
+  final MappableFields<CurrentSource> fields = const {#voltage: _f$voltage};
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'currentSource';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static CurrentSource _instantiate(DecodingData data) {
+    return CurrentSource(voltage: data.dec(_f$voltage));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static CurrentSource fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<CurrentSource>(map);
+  }
+
+  static CurrentSource fromJson(String json) {
+    return ensureInitialized().decodeJson<CurrentSource>(json);
+  }
+}
+
+mixin CurrentSourceMappable {
+  String toJson() {
+    return CurrentSourceMapper.ensureInitialized().encodeJson<CurrentSource>(
+      this as CurrentSource,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return CurrentSourceMapper.ensureInitialized().encodeMap<CurrentSource>(
+      this as CurrentSource,
+    );
+  }
+
+  CurrentSourceCopyWith<CurrentSource, CurrentSource, CurrentSource>
+  get copyWith => _CurrentSourceCopyWithImpl<CurrentSource, CurrentSource>(
+    this as CurrentSource,
+    $identity,
+    $identity,
+  );
+  @override
+  String toString() {
+    return CurrentSourceMapper.ensureInitialized().stringifyValue(
+      this as CurrentSource,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return CurrentSourceMapper.ensureInitialized().equalsValue(
+      this as CurrentSource,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return CurrentSourceMapper.ensureInitialized().hashValue(
+      this as CurrentSource,
+    );
+  }
+}
+
+extension CurrentSourceValueCopy<$R, $Out>
+    on ObjectCopyWith<$R, CurrentSource, $Out> {
+  CurrentSourceCopyWith<$R, CurrentSource, $Out> get $asCurrentSource =>
+      $base.as((v, t, t2) => _CurrentSourceCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class CurrentSourceCopyWith<$R, $In extends CurrentSource, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage;
+  @override
+  $R call({Voltage? voltage});
+  CurrentSourceCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _CurrentSourceCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, CurrentSource, $Out>
+    implements CurrentSourceCopyWith<$R, CurrentSource, $Out> {
+  _CurrentSourceCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<CurrentSource> $mapper =
+      CurrentSourceMapper.ensureInitialized();
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage =>
+      $value.voltage?.copyWith.$chain((v) => call(voltage: v));
+  @override
+  $R call({Object? voltage = $none}) =>
+      $apply(FieldCopyWithData({if (voltage != $none) #voltage: voltage}));
+  @override
+  CurrentSource $make(CopyWithData data) =>
+      CurrentSource(voltage: data.get(#voltage, or: $value.voltage));
+
+  @override
+  CurrentSourceCopyWith<$R2, CurrentSource, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _CurrentSourceCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class IdealDiodeMapper extends SubClassMapperBase<IdealDiode> {
+  IdealDiodeMapper._();
+
+  static IdealDiodeMapper? _instance;
+  static IdealDiodeMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = IdealDiodeMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      VoltageMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'IdealDiode';
+
+  static Voltage? _$voltage(IdealDiode v) => v.voltage;
+  static const Field<IdealDiode, Voltage> _f$voltage = Field(
+    'voltage',
+    _$voltage,
+    opt: true,
+  );
+
+  @override
+  final MappableFields<IdealDiode> fields = const {#voltage: _f$voltage};
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'idealDiode';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static IdealDiode _instantiate(DecodingData data) {
+    return IdealDiode(voltage: data.dec(_f$voltage));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static IdealDiode fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<IdealDiode>(map);
+  }
+
+  static IdealDiode fromJson(String json) {
+    return ensureInitialized().decodeJson<IdealDiode>(json);
+  }
+}
+
+mixin IdealDiodeMappable {
+  String toJson() {
+    return IdealDiodeMapper.ensureInitialized().encodeJson<IdealDiode>(
+      this as IdealDiode,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return IdealDiodeMapper.ensureInitialized().encodeMap<IdealDiode>(
+      this as IdealDiode,
+    );
+  }
+
+  IdealDiodeCopyWith<IdealDiode, IdealDiode, IdealDiode> get copyWith =>
+      _IdealDiodeCopyWithImpl<IdealDiode, IdealDiode>(
+        this as IdealDiode,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return IdealDiodeMapper.ensureInitialized().stringifyValue(
+      this as IdealDiode,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return IdealDiodeMapper.ensureInitialized().equalsValue(
+      this as IdealDiode,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return IdealDiodeMapper.ensureInitialized().hashValue(this as IdealDiode);
+  }
+}
+
+extension IdealDiodeValueCopy<$R, $Out>
+    on ObjectCopyWith<$R, IdealDiode, $Out> {
+  IdealDiodeCopyWith<$R, IdealDiode, $Out> get $asIdealDiode =>
+      $base.as((v, t, t2) => _IdealDiodeCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class IdealDiodeCopyWith<$R, $In extends IdealDiode, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage;
+  @override
+  $R call({Voltage? voltage});
+  IdealDiodeCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _IdealDiodeCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, IdealDiode, $Out>
+    implements IdealDiodeCopyWith<$R, IdealDiode, $Out> {
+  _IdealDiodeCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<IdealDiode> $mapper =
+      IdealDiodeMapper.ensureInitialized();
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage =>
+      $value.voltage?.copyWith.$chain((v) => call(voltage: v));
+  @override
+  $R call({Object? voltage = $none}) =>
+      $apply(FieldCopyWithData({if (voltage != $none) #voltage: voltage}));
+  @override
+  IdealDiode $make(CopyWithData data) =>
+      IdealDiode(voltage: data.get(#voltage, or: $value.voltage));
+
+  @override
+  IdealDiodeCopyWith<$R2, IdealDiode, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _IdealDiodeCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class ResistorMapper extends SubClassMapperBase<Resistor> {
+  ResistorMapper._();
+
+  static ResistorMapper? _instance;
+  static ResistorMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = ResistorMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      ResistanceMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'Resistor';
+
+  static Resistance? _$resistance(Resistor v) => v.resistance;
+  static const Field<Resistor, Resistance> _f$resistance = Field(
+    'resistance',
+    _$resistance,
+    opt: true,
+  );
+
+  @override
+  final MappableFields<Resistor> fields = const {#resistance: _f$resistance};
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'resistor';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static Resistor _instantiate(DecodingData data) {
+    return Resistor(resistance: data.dec(_f$resistance));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static Resistor fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<Resistor>(map);
+  }
+
+  static Resistor fromJson(String json) {
+    return ensureInitialized().decodeJson<Resistor>(json);
+  }
+}
+
+mixin ResistorMappable {
+  String toJson() {
+    return ResistorMapper.ensureInitialized().encodeJson<Resistor>(
+      this as Resistor,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return ResistorMapper.ensureInitialized().encodeMap<Resistor>(
+      this as Resistor,
+    );
+  }
+
+  ResistorCopyWith<Resistor, Resistor, Resistor> get copyWith =>
+      _ResistorCopyWithImpl<Resistor, Resistor>(
+        this as Resistor,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return ResistorMapper.ensureInitialized().stringifyValue(this as Resistor);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return ResistorMapper.ensureInitialized().equalsValue(
+      this as Resistor,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return ResistorMapper.ensureInitialized().hashValue(this as Resistor);
+  }
+}
+
+extension ResistorValueCopy<$R, $Out> on ObjectCopyWith<$R, Resistor, $Out> {
+  ResistorCopyWith<$R, Resistor, $Out> get $asResistor =>
+      $base.as((v, t, t2) => _ResistorCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class ResistorCopyWith<$R, $In extends Resistor, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  ResistanceCopyWith<$R, Resistance, Resistance>? get resistance;
+  @override
+  $R call({Resistance? resistance});
+  ResistorCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _ResistorCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, Resistor, $Out>
+    implements ResistorCopyWith<$R, Resistor, $Out> {
+  _ResistorCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<Resistor> $mapper =
+      ResistorMapper.ensureInitialized();
+  @override
+  ResistanceCopyWith<$R, Resistance, Resistance>? get resistance =>
+      $value.resistance?.copyWith.$chain((v) => call(resistance: v));
+  @override
+  $R call({Object? resistance = $none}) => $apply(
+    FieldCopyWithData({if (resistance != $none) #resistance: resistance}),
+  );
+  @override
+  Resistor $make(CopyWithData data) =>
+      Resistor(resistance: data.get(#resistance, or: $value.resistance));
+
+  @override
+  ResistorCopyWith<$R2, Resistor, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _ResistorCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class ResistanceMapper extends ClassMapperBase<Resistance> {
+  ResistanceMapper._();
+
+  static ResistanceMapper? _instance;
+  static ResistanceMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = ResistanceMapper._());
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'Resistance';
+
+  static double _$ohms(Resistance v) => v.ohms;
+  static const Field<Resistance, double> _f$ohms = Field('ohms', _$ohms);
+
+  @override
+  final MappableFields<Resistance> fields = const {#ohms: _f$ohms};
+
+  static Resistance _instantiate(DecodingData data) {
+    return Resistance(ohms: data.dec(_f$ohms));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static Resistance fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<Resistance>(map);
+  }
+
+  static Resistance fromJson(String json) {
+    return ensureInitialized().decodeJson<Resistance>(json);
+  }
+}
+
+mixin ResistanceMappable {
+  String toJson() {
+    return ResistanceMapper.ensureInitialized().encodeJson<Resistance>(
+      this as Resistance,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return ResistanceMapper.ensureInitialized().encodeMap<Resistance>(
+      this as Resistance,
+    );
+  }
+
+  ResistanceCopyWith<Resistance, Resistance, Resistance> get copyWith =>
+      _ResistanceCopyWithImpl<Resistance, Resistance>(
+        this as Resistance,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return ResistanceMapper.ensureInitialized().stringifyValue(
+      this as Resistance,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return ResistanceMapper.ensureInitialized().equalsValue(
+      this as Resistance,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return ResistanceMapper.ensureInitialized().hashValue(this as Resistance);
+  }
+}
+
+extension ResistanceValueCopy<$R, $Out>
+    on ObjectCopyWith<$R, Resistance, $Out> {
+  ResistanceCopyWith<$R, Resistance, $Out> get $asResistance =>
+      $base.as((v, t, t2) => _ResistanceCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class ResistanceCopyWith<$R, $In extends Resistance, $Out>
+    implements ClassCopyWith<$R, $In, $Out> {
+  $R call({double? ohms});
+  ResistanceCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _ResistanceCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, Resistance, $Out>
+    implements ResistanceCopyWith<$R, Resistance, $Out> {
+  _ResistanceCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<Resistance> $mapper =
+      ResistanceMapper.ensureInitialized();
+  @override
+  $R call({double? ohms}) =>
+      $apply(FieldCopyWithData({if (ohms != null) #ohms: ohms}));
+  @override
+  Resistance $make(CopyWithData data) =>
+      Resistance(ohms: data.get(#ohms, or: $value.ohms));
+
+  @override
+  ResistanceCopyWith<$R2, Resistance, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _ResistanceCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class RealDiodeMapper extends SubClassMapperBase<RealDiode> {
+  RealDiodeMapper._();
+
+  static RealDiodeMapper? _instance;
+  static RealDiodeMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = RealDiodeMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      CurrentMapper.ensureInitialized();
+      VoltageMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'RealDiode';
+
+  static Current? _$i0(RealDiode v) => v.i0;
+  static const Field<RealDiode, Current> _f$i0 = Field('i0', _$i0, opt: true);
+  static Voltage? _$vt(RealDiode v) => v.vt;
+  static const Field<RealDiode, Voltage> _f$vt = Field('vt', _$vt, opt: true);
+  static double? _$n(RealDiode v) => v.n;
+  static const Field<RealDiode, double> _f$n = Field('n', _$n, opt: true);
+
+  @override
+  final MappableFields<RealDiode> fields = const {
+    #i0: _f$i0,
+    #vt: _f$vt,
+    #n: _f$n,
+  };
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'realDiode';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static RealDiode _instantiate(DecodingData data) {
+    return RealDiode(
+      i0: data.dec(_f$i0),
+      vt: data.dec(_f$vt),
+      n: data.dec(_f$n),
+    );
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static RealDiode fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<RealDiode>(map);
+  }
+
+  static RealDiode fromJson(String json) {
+    return ensureInitialized().decodeJson<RealDiode>(json);
+  }
+}
+
+mixin RealDiodeMappable {
+  String toJson() {
+    return RealDiodeMapper.ensureInitialized().encodeJson<RealDiode>(
+      this as RealDiode,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return RealDiodeMapper.ensureInitialized().encodeMap<RealDiode>(
+      this as RealDiode,
+    );
+  }
+
+  RealDiodeCopyWith<RealDiode, RealDiode, RealDiode> get copyWith =>
+      _RealDiodeCopyWithImpl<RealDiode, RealDiode>(
+        this as RealDiode,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return RealDiodeMapper.ensureInitialized().stringifyValue(
+      this as RealDiode,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return RealDiodeMapper.ensureInitialized().equalsValue(
+      this as RealDiode,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return RealDiodeMapper.ensureInitialized().hashValue(this as RealDiode);
+  }
+}
+
+extension RealDiodeValueCopy<$R, $Out> on ObjectCopyWith<$R, RealDiode, $Out> {
+  RealDiodeCopyWith<$R, RealDiode, $Out> get $asRealDiode =>
+      $base.as((v, t, t2) => _RealDiodeCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class RealDiodeCopyWith<$R, $In extends RealDiode, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  CurrentCopyWith<$R, Current, Current>? get i0;
+  VoltageCopyWith<$R, Voltage, Voltage>? get vt;
+  @override
+  $R call({Current? i0, Voltage? vt, double? n});
+  RealDiodeCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _RealDiodeCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, RealDiode, $Out>
+    implements RealDiodeCopyWith<$R, RealDiode, $Out> {
+  _RealDiodeCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<RealDiode> $mapper =
+      RealDiodeMapper.ensureInitialized();
+  @override
+  CurrentCopyWith<$R, Current, Current>? get i0 =>
+      $value.i0?.copyWith.$chain((v) => call(i0: v));
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get vt =>
+      $value.vt?.copyWith.$chain((v) => call(vt: v));
+  @override
+  $R call({Object? i0 = $none, Object? vt = $none, Object? n = $none}) =>
+      $apply(
+        FieldCopyWithData({
+          if (i0 != $none) #i0: i0,
+          if (vt != $none) #vt: vt,
+          if (n != $none) #n: n,
+        }),
+      );
+  @override
+  RealDiode $make(CopyWithData data) => RealDiode(
+    i0: data.get(#i0, or: $value.i0),
+    vt: data.get(#vt, or: $value.vt),
+    n: data.get(#n, or: $value.n),
+  );
+
+  @override
+  RealDiodeCopyWith<$R2, RealDiode, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _RealDiodeCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class VoltageSourceMapper extends SubClassMapperBase<VoltageSource> {
+  VoltageSourceMapper._();
+
+  static VoltageSourceMapper? _instance;
+  static VoltageSourceMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = VoltageSourceMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      VoltageMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'VoltageSource';
+
+  static Voltage? _$voltage(VoltageSource v) => v.voltage;
+  static const Field<VoltageSource, Voltage> _f$voltage = Field(
+    'voltage',
+    _$voltage,
+    opt: true,
+  );
+
+  @override
+  final MappableFields<VoltageSource> fields = const {#voltage: _f$voltage};
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'voltageSource';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static VoltageSource _instantiate(DecodingData data) {
+    return VoltageSource(voltage: data.dec(_f$voltage));
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static VoltageSource fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<VoltageSource>(map);
+  }
+
+  static VoltageSource fromJson(String json) {
+    return ensureInitialized().decodeJson<VoltageSource>(json);
+  }
+}
+
+mixin VoltageSourceMappable {
+  String toJson() {
+    return VoltageSourceMapper.ensureInitialized().encodeJson<VoltageSource>(
+      this as VoltageSource,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return VoltageSourceMapper.ensureInitialized().encodeMap<VoltageSource>(
+      this as VoltageSource,
+    );
+  }
+
+  VoltageSourceCopyWith<VoltageSource, VoltageSource, VoltageSource>
+  get copyWith => _VoltageSourceCopyWithImpl<VoltageSource, VoltageSource>(
+    this as VoltageSource,
+    $identity,
+    $identity,
+  );
+  @override
+  String toString() {
+    return VoltageSourceMapper.ensureInitialized().stringifyValue(
+      this as VoltageSource,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return VoltageSourceMapper.ensureInitialized().equalsValue(
+      this as VoltageSource,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return VoltageSourceMapper.ensureInitialized().hashValue(
+      this as VoltageSource,
+    );
+  }
+}
+
+extension VoltageSourceValueCopy<$R, $Out>
+    on ObjectCopyWith<$R, VoltageSource, $Out> {
+  VoltageSourceCopyWith<$R, VoltageSource, $Out> get $asVoltageSource =>
+      $base.as((v, t, t2) => _VoltageSourceCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class VoltageSourceCopyWith<$R, $In extends VoltageSource, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage;
+  @override
+  $R call({Voltage? voltage});
+  VoltageSourceCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _VoltageSourceCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, VoltageSource, $Out>
+    implements VoltageSourceCopyWith<$R, VoltageSource, $Out> {
+  _VoltageSourceCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<VoltageSource> $mapper =
+      VoltageSourceMapper.ensureInitialized();
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get voltage =>
+      $value.voltage?.copyWith.$chain((v) => call(voltage: v));
+  @override
+  $R call({Object? voltage = $none}) =>
+      $apply(FieldCopyWithData({if (voltage != $none) #voltage: voltage}));
+  @override
+  VoltageSource $make(CopyWithData data) =>
+      VoltageSource(voltage: data.get(#voltage, or: $value.voltage));
+
+  @override
+  VoltageSourceCopyWith<$R2, VoltageSource, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _VoltageSourceCopyWithImpl<$R2, $Out2>($value, $cast, t);
+}
+
+class ZenerDiodeMapper extends SubClassMapperBase<ZenerDiode> {
+  ZenerDiodeMapper._();
+
+  static ZenerDiodeMapper? _instance;
+  static ZenerDiodeMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = ZenerDiodeMapper._());
+      BranchModelMapper.ensureInitialized().addSubMapper(_instance!);
+      VoltageMapper.ensureInitialized();
+      ResistanceMapper.ensureInitialized();
+      CurrentMapper.ensureInitialized();
+    }
+    return _instance!;
+  }
+
+  @override
+  final String id = 'ZenerDiode';
+
+  static Voltage? _$vzt(ZenerDiode v) => v.vzt;
+  static const Field<ZenerDiode, Voltage> _f$vzt = Field(
+    'vzt',
+    _$vzt,
+    opt: true,
+  );
+  static Resistance? _$rzt(ZenerDiode v) => v.rzt;
+  static const Field<ZenerDiode, Resistance> _f$rzt = Field(
+    'rzt',
+    _$rzt,
+    opt: true,
+  );
+  static Current? _$izt(ZenerDiode v) => v.izt;
+  static const Field<ZenerDiode, Current> _f$izt = Field(
+    'izt',
+    _$izt,
+    opt: true,
+  );
+
+  @override
+  final MappableFields<ZenerDiode> fields = const {
+    #vzt: _f$vzt,
+    #rzt: _f$rzt,
+    #izt: _f$izt,
+  };
+
+  @override
+  final String discriminatorKey = 'type';
+  @override
+  final dynamic discriminatorValue = 'zenerDiode';
+  @override
+  late final ClassMapperBase superMapper =
+      BranchModelMapper.ensureInitialized();
+
+  static ZenerDiode _instantiate(DecodingData data) {
+    return ZenerDiode(
+      vzt: data.dec(_f$vzt),
+      rzt: data.dec(_f$rzt),
+      izt: data.dec(_f$izt),
+    );
+  }
+
+  @override
+  final Function instantiate = _instantiate;
+
+  static ZenerDiode fromMap(Map<String, dynamic> map) {
+    return ensureInitialized().decodeMap<ZenerDiode>(map);
+  }
+
+  static ZenerDiode fromJson(String json) {
+    return ensureInitialized().decodeJson<ZenerDiode>(json);
+  }
+}
+
+mixin ZenerDiodeMappable {
+  String toJson() {
+    return ZenerDiodeMapper.ensureInitialized().encodeJson<ZenerDiode>(
+      this as ZenerDiode,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return ZenerDiodeMapper.ensureInitialized().encodeMap<ZenerDiode>(
+      this as ZenerDiode,
+    );
+  }
+
+  ZenerDiodeCopyWith<ZenerDiode, ZenerDiode, ZenerDiode> get copyWith =>
+      _ZenerDiodeCopyWithImpl<ZenerDiode, ZenerDiode>(
+        this as ZenerDiode,
+        $identity,
+        $identity,
+      );
+  @override
+  String toString() {
+    return ZenerDiodeMapper.ensureInitialized().stringifyValue(
+      this as ZenerDiode,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return ZenerDiodeMapper.ensureInitialized().equalsValue(
+      this as ZenerDiode,
+      other,
+    );
+  }
+
+  @override
+  int get hashCode {
+    return ZenerDiodeMapper.ensureInitialized().hashValue(this as ZenerDiode);
+  }
+}
+
+extension ZenerDiodeValueCopy<$R, $Out>
+    on ObjectCopyWith<$R, ZenerDiode, $Out> {
+  ZenerDiodeCopyWith<$R, ZenerDiode, $Out> get $asZenerDiode =>
+      $base.as((v, t, t2) => _ZenerDiodeCopyWithImpl<$R, $Out>(v, t, t2));
+}
+
+abstract class ZenerDiodeCopyWith<$R, $In extends ZenerDiode, $Out>
+    implements BranchModelCopyWith<$R, $In, $Out> {
+  VoltageCopyWith<$R, Voltage, Voltage>? get vzt;
+  ResistanceCopyWith<$R, Resistance, Resistance>? get rzt;
+  CurrentCopyWith<$R, Current, Current>? get izt;
+  @override
+  $R call({Voltage? vzt, Resistance? rzt, Current? izt});
+  ZenerDiodeCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
+}
+
+class _ZenerDiodeCopyWithImpl<$R, $Out>
+    extends ClassCopyWithBase<$R, ZenerDiode, $Out>
+    implements ZenerDiodeCopyWith<$R, ZenerDiode, $Out> {
+  _ZenerDiodeCopyWithImpl(super.value, super.then, super.then2);
+
+  @override
+  late final ClassMapperBase<ZenerDiode> $mapper =
+      ZenerDiodeMapper.ensureInitialized();
+  @override
+  VoltageCopyWith<$R, Voltage, Voltage>? get vzt =>
+      $value.vzt?.copyWith.$chain((v) => call(vzt: v));
+  @override
+  ResistanceCopyWith<$R, Resistance, Resistance>? get rzt =>
+      $value.rzt?.copyWith.$chain((v) => call(rzt: v));
+  @override
+  CurrentCopyWith<$R, Current, Current>? get izt =>
+      $value.izt?.copyWith.$chain((v) => call(izt: v));
+  @override
+  $R call({Object? vzt = $none, Object? rzt = $none, Object? izt = $none}) =>
+      $apply(
+        FieldCopyWithData({
+          if (vzt != $none) #vzt: vzt,
+          if (rzt != $none) #rzt: rzt,
+          if (izt != $none) #izt: izt,
+        }),
+      );
+  @override
+  ZenerDiode $make(CopyWithData data) => ZenerDiode(
+    vzt: data.get(#vzt, or: $value.vzt),
+    rzt: data.get(#rzt, or: $value.rzt),
+    izt: data.get(#izt, or: $value.izt),
+  );
+
+  @override
+  ZenerDiodeCopyWith<$R2, ZenerDiode, $Out2> $chain<$R2, $Out2>(
+    Then<$Out2, $R2> t,
+  ) => _ZenerDiodeCopyWithImpl<$R2, $Out2>($value, $cast, t);
 }
 
 typedef _t$_R0<A, B> = (A, B);

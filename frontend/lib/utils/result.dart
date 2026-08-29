@@ -51,3 +51,13 @@ final class Error<T> extends Result<T> {
   @override
   String toString() => 'Result<$T>.error($error)';
 }
+
+extension FutureResult<T> on Future<Result<T>> {
+  Future<Result<U>> transform<U>(U Function(T) f) async {
+    return (await this).transform(f);
+  }
+
+  Future<T> valueOrThrow() async {
+    return (await this).valueOrThrow();
+  }
+}

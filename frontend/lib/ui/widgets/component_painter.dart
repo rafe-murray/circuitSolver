@@ -4,25 +4,35 @@ import 'package:uuid/uuid.dart';
 
 import '../core/themes/circuit_theme.dart';
 
-class ComponentPainter extends CustomPainter {
+class ComponentPainter extends BranchPainter {
   final ComponentModel componentModel;
   final Map<UuidValue, EndpointModel> endpoints;
 
-  ComponentPainter({required this.componentModel, required this.endpoints});
+  ComponentPainter({required this.componentModel, required this.endpoints})
+    : super(
+        branch: componentModel.branch,
+        from: endpoints[componentModel.fromId]!.pos,
+        to: endpoints[componentModel.toId]!.pos,
+      );
+}
+
+class BranchPainter extends CustomPainter {
+  final BranchModel branch;
+  final Offset from;
+  final Offset to;
+  final CircuitTheme theme;
+  BranchPainter({
+    required this.branch,
+    required this.from,
+    required this.to,
+    this.theme = const EditorCircuitTheme(),
+  });
   @override
   void paint(Canvas canvas, Size size) async {
-    final branch = componentModel.branch;
-    final from = endpoints[componentModel.fromId];
-    if (from == null) {
-      throw StateError("From endpoint ${componentModel.fromId} not found");
-    }
-    final to = endpoints[componentModel.toId];
-    if (to == null) {
-      throw StateError("To endpoint ${componentModel.toId} not found");
-    }
-    switch (branch) {
+    final localBranch = branch;
+    switch (localBranch) {
       case CurrentSource():
-        _paintCurrentSource(canvas, size, from, to, branch);
+        _paintCurrentSource(canvas, size, from, to, localBranch, theme);
         break;
       case IdealDiode():
         // TODO: Handle this case.
@@ -31,10 +41,10 @@ class ComponentPainter extends CustomPainter {
         // TODO: Handle this case.
         throw UnimplementedError();
       case Resistor():
-        _paintResistor(canvas, size, from, to, branch);
+        _paintResistor(canvas, size, from, to, localBranch, theme);
         break;
       case VoltageSource():
-        _paintVoltageSource(canvas, size, from, to, branch);
+        _paintVoltageSource(canvas, size, from, to, localBranch, theme);
         break;
       case ZenerDiode():
         // TODO: Handle this case.
@@ -43,8 +53,10 @@ class ComponentPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant ComponentPainter oldDelegate) {
-    return oldDelegate.componentModel != componentModel;
+  bool shouldRepaint(covariant BranchPainter oldDelegate) {
+    return (oldDelegate.branch != branch ||
+        oldDelegate.from != from ||
+        oldDelegate.to != to);
   }
 }
 
@@ -61,7 +73,7 @@ Offset _leadEndPosition({
   required Offset from,
   required Offset to,
   required Offset direction,
-  double componentRadius = CircuitTheme.componentRadius,
+  required double componentRadius,
 }) {
   return (to - from) / 2 - direction * componentRadius + from;
 }
@@ -69,17 +81,18 @@ Offset _leadEndPosition({
 void _paintVoltageSource(
   Canvas canvas,
   Size size,
-  EndpointModel from,
-  EndpointModel to,
+  Offset from,
+  Offset to,
   VoltageSource voltageSource,
+  CircuitTheme theme,
 ) {
   canvas.save();
-  _paintLeads(canvas, size, from.pos, to.pos);
-  final radius = CircuitTheme.componentRadius;
-  canvas.drawCircle((to.pos - from.pos) / 2 + from.pos, radius, circuitPaint);
-  final direction = _direction(from.pos, to.pos);
-  final normal = _normal(from.pos, to.pos);
-  final centre = (from.pos + to.pos) / 2;
+  _paintLeads(canvas, size, from, to, theme.componentRadius);
+  final radius = theme.componentRadius;
+  canvas.drawCircle((to - from) / 2 + from, radius, circuitPaint);
+  final direction = _direction(from, to);
+  final normal = _normal(from, to);
+  final centre = (from + to) / 2;
   // proportion of radius at which to place the + and -
   const placementProportion = 0.6;
   // proprtion of radius to offset the ends of each +/- from centre (in the normal direction)
@@ -116,9 +129,9 @@ void _paintLeads(
   Canvas canvas,
   Size size,
   Offset from,
-  Offset to, {
-  double componentRadius = CircuitTheme.componentRadius,
-}) {
+  Offset to,
+  double componentRadius,
+) {
   final direction = _direction(from, to);
   canvas.drawLine(
     from,
@@ -145,21 +158,22 @@ void _paintLeads(
 void _paintCurrentSource(
   Canvas canvas,
   Size size,
-  EndpointModel from,
-  EndpointModel to,
+  Offset from,
+  Offset to,
   CurrentSource currentSource,
+  CircuitTheme theme,
 ) {
   canvas.save();
-  _paintLeads(canvas, size, from.pos, to.pos);
-  final radius = CircuitTheme.componentRadius;
+  _paintLeads(canvas, size, from, to, theme.componentRadius);
+  final radius = theme.componentRadius;
   const arrowProportion = 0.8;
   const arrowheadLengthProportion = 0.5;
   const arrowheadWidthProportion = 0.4;
 
-  canvas.drawCircle((to.pos - from.pos) / 2 + from.pos, radius, circuitPaint);
+  canvas.drawCircle((to - from) / 2 + from, radius, circuitPaint);
 
-  final centre = (to.pos + from.pos) / 2;
-  final direction = _direction(to.pos, from.pos);
+  final centre = (to + from) / 2;
+  final direction = _direction(to, from);
   final tip = centre + direction * arrowProportion * radius;
 
   final headLength = arrowheadLengthProportion * radius;
@@ -171,7 +185,7 @@ void _paintCurrentSource(
     circuitPaint,
   );
 
-  final normal = _normal(from.pos, to.pos);
+  final normal = _normal(from, to);
   final left =
       tip -
       direction * headLength +
@@ -193,31 +207,31 @@ void _paintCurrentSource(
 void _paintResistor(
   Canvas canvas,
   Size size,
-  EndpointModel from,
-  EndpointModel to,
+  Offset from,
+  Offset to,
   Resistor resistor,
+  CircuitTheme theme,
 ) {
   canvas.save();
   final path = Path();
 
-  path.moveTo(from.pos.dx, from.pos.dy);
-  final direction = _direction(from.pos, to.pos);
-  final normal = _normal(from.pos, to.pos);
+  path.moveTo(from.dx, from.dy);
+  final direction = _direction(from, to);
+  final normal = _normal(from, to);
 
   final leadEnd = _leadEndPosition(
-    from: from.pos,
-    to: to.pos,
+    from: from,
+    to: to,
     direction: direction,
-    componentRadius: CircuitTheme.resistorParallelSize / 2,
+    componentRadius: theme.resistorParallelSize / 2,
   );
   path.lineTo(leadEnd.dx, leadEnd.dy);
 
-  final segmentLength =
-      CircuitTheme.resistorParallelSize / CircuitTheme.resistorSteps;
-  for (int i = 0; i < CircuitTheme.resistorSteps; i++) {
+  final segmentLength = theme.resistorParallelSize / theme.resistorSteps;
+  for (int i = 0; i < theme.resistorSteps; i++) {
     // final double d = i.toDouble();
     final firstVertex =
-        normal * CircuitTheme.resistorPerpendicularSize +
+        normal * theme.resistorPerpendicularSize +
         leadEnd +
         direction * (i * segmentLength + segmentLength / 4);
     // On line through centre of resistor
@@ -225,7 +239,7 @@ void _paintResistor(
         leadEnd + direction * (i * segmentLength + 2 * segmentLength / 4);
 
     final thirdVertex =
-        -normal * CircuitTheme.resistorPerpendicularSize +
+        -normal * theme.resistorPerpendicularSize +
         leadEnd +
         direction * (i * segmentLength + 3 * segmentLength / 4);
     final fourthVertex = leadEnd + direction * ((i + 1) * segmentLength);
@@ -236,7 +250,7 @@ void _paintResistor(
     path.lineTo(fourthVertex.dx, fourthVertex.dy);
   }
 
-  path.lineTo(to.pos.dx, to.pos.dy);
+  path.lineTo(to.dx, to.dy);
   canvas.drawPath(path, circuitPaint);
   canvas.restore();
 }

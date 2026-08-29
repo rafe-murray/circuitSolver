@@ -1,20 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/ui/widgets/component_painter.dart';
 import 'package:frontend/ui/widgets/editor_screen.dart';
-// import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
 
-// import 'commands/command.dart';
-import 'data/model/circuit_models.dart';
-// import 'screens/editor_page.dart';
-// import 'screens/landing_page.dart';
-import 'services/storage.dart';
-// import 'viewmodels/canvas_viewmodel.dart';
+import 'ui/widgets/home_screen.dart';
+
+part 'main.g.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const ProviderScope(child: CircuitSolverApp()));
+}
+
+final _router = GoRouter(routes: $appRoutes);
+
+@TypedGoRoute<HomeScreenRoute>(
+  path: '/',
+  routes: [TypedGoRoute<CircuitEditorRoute>(path: 'edit/:circuitId')],
+)
+@immutable
+class HomeScreenRoute extends GoRouteData with $HomeScreenRoute {
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return const HomeScreen();
+  }
+}
+
+@immutable
+class CircuitEditorRoute extends GoRouteData with $CircuitEditorRoute {
+  final String circuitId;
+  const CircuitEditorRoute({required this.circuitId});
+  @override
+  Widget build(BuildContext context, GoRouterState state) {
+    return EditorScreen(circuitId: UuidValue.withValidation(circuitId));
+  }
 }
 
 class CircuitSolverApp extends StatelessWidget {
@@ -22,18 +42,9 @@ class CircuitSolverApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uuid = Uuid();
-    return MaterialApp(
-      theme: ThemeData(scaffoldBackgroundColor: Colors.white),
-      home: Column(
-        children: [
-          Text("Hello, world!"),
-          Container(
-            color: Colors.white,
-            child: EditorScreen(circuitId: uuid.v7obj()),
-          ),
-        ],
-      ),
+    return MaterialApp.router(
+      // theme: ThemeData(scaffoldBackgroundColor: Colors.white),
+      routerConfig: _router,
     );
     // return MultiProvider(
     //   providers: [

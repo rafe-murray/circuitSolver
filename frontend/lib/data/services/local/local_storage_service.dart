@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -45,6 +45,12 @@ class LocalStorageService {
                   ),
                 ]))
               .get();
+      print(
+        "Current circuit ids from db id: ${circuitRecords.map((record) => UuidValue.fromByteList(record.id))}",
+      );
+      print(
+        "Current circuit ids from circuit.id: ${circuitRecords.map((record) => CircuitModelMapper.fromJson(record.circuit).id)}",
+      );
       final circuits = circuitRecords
           .map(_localStorageModelFromDatabaseModel)
           .toList();
@@ -74,7 +80,7 @@ extension on CircuitLocalStorageModel {
       name: Value(name),
       created: Value(created),
       modified: Value(modified),
-      circuit: Value(jsonEncode(circuit)),
+      circuit: Value(circuit.toJson()),
     );
   }
 }
@@ -89,7 +95,7 @@ CircuitLocalStorageModel _localStorageModelFromDatabaseModel(
     name: circuitRecord.name,
     created: circuitRecord.created,
     modified: circuitRecord.modified,
-    circuit: jsonDecode(circuitRecord.circuit),
+    circuit: CircuitModelMapper.fromJson(circuitRecord.circuit),
   );
 }
 

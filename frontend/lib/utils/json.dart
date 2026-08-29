@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:dart_mappable/dart_mappable.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:frontend/data/model/circuit_models.dart';
 import 'package:uuid/uuid.dart';
 
 class UuidValueMapper extends SimpleMapper<UuidValue> {
+  const UuidValueMapper();
   @override
   UuidValue decode(Object value) {
     return UuidValue.withValidation(value as String);
@@ -18,10 +18,13 @@ class UuidValueMapper extends SimpleMapper<UuidValue> {
 }
 
 class OffsetMapper extends SimpleMapper<Offset> {
+  const OffsetMapper();
   @override
   Offset decode(Object value) {
-    final map = value as Map<String, double>;
-    return Offset(map['dx']!, map['dy']!);
+    final map = value as Map<String, dynamic>;
+    final dx = map['dx'] as num;
+    final dy = map['dy'] as num;
+    return Offset(dx.toDouble(), dy.toDouble());
   }
 
   @override

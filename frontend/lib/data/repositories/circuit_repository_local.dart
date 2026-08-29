@@ -48,7 +48,7 @@ class CircuitRepositoryLocal implements CircuitRepository {
     final oldCircuit = await _localStorageService.getCircuit(circuit.id);
     switch (oldCircuit) {
       case Ok<CircuitLocalStorageModel>():
-        _localStorageService.putCircuit(
+        return await _localStorageService.putCircuit(
           CircuitLocalStorageModel(
             id: circuit.id,
             name: circuit.name ?? "",
@@ -57,10 +57,9 @@ class CircuitRepositoryLocal implements CircuitRepository {
             circuit: circuit,
           ),
         );
-        return Result.ok(null);
       case Error<CircuitLocalStorageModel>():
         if (oldCircuit.error is NotFoundException) {
-          _localStorageService.putCircuit(
+          return await _localStorageService.putCircuit(
             CircuitLocalStorageModel(
               id: circuit.id,
               name: circuit.name ?? "",
@@ -69,7 +68,6 @@ class CircuitRepositoryLocal implements CircuitRepository {
               circuit: circuit,
             ),
           );
-          return Result.ok(null);
         }
         return Result.error(oldCircuit.error);
     }
@@ -158,7 +156,7 @@ class CircuitRepositoryLocal implements CircuitRepository {
         wires: newWires,
       ),
     );
-    return _localStorageService.putCircuit(newCircuitLocalStorageModel);
+    return await _localStorageService.putCircuit(newCircuitLocalStorageModel);
   }
 }
 
