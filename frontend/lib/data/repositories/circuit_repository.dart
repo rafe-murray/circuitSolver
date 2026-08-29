@@ -8,4 +8,5 @@ abstract class CircuitRepository {
   Future<Result<void>> patchCircuit(PatchCircuitModel circuit);
   Future<Result<CircuitModel>> getCircuit(UuidValue id);
   Future<Result<List<CircuitModel>>> getAllCircuits();
+  Future<Result<void>> deleteCircuit(UuidValue id);
 }

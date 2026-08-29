@@ -1522,8 +1522,8 @@ class PatchCircuitModelMapper extends ClassMapperBase<PatchCircuitModel> {
 
   static UuidValue _$id(PatchCircuitModel v) => v.id;
   static const Field<PatchCircuitModel, UuidValue> _f$id = Field('id', _$id);
-  static Patch<void, String?>? _$name(PatchCircuitModel v) => v.name;
-  static const Field<PatchCircuitModel, Patch<void, String?>> _f$name = Field(
+  static String? _$name(PatchCircuitModel v) => v.name;
+  static const Field<PatchCircuitModel, String> _f$name = Field(
     'name',
     _$name,
     opt: true,
@@ -1633,8 +1633,6 @@ abstract class PatchCircuitModelCopyWith<
   $Out
 >
     implements ClassCopyWith<$R, $In, $Out> {
-  PatchCopyWith<$R, Patch<void, String?>, Patch<void, String?>, void, String?>?
-  get name;
   PatchCopyWith<
     $R,
     Patch<int, ComponentModel>,
@@ -1661,7 +1659,7 @@ abstract class PatchCircuitModelCopyWith<
   get endpoints;
   $R call({
     UuidValue? id,
-    Patch<void, String?>? name,
+    String? name,
     Patch<int, ComponentModel>? components,
     Patch<int, WireModel>? wires,
     Patch<UuidValue, EndpointModel>? endpoints,
@@ -1679,9 +1677,6 @@ class _PatchCircuitModelCopyWithImpl<$R, $Out>
   @override
   late final ClassMapperBase<PatchCircuitModel> $mapper =
       PatchCircuitModelMapper.ensureInitialized();
-  @override
-  PatchCopyWith<$R, Patch<void, String?>, Patch<void, String?>, void, String?>?
-  get name => $value.name?.copyWith.$chain((v) => call(name: v));
   @override
   PatchCopyWith<
     $R,

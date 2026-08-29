@@ -71,6 +71,24 @@ class LocalStorageService {
       return Result.error(error);
     }
   }
+
+  Future<Result<void>> deleteCircuit(UuidValue id) async {
+    try {
+      final countDeleted = await _db.circuits.deleteWhere(
+        (circuit) => circuit.id.equals(id.toBytes()),
+      );
+      if (countDeleted == 0) {
+        return Result.error(NotFoundException("No Circuit found with id $id"));
+      } else if (countDeleted > 1) {
+        return Result.error(
+          Exception("More than one circuit deleted with the same id: $id"),
+        );
+      }
+      return Result.ok(null);
+    } on Exception catch (error) {
+      return Result.error(error);
+    }
+  }
 }
 
 extension on CircuitLocalStorageModel {

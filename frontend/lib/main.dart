@@ -43,7 +43,7 @@ class CircuitSolverApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      // theme: ThemeData(scaffoldBackgroundColor: Colors.white),
+      theme: ThemeData(colorSchemeSeed: Colors.cyan),
       routerConfig: _router,
     );
     // return MultiProvider(

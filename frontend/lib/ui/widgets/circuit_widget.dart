@@ -14,6 +14,10 @@ class CircuitWidget extends StatelessWidget {
   });
   @override
   Widget build(BuildContext context) {
+    // Ensure the widget takes up the same space even if circuit is empty
+    if (circuitModel.components.isEmpty) {
+      return SizedBox.fromSize(size: size);
+    }
     return Stack(
       children: circuitModel.components.map((component) {
         if (circuitModel.endpoints[component.fromId] == null) {

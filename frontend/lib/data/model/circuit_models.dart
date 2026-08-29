@@ -60,7 +60,7 @@ class Replace<K, V> extends Patch<K, V> with ReplaceMappable<K, V> {
 @MappableClass()
 class PatchCircuitModel with PatchCircuitModelMappable {
   final UuidValue id;
-  final Patch<void, String?>? name;
+  final String? name;
   final Patch<int, ComponentModel>? components;
   final Patch<int, WireModel>? wires;
   final Patch<UuidValue, EndpointModel>? endpoints;

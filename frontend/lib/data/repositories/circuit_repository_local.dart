@@ -112,7 +112,7 @@ class CircuitRepositoryLocal implements CircuitRepository {
     final List<ComponentModel>? newComponents;
     switch (componentsPatch) {
       case null:
-        newComponents = null;
+        newComponents = oldCircuit.components;
       case Add<int, ComponentModel>():
         oldCircuit.components.addAll(
           componentsPatch.value.map((record) => record.$2),
@@ -134,7 +134,7 @@ class CircuitRepositoryLocal implements CircuitRepository {
     final List<WireModel>? newWires;
     switch (wiresPatch) {
       case null:
-        newWires = null;
+        newWires = oldCircuit.wires;
       case Add<int, WireModel>():
         oldCircuit.wires.addAll(wiresPatch.value.map((record) => record.$2));
         newWires = oldCircuit.wires;
@@ -151,12 +151,18 @@ class CircuitRepositoryLocal implements CircuitRepository {
     final newCircuitLocalStorageModel = oldCircuitLocalStorageModel.copyWith(
       modified: DateTime.now(),
       circuit: oldCircuit.copyWith(
+        name: circuit.name ?? oldCircuit.name,
         endpoints: newEndpoints,
         components: newComponents,
         wires: newWires,
       ),
     );
     return await _localStorageService.putCircuit(newCircuitLocalStorageModel);
+  }
+
+  @override
+  Future<Result<void>> deleteCircuit(UuidValue id) async {
+    return await _localStorageService.deleteCircuit(id);
   }
 }
 

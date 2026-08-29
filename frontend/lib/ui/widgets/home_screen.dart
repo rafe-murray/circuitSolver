@@ -11,7 +11,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(color: Colors.white, child: CircuitListWidget()),
+      appBar: AppBar(title: Text("Circuit Solver")),
+      body: CircuitListWidget(),
     );
   }
 }
@@ -25,8 +26,125 @@ class CreateCircuitWidget extends ConsumerWidget {
       onPressed: () {
         ref.watch(homeViewModelProvider.notifier).createCircuit();
       },
-      icon: const Icon(Icons.plus_one),
+      icon: const Icon(Icons.add),
       label: const Text('New Circuit'),
+    );
+  }
+}
+
+enum CircuitMenuOptions { rename, delete }
+
+class CircuitRenameDialog extends StatelessWidget {
+  final void Function(String) onSubmit;
+  final TextEditingController controller;
+  const CircuitRenameDialog({
+    super.key,
+    required this.onSubmit,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Rename"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Please enter a new name for the item:"),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            selectAllOnFocus: true,
+            onSubmitted: (newName) {
+              onSubmit(newName);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+      actions: [
+        OutlinedButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text("Cancel"),
+        ),
+        FilledButton(
+          onPressed: () {
+            onSubmit(controller.text);
+            Navigator.pop(context);
+          },
+          child: Text("OK"),
+        ),
+      ],
+    );
+  }
+}
+
+class CircuitCard extends ConsumerWidget {
+  final CircuitModel circuitModel;
+  const CircuitCard({super.key, required this.circuitModel});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Card(
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(circuitModel.name ?? "New Circuit"),
+              PopupMenuButton(
+                tooltip: '',
+                offset: Offset(0.0, 40.0),
+                icon: const Icon(Icons.more_vert),
+                onSelected: (result) {
+                  switch (result) {
+                    case CircuitMenuOptions.rename:
+                      showDialog(
+                        context: context,
+                        builder: (context) => CircuitRenameDialog(
+                          onSubmit: (newName) {
+                            ref
+                                .read(homeViewModelProvider.notifier)
+                                .renameCircuit(circuitModel.id, newName);
+                          },
+                          controller: TextEditingController.fromValue(
+                            TextEditingValue(
+                              text: circuitModel.name ?? "",
+                              selection: TextSelection(
+                                baseOffset: 0,
+                                extentOffset: circuitModel.name?.length ?? 0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    case CircuitMenuOptions.delete:
+                      ref
+                          .read(homeViewModelProvider.notifier)
+                          .deleteCircuit(circuitModel.id);
+                  }
+                },
+                itemBuilder: (BuildContext context) =>
+                    <PopupMenuEntry<CircuitMenuOptions>>[
+                      const PopupMenuItem(
+                        value: CircuitMenuOptions.rename,
+                        child: Row(
+                          children: [Icon(Icons.edit), Text("Rename")],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: CircuitMenuOptions.delete,
+                        child: Row(
+                          children: [Icon(Icons.delete), Text("Delete")],
+                        ),
+                      ),
+                    ],
+              ),
+            ],
+          ),
+          CircuitWidget(circuitModel: circuitModel, size: const Size(100, 150)),
+        ],
+      ),
     );
   }
 }
@@ -46,26 +164,11 @@ class CircuitListWidget extends ConsumerWidget {
           children: [
             CreateCircuitWidget(),
             ...circuits.value.map(
-              (circuitModel) => Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.black, width: 1.0),
-                ),
-                child: InkWell(
-                  onTap: () {
-                    context.go('/edit/${circuitModel.id.toString()}');
-                  },
-                  child: Card(
-                    child: Column(
-                      children: [
-                        Text(circuitModel.name ?? "New Circuit"),
-                        CircuitWidget(
-                          circuitModel: circuitModel,
-                          size: const Size(100, 150),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              (circuitModel) => InkWell(
+                onTap: () {
+                  context.go('/edit/${circuitModel.id.toString()}');
+                },
+                child: CircuitCard(circuitModel: circuitModel),
               ),
             ),
           ],
