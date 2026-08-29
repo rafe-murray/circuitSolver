@@ -25,69 +25,36 @@ Uuid uuid(Ref ref) {
   return Uuid();
 }
 
-class UndoManager {
-  final _history = <CircuitDiff>[];
-  // Index of current position on the history list
-  var currentPosition = -1;
-  bool get canUndo => currentPosition >= 0;
-  bool get canRedo => _history.length - 1 > currentPosition;
-
-  CircuitModel undo(CircuitModel currentCircuit) {
-    assert(canUndo);
-    final diff = _history[currentPosition--];
-    return diff.revertFrom(currentCircuit);
-  }
-
-  CircuitModel redo(CircuitModel currentCircuit) {
-    assert(canRedo);
-    final diff = _history[++currentPosition];
-    return diff.applyTo(currentCircuit);
-  }
-
-  void pushChange(CircuitModel oldCircuit, CircuitModel newCircuit) {
-    _history.removeRange(++currentPosition, _history.length);
-    _history.add(calculateDiff(oldCircuit, newCircuit));
-  }
-}
-
 typedef CommandAction = Future<void> Function();
+
+typedef UpdateAction = Future<CircuitModel> Function();
 
 @riverpod
 class CircuitViewModel extends _$CircuitViewModel {
   final _manager = UndoManager();
-  UuidValue get id => circuitId;
+  bool get canRedo => _manager.canRedo;
+  bool get canUndo => _manager.canUndo;
   Future<CircuitModel> get circuitModel async =>
       (await ref.watch(circuitRepositoryProvider).getCircuit(id))
           .valueOrThrow();
+  UuidValue get id => circuitId;
 
-  @override
-  Future<CircuitModel> build({required UuidValue circuitId}) async {
-    return await circuitModel;
-  }
-
-  Future<void> _undoableCommand(CommandAction action) async {
-    final beforeMutation = await circuitModel;
-    await action();
-    final afterMutation = await circuitModel;
-    _manager.pushChange(beforeMutation, afterMutation);
-    ref.invalidate(circuitRepositoryProvider);
-  }
-
-  Future<EndpointModel> _createEndpoint(Offset position) async {
-    final endpoint = EndpointModel(
-      pos: position,
-      id: ref.read(uuidProvider).v7obj(),
-    );
-    await ref
-        .read(circuitRepositoryProvider)
-        .patchCircuit(
-          PatchCircuitModel(
-            id: id,
-            endpoints: Add(value: [(endpoint.id, endpoint)]),
-          ),
-        )
-        .valueOrThrow();
-    return endpoint;
+  Future<void> addComponent(BranchModel branch) async {
+    _undoableCommand(() async {
+      print("Adding component of type $branch");
+      final from = await _createEndpoint(Offset(50, 50));
+      final to = await _createEndpoint(Offset(50, 100));
+      final circuit = await circuitModel;
+      circuit.components.add(
+        ComponentModel(
+          id: ref.read(uuidProvider).v7obj(),
+          fromId: from.id,
+          toId: to.id,
+          branch: branch,
+        ),
+      );
+      ref.read(circuitRepositoryProvider).saveCircuit(circuit).valueOrThrow();
+    });
   }
 
   Future<void> addWire() async {
@@ -109,22 +76,9 @@ class CircuitViewModel extends _$CircuitViewModel {
     });
   }
 
-  Future<void> addComponent(BranchModel branch) async {
-    _undoableCommand(() async {
-      print("Adding component of type $branch");
-      final from = await _createEndpoint(Offset(50, 50));
-      final to = await _createEndpoint(Offset(50, 100));
-      final circuit = await circuitModel;
-      circuit.components.add(
-        ComponentModel(
-          id: ref.read(uuidProvider).v7obj(),
-          fromId: from.id,
-          toId: to.id,
-          branch: branch,
-        ),
-      );
-      ref.read(circuitRepositoryProvider).saveCircuit(circuit).valueOrThrow();
-    });
+  @override
+  Future<CircuitModel> build({required UuidValue circuitId}) async {
+    return await circuitModel;
   }
 
   Future<void> moveEndpoint(UuidValue endpointId, Offset newPos) async {
@@ -141,58 +95,73 @@ class CircuitViewModel extends _$CircuitViewModel {
     });
   }
 
-  // @override
-  // Future<CircuitModel> build(UuidValue id) async {
-  //   final uuid = Uuid();
-  //   final ep1 = EndpointModel(pos: Offset(50, 100), id: uuid.v7obj());
-  //   final ep2 = EndpointModel(pos: Offset(300, 20), id: uuid.v7obj());
-  //   final ep3 = EndpointModel(pos: Offset(200, 300), id: uuid.v7obj());
-  //   final ep4 = EndpointModel(pos: Offset(20, 300), id: uuid.v7obj());
-  //   final r1 = ComponentModel(
-  //     id: uuid.v7obj(),
-  //     from: ep1,
-  //     to: ep2,
-  //     branch: Resistor(),
-  //   );
-  //   final vs = ComponentModel(
-  //     id: uuid.v7obj(),
-  //     from: ep2,
-  //     to: ep3,
-  //     branch: VoltageSource(),
-  //   );
-  //   final cs = ComponentModel(
-  //     id: uuid.v7obj(),
-  //     from: ep3,
-  //     to: ep4,
-  //     branch: CurrentSource(),
-  //   );
-  //   return CircuitModel(id: id, components: [r1, vs, cs], wires: []);
-  //   // return (await ref.watch(circuitRepositoryProvider).getCircuit(id))
-  //   //     .valueOrThrow();
-  // }
+  Future<void> undo() async {
+    assert(canUndo);
+    final previousCircuit = _manager.undo(await circuitModel);
+    ref.read(circuitRepositoryProvider).saveCircuit(previousCircuit);
+  }
 
-  // Future<void> _updateCircuit(CircuitModel circuit) async {
-  //   _circuitRepository.saveCircuit(circuit);
-  // }
+  Future<void> redo() async {
+    assert(canRedo);
+    final newCircuit = _manager.redo(await circuitModel);
+    ref.read(circuitRepositoryProvider).saveCircuit(newCircuit);
+  }
 
-  // Future<void> addComponent(BranchModel branch) async {
-  //   var uuid = ref.read(uuidProvider);
-  //
-  //   final fromPos = ref.read(nextFromProvider);
-  //   final toPos = ref.read(nextToProvider);
-  //
-  //   final from = EndpointModel(pos: fromPos, id: uuid.v7obj());
-  //   final to = EndpointModel(pos: toPos, id: uuid.v7obj());
-  //
-  //   return ref.read(circuitRepositoryProvider).patchCircuit()
-  // }
+  Future<void> updateCircuit(UpdateAction action) async {
+    final beforeUpdate = await circuitModel;
+    final afterUpdate = await action();
+    ref.read(circuitRepositoryProvider).saveCircuit(afterUpdate);
+    _manager.pushChange(beforeUpdate, afterUpdate);
+    ref.invalidate(circuitRepositoryProvider);
+  }
+
+  Future<EndpointModel> _createEndpoint(Offset position) async {
+    final endpoint = EndpointModel(
+      pos: position,
+      id: ref.read(uuidProvider).v7obj(),
+    );
+    await ref
+        .read(circuitRepositoryProvider)
+        .patchCircuit(
+          PatchCircuitModel(
+            id: id,
+            endpoints: Add(value: [(endpoint.id, endpoint)]),
+          ),
+        )
+        .valueOrThrow();
+    return endpoint;
+  }
+
+  Future<void> _undoableCommand(CommandAction action) async {
+    final beforeMutation = await circuitModel;
+    await action();
+    final afterMutation = await circuitModel;
+    _manager.pushChange(beforeMutation, afterMutation);
+    ref.invalidate(circuitRepositoryProvider);
+  }
 }
 
-// @riverpod
-// Future<ComponentModel> component(Ref ref, UuidValue id) async {
-//   final circuitId = ref.watch(circuitIdProvider);
-//   final circuitModel = await ref.watch(
-//     circuitViewModelProvider.call(circuitId).future,
-//   );
-//   return circuitModel.components.firstWhere((component) => component.id == id);
-// }
+class UndoManager {
+  final _history = <CircuitDiff>[];
+  // Index of current position on the history list
+  var currentPosition = -1;
+  bool get canRedo => _history.length - 1 > currentPosition;
+  bool get canUndo => currentPosition >= 0;
+
+  void pushChange(CircuitModel oldCircuit, CircuitModel newCircuit) {
+    _history.removeRange(++currentPosition, _history.length);
+    _history.add(calculateDiff(oldCircuit, newCircuit));
+  }
+
+  CircuitModel redo(CircuitModel currentCircuit) {
+    assert(canRedo);
+    final diff = _history[++currentPosition];
+    return diff.applyTo(currentCircuit);
+  }
+
+  CircuitModel undo(CircuitModel currentCircuit) {
+    assert(canUndo);
+    final diff = _history[currentPosition--];
+    return diff.revertFrom(currentCircuit);
+  }
+}
