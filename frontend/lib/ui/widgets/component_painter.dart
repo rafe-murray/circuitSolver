@@ -147,11 +147,11 @@ class _BranchPaintParameters<T extends BranchModel> {
   });
 }
 
-Offset _direction(Offset from, Offset to) {
+Offset _direction({required Offset from, required Offset to}) {
   return (to - from) / (to - from).distance;
 }
 
-Offset _normal(Offset from, Offset to) {
+Offset _normal({required Offset from, required Offset to}) {
   final normal = Offset(from.dy - to.dy, to.dx - from.dx);
   return normal / normal.distance;
 }
@@ -174,8 +174,11 @@ void _paintVoltageSource(_BranchPaintParameters<VoltageSource> parameters) {
     radius,
     parameters.theme.circuitPaint,
   );
-  final direction = _direction(parameters.globalFrom, parameters.globalTo);
-  final normal = _normal(parameters.globalFrom, parameters.globalTo);
+  final direction = _direction(
+    from: parameters.globalFrom,
+    to: parameters.globalTo,
+  );
+  final normal = _normal(from: parameters.globalFrom, to: parameters.globalTo);
   final centre = (parameters.globalFrom + parameters.globalTo) / 2;
   // proportion of radius at which to place the + and -
   const placementProportion = 0.6;
@@ -236,7 +239,10 @@ void _paintPlaceholder(_BranchPaintParameters parameters) {
 }
 
 void _paintLeads(_BranchPaintParameters parameters) {
-  final direction = _direction(parameters.globalFrom, parameters.globalTo);
+  final direction = _direction(
+    from: parameters.globalFrom,
+    to: parameters.globalTo,
+  );
   parameters.canvas.drawLine(
     parameters.globalFrom,
     _leadEndPosition(
@@ -274,7 +280,10 @@ void _paintCurrentSource(_BranchPaintParameters<CurrentSource> parameters) {
   );
 
   final centre = (parameters.globalTo + parameters.globalFrom) / 2;
-  final direction = _direction(parameters.globalTo, parameters.globalFrom);
+  final direction = _direction(
+    from: parameters.globalFrom,
+    to: parameters.globalTo,
+  );
   final tip = centre + direction * arrowProportion * radius;
 
   final headLength = arrowheadLengthProportion * radius;
@@ -286,7 +295,7 @@ void _paintCurrentSource(_BranchPaintParameters<CurrentSource> parameters) {
     parameters.theme.circuitPaint,
   );
 
-  final normal = _normal(parameters.globalFrom, parameters.globalTo);
+  final normal = _normal(from: parameters.globalFrom, to: parameters.globalTo);
   final left =
       tip -
       direction * headLength +
@@ -310,8 +319,11 @@ void _paintResistor(_BranchPaintParameters<Resistor> parameters) {
   final path = Path();
 
   path.moveTo(parameters.globalFrom.dx, parameters.globalFrom.dy);
-  final direction = _direction(parameters.globalFrom, parameters.globalTo);
-  final normal = _normal(parameters.globalFrom, parameters.globalTo);
+  final direction = _direction(
+    from: parameters.globalFrom,
+    to: parameters.globalTo,
+  );
+  final normal = _normal(from: parameters.globalFrom, to: parameters.globalTo);
 
   final leadEnd = _leadEndPosition(
     from: parameters.globalFrom,
