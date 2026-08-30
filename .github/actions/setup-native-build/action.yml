@@ -37,7 +37,7 @@ runs:
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+        vcpkgJsonGlob: "**/native_lib/vcpkg.json"
         doNotCache: false
 
     - name: Setup CMake and Ninja
