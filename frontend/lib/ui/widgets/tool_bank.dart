@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/ui/view_models/tool/tool.dart';
 
-/// Vertical rail of tool groups shown alongside the circuit editor.
+/// Floating card of tool groups shown over the circuit editor canvas.
 ///
 /// Renders one [ToolPicker] per entry in [toolGroups]. The tool the user picks
 /// is reported through [onToolSelected]; the currently active tool is passed
@@ -13,6 +13,12 @@ class ToolBank extends StatelessWidget {
     required this.onToolSelected,
   });
 
+  /// Outer corner radius of the card.
+  static const _cornerRadius = 6.0;
+
+  /// Inset between the card edge and the tool buttons.
+  static const _padding = 4.0;
+
   /// The tool currently active in the editor, or `null` when none is selected.
   final ToolMeta? selectedTool;
 
@@ -21,22 +27,31 @@ class ToolBank extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      elevation: 1,
-      child: SizedBox(
-        width: 64,
-        child: SingleChildScrollView(
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.all(_padding),
+      child: Card(
+        // elevation: 6,
+        margin: EdgeInsets.zero,
+        color: colors.surfaceContainerHigh,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.all(Radius.circular(_cornerRadius)),
+          side: BorderSide(color: colors.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(_padding),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            spacing: 4,
             children: [
               for (final group in toolGroups)
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: ToolPicker(
-                    group: group,
-                    selectedTool: selectedTool,
-                    onToolSelected: onToolSelected,
-                  ),
+                ToolPicker(
+                  group: group,
+                  selectedTool: selectedTool,
+                  onToolSelected: onToolSelected,
+                  // End buttons nest flush inside the card's rounded corners.
+                  cornerRadius: _cornerRadius - _padding,
                 ),
             ],
           ),
@@ -57,6 +72,7 @@ class ToolPicker extends StatefulWidget {
     required this.group,
     required this.selectedTool,
     required this.onToolSelected,
+    this.cornerRadius = 2,
   });
 
   /// The group of tools this entry picks between.
@@ -67,6 +83,9 @@ class ToolPicker extends StatefulWidget {
 
   /// Called with the [ToolMeta] of the tool the user picked from the flyout.
   final ValueChanged<ToolMeta> onToolSelected;
+
+  /// Corner radius applied to this entry's [ToolButton]s.
+  final double cornerRadius;
 
   @override
   State<ToolPicker> createState() => _ToolPickerState();
@@ -94,33 +113,50 @@ class _ToolPickerState extends State<ToolPicker> {
     return MenuAnchor(
       controller: _menuController,
       alignmentOffset: const Offset(8, 0),
-      menuChildren: [
-        for (final tool in widget.group.tools)
-          ToolButton(
-            meta: tool,
-            selected: widget.selectedTool?.id == tool.id,
-            onPressed: () => _select(tool),
+      style: MenuStyle(
+        padding: const WidgetStatePropertyAll(
+          // HACK: set top padding to 0 here so we can use SizedBoxes for padding between menu elements
+          EdgeInsets.fromLTRB(4.0, 0.0, 4.0, 4.0),
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(widget.cornerRadius + 4),
           ),
-      ],
+        ),
+      ),
+      menuChildren: widget.group.tools
+          .map(
+            (tool) => ToolButton(
+              meta: tool,
+              selected: widget.selectedTool?.id == tool.id,
+              onPressed: () => _select(tool),
+              cornerRadius: widget.cornerRadius,
+            ),
+          )
+          .fold([], (list, el) {
+            list.add(const SizedBox(height: 4));
+            list.add(el);
+            return list;
+          }),
       builder: (context, controller, child) => ToolButton(
         meta: _representative,
         selected: _inGroup(widget.selectedTool),
-        showLabel: false,
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
+        cornerRadius: widget.cornerRadius,
       ),
     );
   }
 }
 
-/// A tappable icon, and optional label, for a single tool.
+/// A tappable icon for a single tool; its name is shown as a tooltip.
 class ToolButton extends StatelessWidget {
   const ToolButton({
     super.key,
     required this.meta,
     required this.selected,
     required this.onPressed,
-    this.showLabel = true,
+    this.cornerRadius = 2,
   });
 
   /// The tool this button represents.
@@ -132,33 +168,27 @@ class ToolButton extends StatelessWidget {
   /// Called when the button is tapped.
   final VoidCallback onPressed;
 
-  /// Whether to show [ToolMeta.name] beside the icon.
-  final bool showLabel;
+  /// Corner radius of the button.
+  final double cornerRadius;
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final radius = BorderRadius.circular(cornerRadius);
     return Tooltip(
       message: meta.name,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: radius,
         child: Container(
           padding: const EdgeInsets.all(6.0),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: selected ? colors.primary : Colors.transparent,
-              width: 2,
-            ),
-            color: selected ? colors.primaryContainer : null,
+            borderRadius: radius,
+            color: selected ? colors.surfaceContainerHighest : null,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox.square(dimension: 32, child: Center(child: meta.icon)),
-              if (showLabel) ...[const SizedBox(width: 8), Text(meta.name)],
-            ],
+          child: SizedBox.square(
+            dimension: 28,
+            child: Center(child: meta.icon),
           ),
         ),
       ),

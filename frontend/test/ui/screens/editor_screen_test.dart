@@ -106,8 +106,8 @@ void main() {
       expect(find.byType(AddComponentKeyboardListener), findsNothing);
     });
 
-    testWidgets('wraps the canvas in the add-component input widgets once the '
-        'resistor tool is selected', (tester) async {
+    testWidgets('wraps the canvas in the add-component input widgets once a '
+        'tool is selected', (tester) async {
       tester.view.physicalSize = const Size(2400, 1800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
@@ -117,7 +117,7 @@ void main() {
 
       await tester.tap(find.byType(ToolButton).first);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Add Resistor'));
+      await tester.tap(find.byTooltip('Add Voltage Source'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AddComponentKeyboardListener), findsOneWidget);

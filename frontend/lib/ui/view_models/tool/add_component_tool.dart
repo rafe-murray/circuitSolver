@@ -61,10 +61,15 @@ class AddComponentTool extends Tool {
     required super.circuit,
   }) : super._(
          meta: createMeta(id: id, branch: branch),
-       );
+       ) {
+    print("Creating new AddComponentTool");
+  }
 
   CircuitModel Function() addComponentAtPos(CircuitModel circuit, Offset pos) =>
       () {
+        print(
+          "Adding ${branch.kind} to circuit ${circuit.id} at position $pos",
+        );
         final fromEndpoint = EndpointModel(
           pos: pos - Offset(20, 20),
           id: uuid.v7obj(),

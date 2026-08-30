@@ -13,6 +13,8 @@ class AddComponentCanvasGestureDetector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior
+          .opaque, // Ensures the entire space catches the hit test
       onTapUp: (details) {
         addComponentCallback(details.localPosition);
       },

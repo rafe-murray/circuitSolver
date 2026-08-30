@@ -11,9 +11,9 @@ import 'package:uuid/uuid_value.dart';
 
 /// Screen for viewing and editing a single circuit.
 ///
-/// The [ToolBank] rail on the left selects the active tool; [_CircuitCanvas]
-/// renders the circuit and, when a tool is active, wraps it in the tool's
-/// input-detection widgets.
+/// The [ToolBank] card floats at the top-left and selects the active tool;
+/// [_CircuitCanvas] renders the circuit and, when a tool is active, wraps it in
+/// the tool's input-detection widgets.
 class EditorScreen extends ConsumerWidget {
   /// Id of the circuit being edited.
   final UuidValue circuitId;
@@ -24,15 +24,20 @@ class EditorScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(title: const Text("Circuit Solver")),
-      body: Row(
+      body: Stack(
         children: [
-          ToolBank(
-            selectedTool: ref.watch(selectedToolProvider(circuitId: circuitId)),
-            onToolSelected: (meta) => ref
-                .read(selectedToolProvider(circuitId: circuitId).notifier)
-                .select(meta),
+          Positioned.fill(child: _CircuitCanvas(circuitId: circuitId)),
+          Align(
+            alignment: Alignment.topLeft,
+            child: ToolBank(
+              selectedTool: ref.watch(
+                selectedToolProvider(circuitId: circuitId),
+              ),
+              onToolSelected: (meta) => ref
+                  .read(selectedToolProvider(circuitId: circuitId).notifier)
+                  .select(meta),
+            ),
           ),
-          Expanded(child: _CircuitCanvas(circuitId: circuitId)),
         ],
       ),
     );
@@ -52,41 +57,16 @@ class _CircuitCanvas extends ConsumerStatefulWidget {
 class _CircuitCanvasState extends ConsumerState<_CircuitCanvas> {
   final _focusNode = FocusNode();
 
-  /// Position used when a tool is activated by keyboard rather than a tap.
-  static const _keyboardAddPosition = Offset(50, 50);
-
   @override
   void dispose() {
     _focusNode.dispose();
     super.dispose();
   }
 
-  /// Runs [tool] against [circuit] as the action for
-  /// [EditorViewModel.updateCircuit].
-  void _apply(Tool tool, CircuitModel circuit, Offset position) {
-    final viewModel = ref.read(
-      editorViewModelProvider(circuitId: widget.circuitId).notifier,
-    );
-    switch (tool) {
-      case AddComponentTool():
-        viewModel.updateCircuit(tool.addComponentAtPos(circuit, position));
-    }
-  }
-
-  /// Wraps [CircuitView] in the input-detection widgets for [tool].
-  Widget _withToolInput(Tool tool, CircuitModel circuit) {
-    switch (tool) {
-      case AddComponentTool():
-        return AddComponentKeyboardListener(
-          focusNode: _focusNode,
-          addComponentCallback: () =>
-              _apply(tool, circuit, _keyboardAddPosition),
-          child: AddComponentCanvasGestureDetector(
-            addComponentCallback: (position) => _apply(tool, circuit, position),
-            child: CircuitView(circuitModel: circuit),
-          ),
-        );
-    }
+  Future<void> _execute(CircuitModel Function() toolCallBack) async {
+    await ref
+        .read(editorViewModelProvider(circuitId: widget.circuitId).notifier)
+        .updateCircuit(toolCallBack);
   }
 
   @override
@@ -112,7 +92,19 @@ class _CircuitCanvasState extends ConsumerState<_CircuitCanvas> {
           uuid: ref.read(uuidProvider),
           circuit: model,
         );
-        return _withToolInput(tool, model);
+        switch (tool) {
+          case AddComponentTool():
+            return AddComponentKeyboardListener(
+              addComponentCallback: () =>
+                  _execute(tool.addComponent(circuit.value)),
+              focusNode: _focusNode,
+              child: AddComponentCanvasGestureDetector(
+                addComponentCallback: (pos) =>
+                    _execute(tool.addComponentAtPos(circuit.value, pos)),
+                child: CircuitView(circuitModel: circuit.value),
+              ),
+            );
+        }
     }
   }
 }

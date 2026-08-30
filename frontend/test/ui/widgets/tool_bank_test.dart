@@ -18,15 +18,20 @@ void main() {
     );
   }
 
+  final voltageSource = addComponentToolGroup.tools.firstWhere(
+    (tool) => tool.id == AddComponentTool.voltageSourceId,
+  );
+
   testWidgets('shows one entry per tool group with the flyout collapsed', (
     tester,
   ) async {
     await tester.pumpWidget(wrap(onToolSelected: (_) {}));
 
     expect(find.byType(ToolPicker), findsNWidgets(toolGroups.length));
-    // Collapsed: one representative button per group, no group tool labels.
+    // Collapsed: one representative button per group.
     expect(find.byType(ToolButton), findsNWidgets(toolGroups.length));
-    expect(find.text('Add Resistor'), findsNothing);
+    // A tool that is only in the flyout is not shown yet.
+    expect(find.byTooltip(voltageSource.name), findsNothing);
   });
 
   testWidgets('tapping an entry reveals every tool in its group', (
@@ -37,9 +42,12 @@ void main() {
     await tester.tap(find.byType(ToolButton).first);
     await tester.pumpAndSettle();
 
-    for (final tool in addComponentToolGroup.tools) {
-      expect(find.text(tool.name), findsOneWidget);
-    }
+    // Representative button plus one per tool in the group.
+    expect(
+      find.byType(ToolButton),
+      findsNWidgets(1 + addComponentToolGroup.tools.length),
+    );
+    expect(find.byTooltip('Add Ideal Diode'), findsOneWidget);
   });
 
   testWidgets('picking a tool reports it and closes the flyout', (
@@ -50,13 +58,13 @@ void main() {
 
     await tester.tap(find.byType(ToolButton).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Add Resistor'));
+    await tester.tap(find.byTooltip(voltageSource.name));
     await tester.pumpAndSettle();
 
     expect(picked, isNotNull);
-    expect(picked!.id, AddComponentTool.resistorId);
+    expect(picked!.id, AddComponentTool.voltageSourceId);
     // Flyout closed again.
-    expect(find.text('Add Voltage Source'), findsNothing);
+    expect(find.byType(ToolButton), findsOneWidget);
   });
 
   testWidgets('tapping the entry again closes the flyout', (tester) async {
@@ -64,11 +72,11 @@ void main() {
 
     await tester.tap(find.byType(ToolButton).first);
     await tester.pumpAndSettle();
-    expect(find.text('Add Resistor'), findsOneWidget);
+    expect(find.byTooltip(voltageSource.name), findsOneWidget);
 
     await tester.tap(find.byType(ToolButton).first);
     await tester.pumpAndSettle();
-    expect(find.text('Add Resistor'), findsNothing);
+    expect(find.byTooltip(voltageSource.name), findsNothing);
   });
 
   testWidgets('the active tool renders its group entry as selected', (
