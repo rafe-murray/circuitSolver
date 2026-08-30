@@ -76,6 +76,10 @@ jobs:
   review:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
     steps:
       - uses: actions/download-artifact@v8
         with:
