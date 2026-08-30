@@ -1,4 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:ui';
+
 import 'package:frontend/config/repository_providers.dart';
 import 'package:frontend/utils/result.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,12 +19,6 @@ Offset nextFrom(Ref ref) {
 @riverpod
 Offset nextTo(Ref ref) {
   return Offset(200, 100);
-}
-
-// TODO: move to config dir
-@riverpod
-Uuid uuid(Ref ref) {
-  return Uuid();
 }
 
 typedef CommandAction = Future<void> Function();

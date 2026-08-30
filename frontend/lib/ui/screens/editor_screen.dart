@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/config/repository_providers.dart';
 import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/ui/view_models/editor_view_model.dart';
 import 'package:frontend/ui/view_models/tool/tool.dart';

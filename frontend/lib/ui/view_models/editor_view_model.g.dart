@@ -89,46 +89,6 @@ final class NextToProvider extends $FunctionalProvider<Offset, Offset, Offset>
 
 String _$nextToHash() => r'1059316ea2a7f473a5143e5b5acaa4d9e31dd595';
 
-@ProviderFor(uuid)
-final uuidProvider = UuidProvider._();
-
-final class UuidProvider extends $FunctionalProvider<Uuid, Uuid, Uuid>
-    with $Provider<Uuid> {
-  UuidProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'uuidProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$uuidHash();
-
-  @$internal
-  @override
-  $ProviderElement<Uuid> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  Uuid create(Ref ref) {
-    return uuid(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Uuid value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<Uuid>(value),
-    );
-  }
-}
-
-String _$uuidHash() => r'705956b657aa32243556b044bffa026ae299734c';
-
 /// The tool currently active in the editor's tool bank for [circuitId], or
 /// `null` when no tool is selected and canvas input is inert.
 
@@ -283,7 +243,7 @@ final class EditorViewModelProvider
   }
 }
 
-String _$editorViewModelHash() => r'de3b43bb0881990f3164f97c2164210fe8bae5cd';
+String _$editorViewModelHash() => r'089f91dd4fdace13197ea4d18b8a95f6d6ac4965';
 
 final class EditorViewModelFamily extends $Family
     with
