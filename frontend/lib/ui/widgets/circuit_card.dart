@@ -70,7 +70,11 @@ class CircuitCard extends ConsumerWidget {
               ),
             ],
           ),
-          CircuitView(circuitModel: circuitModel, size: const Size(100, 150)),
+          CircuitView(
+            circuitModel: circuitModel,
+            clippedSize: const Size(100, 150),
+            scalingFactor: 0.4,
+          ),
         ],
       ),
     );

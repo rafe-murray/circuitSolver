@@ -59,6 +59,18 @@ class EditorCircuitThemeMapper extends ClassMapperBase<EditorCircuitTheme> {
     _$voltageSourceStyle,
     mode: FieldMode.member,
   );
+  static Paint _$circuitPaint(EditorCircuitTheme v) => v.circuitPaint;
+  static const Field<EditorCircuitTheme, Paint> _f$circuitPaint = Field(
+    'circuitPaint',
+    _$circuitPaint,
+    mode: FieldMode.member,
+  );
+  static Paint _$fillPaint(EditorCircuitTheme v) => v.fillPaint;
+  static const Field<EditorCircuitTheme, Paint> _f$fillPaint = Field(
+    'fillPaint',
+    _$fillPaint,
+    mode: FieldMode.member,
+  );
 
   @override
   final MappableFields<EditorCircuitTheme> fields = const {
@@ -67,6 +79,8 @@ class EditorCircuitThemeMapper extends ClassMapperBase<EditorCircuitTheme> {
     #resistorParallelSize: _f$resistorParallelSize,
     #componentRadius: _f$componentRadius,
     #voltageSourceStyle: _f$voltageSourceStyle,
+    #circuitPaint: _f$circuitPaint,
+    #fillPaint: _f$fillPaint,
   };
 
   static EditorCircuitTheme _instantiate(DecodingData data) {
@@ -212,6 +226,16 @@ class CircuitThemeMapper extends ClassMapperBase<CircuitTheme> {
       v.voltageSourceStyle;
   static const Field<CircuitTheme, VoltageSourceStyle> _f$voltageSourceStyle =
       Field('voltageSourceStyle', _$voltageSourceStyle);
+  static Paint _$circuitPaint(CircuitTheme v) => v.circuitPaint;
+  static const Field<CircuitTheme, Paint> _f$circuitPaint = Field(
+    'circuitPaint',
+    _$circuitPaint,
+  );
+  static Paint _$fillPaint(CircuitTheme v) => v.fillPaint;
+  static const Field<CircuitTheme, Paint> _f$fillPaint = Field(
+    'fillPaint',
+    _$fillPaint,
+  );
 
   @override
   final MappableFields<CircuitTheme> fields = const {
@@ -220,6 +244,8 @@ class CircuitThemeMapper extends ClassMapperBase<CircuitTheme> {
     #resistorParallelSize: _f$resistorParallelSize,
     #componentRadius: _f$componentRadius,
     #voltageSourceStyle: _f$voltageSourceStyle,
+    #circuitPaint: _f$circuitPaint,
+    #fillPaint: _f$fillPaint,
   };
 
   static CircuitTheme _instantiate(DecodingData data) {
@@ -229,6 +255,8 @@ class CircuitThemeMapper extends ClassMapperBase<CircuitTheme> {
       resistorParallelSize: data.dec(_f$resistorParallelSize),
       componentRadius: data.dec(_f$componentRadius),
       voltageSourceStyle: data.dec(_f$voltageSourceStyle),
+      circuitPaint: data.dec(_f$circuitPaint),
+      fillPaint: data.dec(_f$fillPaint),
     );
   }
 
@@ -324,6 +352,8 @@ class _CircuitThemeCopyWithImpl<$R, $Out>
       #voltageSourceStyle,
       or: $value.voltageSourceStyle,
     ),
+    circuitPaint: data.get(#circuitPaint, or: $value.circuitPaint),
+    fillPaint: data.get(#fillPaint, or: $value.fillPaint),
   );
 
   @override
@@ -382,6 +412,18 @@ class IconCircuitThemeMapper extends ClassMapperBase<IconCircuitTheme> {
     _$voltageSourceStyle,
     mode: FieldMode.member,
   );
+  static Paint _$circuitPaint(IconCircuitTheme v) => v.circuitPaint;
+  static const Field<IconCircuitTheme, Paint> _f$circuitPaint = Field(
+    'circuitPaint',
+    _$circuitPaint,
+    mode: FieldMode.member,
+  );
+  static Paint _$fillPaint(IconCircuitTheme v) => v.fillPaint;
+  static const Field<IconCircuitTheme, Paint> _f$fillPaint = Field(
+    'fillPaint',
+    _$fillPaint,
+    mode: FieldMode.member,
+  );
 
   @override
   final MappableFields<IconCircuitTheme> fields = const {
@@ -390,6 +432,8 @@ class IconCircuitThemeMapper extends ClassMapperBase<IconCircuitTheme> {
     #resistorParallelSize: _f$resistorParallelSize,
     #componentRadius: _f$componentRadius,
     #voltageSourceStyle: _f$voltageSourceStyle,
+    #circuitPaint: _f$circuitPaint,
+    #fillPaint: _f$fillPaint,
   };
 
   static IconCircuitTheme _instantiate(DecodingData data) {

@@ -24,31 +24,54 @@ final circuitPaint = Paint()
   ..color = Colors.black
   ..strokeWidth = 2.0
   ..style = PaintingStyle.stroke
+  ..isAntiAlias = true
   ..strokeCap = StrokeCap.round;
 
 @MappableClass()
 final class EditorCircuitTheme extends CircuitTheme
     with EditorCircuitThemeMappable {
-  const EditorCircuitTheme()
+  EditorCircuitTheme()
     : super(
         resistorPerpendicularSize: 20.0,
         resistorSteps: 2,
         resistorParallelSize: 30.0,
         componentRadius: 20.0,
         voltageSourceStyle: VoltageSourceStyle.circle,
+        circuitPaint: Paint()
+          ..color = Colors.black
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.stroke
+          ..isAntiAlias = true
+          ..strokeCap = StrokeCap.round,
+        fillPaint: Paint()
+          ..color = Colors.black
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.fill
+          ..strokeCap = StrokeCap.round,
       );
 }
 
 @MappableClass()
 final class IconCircuitTheme extends CircuitTheme
     with IconCircuitThemeMappable {
-  const IconCircuitTheme()
+  IconCircuitTheme()
     : super(
         resistorPerpendicularSize: 8.0,
         resistorSteps: 2,
         resistorParallelSize: 12.0,
         componentRadius: 8.0,
         voltageSourceStyle: VoltageSourceStyle.circle,
+        circuitPaint: Paint()
+          ..color = Colors.black
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.stroke
+          ..isAntiAlias = true
+          ..strokeCap = StrokeCap.round,
+        fillPaint: Paint()
+          ..color = Colors.black
+          ..strokeWidth = 2.0
+          ..style = PaintingStyle.fill
+          ..strokeCap = StrokeCap.round,
       );
 }
 
@@ -59,6 +82,8 @@ class CircuitTheme with CircuitThemeMappable {
   final double resistorParallelSize;
   final double componentRadius;
   final VoltageSourceStyle voltageSourceStyle;
+  final Paint circuitPaint;
+  final Paint fillPaint;
 
   @MappableConstructor()
   const CircuitTheme({
@@ -67,8 +92,22 @@ class CircuitTheme with CircuitThemeMappable {
     required this.resistorParallelSize,
     required this.componentRadius,
     required this.voltageSourceStyle,
+    required this.circuitPaint,
+    required this.fillPaint,
   });
 
-  const factory CircuitTheme.editor() = EditorCircuitTheme;
-  const factory CircuitTheme.icon() = IconCircuitTheme;
+  factory CircuitTheme.editor() = EditorCircuitTheme;
+  factory CircuitTheme.icon() = IconCircuitTheme;
+
+  CircuitTheme scale(double scalingFactor) {
+    return CircuitTheme(
+      resistorPerpendicularSize: resistorPerpendicularSize * scalingFactor,
+      resistorSteps: resistorSteps,
+      resistorParallelSize: resistorParallelSize * scalingFactor,
+      componentRadius: componentRadius * scalingFactor,
+      voltageSourceStyle: voltageSourceStyle,
+      circuitPaint: Paint.from(circuitPaint)..strokeWidth *= scalingFactor,
+      fillPaint: Paint.from(fillPaint)..strokeWidth *= scalingFactor,
+    );
+  }
 }
