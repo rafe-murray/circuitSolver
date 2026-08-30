@@ -5,12 +5,14 @@ on:
     paths:
       - native_lib/**/*.cpp
       - native_lib/**/*.h
+      - .github/workflows/native_lib_test.yaml
       - native_lib/vcpkg.json
   pull_request:
     branches: ["main"]
     paths:
       - native_lib/**/*.cpp
       - native_lib/**/*.h
+      - .github/workflows/native_lib_test.yaml
       - native_lib/vcpkg.json
 env:
   # CMake build type
@@ -57,7 +59,7 @@ jobs:
         run: cmake --build native_lib/build
 
       - name: Test
-        run: ctest --test-dir native_lib/build
+        run: LLVM_PROFILE_FILE="profile-%p.profraw" ctest --test-dir native_lib/build
 
       - name: Generate Coverage Report
         run: |
