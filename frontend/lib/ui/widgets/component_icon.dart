@@ -16,9 +16,10 @@ class ComponentIcon extends StatelessWidget {
     return CustomPaint(
       painter: BranchPainter(
         branch: branch,
-        from: Offset(0.0, size),
-        to: Offset(size, 0.0),
-        theme: CircuitTheme.icon(),
+        from: Offset(0.0, size * 2),
+        to: Offset(size * 2, 0.0),
+        theme: CircuitTheme.editor(),
+        scalingFactor: 0.5,
       ),
       size: Size.square(size),
     );
