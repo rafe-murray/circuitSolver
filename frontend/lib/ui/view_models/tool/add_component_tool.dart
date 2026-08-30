@@ -65,32 +65,38 @@ class AddComponentTool extends Tool {
     print("Creating new AddComponentTool");
   }
 
+  /// Builds a callback that adds a component whose two endpoints sit at [from]
+  /// and [to] in circuit coordinates.
+  CircuitModel Function() addComponentBetween(
+    CircuitModel circuit, {
+    required Offset from,
+    required Offset to,
+  }) => () {
+    print("Adding ${branch.kind} to circuit ${circuit.id} from $from to $to");
+    final fromEndpoint = EndpointModel(pos: from, id: uuid.v7obj());
+    final toEndpoint = EndpointModel(pos: to, id: uuid.v7obj());
+    final newComponent = ComponentModel(
+      id: uuid.v7obj(),
+      fromId: fromEndpoint.id,
+      toId: toEndpoint.id,
+      branch: branch,
+    );
+    circuit.endpoints.addEntries([
+      MapEntry(fromEndpoint.id, fromEndpoint),
+      MapEntry(toEndpoint.id, toEndpoint),
+    ]);
+    circuit.components.add(newComponent);
+    return circuit;
+  };
+
+  /// Builds a callback that adds a component centered on [pos] with a fixed
+  /// default size.
   CircuitModel Function() addComponentAtPos(CircuitModel circuit, Offset pos) =>
-      () {
-        print(
-          "Adding ${branch.kind} to circuit ${circuit.id} at position $pos",
-        );
-        final fromEndpoint = EndpointModel(
-          pos: pos - Offset(20, 20),
-          id: uuid.v7obj(),
-        );
-        final toEndpoint = EndpointModel(
-          pos: pos + Offset(20, 20),
-          id: uuid.v7obj(),
-        );
-        final newComponent = ComponentModel(
-          id: uuid.v7obj(),
-          fromId: fromEndpoint.id,
-          toId: toEndpoint.id,
-          branch: branch,
-        );
-        circuit.endpoints.addEntries([
-          MapEntry(fromEndpoint.id, fromEndpoint),
-          MapEntry(toEndpoint.id, toEndpoint),
-        ]);
-        circuit.components.add(newComponent);
-        return circuit;
-      };
+      addComponentBetween(
+        circuit,
+        from: pos - Offset(20, 20),
+        to: pos + Offset(20, 20),
+      );
 
   CircuitModel Function() addComponent(CircuitModel circuit) =>
       addComponentAtPos(circuit, Offset(50, 50));
