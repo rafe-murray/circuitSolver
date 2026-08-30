@@ -1,0 +1,59 @@
+name: Setup native build
+description: >
+  Set up the toolchain needed to build native_lib via the
+  ffi_bridge build hook: a cached vcpkg, CMake/Ninja, Flutter, and the .env
+  file the hook reads VCPKG_ROOT from.
+
+inputs:
+  flutter-version:
+    description: Flutter SDK version to install.
+    required: true
+  env-file-dir:
+    description: >
+      Package directory to write a `.env` file into (with VCPKG_ROOT). Leave
+      empty to skip. The ffi_bridge build hook resolves this file relative to
+      the package being built.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    # The build hook runs in a semi-hermetic environment that strips
+    # VCPKG_DEFAULT_BINARY_CACHE, so vcpkg writes to its default location
+    # (~/.cache/vcpkg/archives). HOME survives the sandbox, so caching that
+    # directory is enough: deps are only recompiled when the manifest/baseline
+    # or the runner's compiler changes. Bump the "v1" segment to force a full
+    # rebuild.
+    - name: Restore vcpkg binary cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/vcpkg/archives
+        key: ${{ runner.os }}-vcpkg-v1-${{ hashFiles('native_lib/vcpkg.json', 'native_lib/vcpkg-configuration.json') }}
+        restore-keys: |
+          ${{ runner.os }}-vcpkg-v1-
+          ${{ runner.os }}-vcpkg-
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+        doNotCache: false
+
+    - name: Setup CMake and Ninja
+      uses: aminya/setup-cpp@v1
+      with:
+        cmake: 4.4.0
+        ninja: true
+
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
+        channel: stable
+        cache: true
+
+    # The hook reads VCPKG_ROOT from this file, not the environment.
+    - name: Write .env
+      if: inputs.env-file-dir != ''
+      shell: bash
+      run: echo "VCPKG_ROOT=$VCPKG_ROOT" > "${{ inputs.env-file-dir }}/.env"

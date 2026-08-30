@@ -1,0 +1,61 @@
+name: ffi_bridge Tests
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ffi_bridge/**
+      - native_lib/src/api.cpp
+      - native_lib/include/circuit_solver/api.h
+      - native_lib/include/circuit_solver/c_errors.h
+      - circuit_solver_proto/**
+      - proto/**
+      - .github/workflows/ffi_bridge_test.yaml
+      - .github/actions/setup-native-build/**
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ffi_bridge/**
+      - native_lib/src/api.cpp
+      - native_lib/include/circuit_solver/api.h
+      - native_lib/include/circuit_solver/c_errors.h
+      - circuit_solver_proto/**
+      - proto/**
+      - .github/workflows/ffi_bridge_test.yaml
+      - .github/actions/setup-native-build/**
+
+env:
+  FLUTTER_VERSION: "3.44.8"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup-native-build
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          env-file-dir: ffi_bridge
+
+      - name: Install dependencies
+        working-directory: ffi_bridge
+        run: dart pub get
+
+      - name: Run tests
+        working-directory: ffi_bridge
+        run: dart test --coverage=coverage
+
+      - name: Format coverage
+        working-directory: ffi_bridge
+        run: |
+          dart pub global activate coverage
+          dart pub global run coverage:format_coverage \
+            --lcov --in=coverage --out=coverage/lcov.info \
+            --report-on=lib --packages=.dart_tool/package_config.json
+
+      - uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ffi_bridge/coverage/lcov.info
+          flags: ffi_bridge
