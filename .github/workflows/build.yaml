@@ -22,7 +22,7 @@ jobs:
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          vcpkgConfigurationJsonGlob: "**/native_lib/vcpkg-configuration.json"
+          vcpkgJsonGlob: "native_lib/vcpkg.json"
           doNotCache: false
       - uses: aminya/setup-cpp@v1
         with:
@@ -34,7 +34,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: native_lib/build/vcpkg_installed
-          key: ${{ runner.os }}-${{ hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json')}}
+          key: ${{ runner.os }}-${{ hashFiles('native_lib/vcpkg.json') }}
 
       - name: Configure CMake
         run: cmake native_lib --preset tests

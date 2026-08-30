@@ -1,4 +1,5 @@
 {
+  "builtin-baseline": "8e8dfb4ba483886936ded5ca201b500b8d8b0096",
   "dependencies": [
     "circuit-solver-lib",
     "spdlog",
