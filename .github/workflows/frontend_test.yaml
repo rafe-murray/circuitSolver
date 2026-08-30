@@ -1,16 +1,30 @@
-name: Frontend Unit Tests
+name: Frontend Tests
+
+# Builds the native libcircuitsolver (cached vcpkg) and runs both the mocked
+# unit suite (frontend/test/) and the end-to-end solve test
+# (frontend/test_native/) in a single job.
 
 on:
   push:
     branches: ["main"]
     paths:
       - frontend/**
+      - ffi_bridge/**
+      - native_lib/**
+      - circuit_solver_proto/**
+      - proto/**
       - .github/workflows/frontend_test.yaml
+      - .github/actions/setup-native-build/**
   pull_request:
     branches: ["main"]
     paths:
       - frontend/**
+      - ffi_bridge/**
+      - native_lib/**
+      - circuit_solver_proto/**
+      - proto/**
       - .github/workflows/frontend_test.yaml
+      - .github/actions/setup-native-build/**
 
 env:
   FLUTTER_VERSION: "3.44.8"
@@ -21,19 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: subosito/flutter-action@v2
+      - uses: ./.github/actions/setup-native-build
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+          env-file-dir: frontend
 
       - name: Enable native assets
         run: flutter config --enable-native-assets
-
-      # The unit suite mocks out ffi_bridge, so the native libcircuitsolver
-      # build is not needed. This tells ffi_bridge/hook/build.dart to skip it.
-      - name: Skip native solver build
-        run: echo "SKIP_NATIVE_BUILD=1" > frontend/.env
 
       - name: Install dependencies
         working-directory: frontend
@@ -41,7 +49,7 @@ jobs:
 
       - name: Run tests
         working-directory: frontend
-        run: flutter test test/ --coverage
+        run: flutter test test/ test_native/ --coverage
 
       - uses: codecov/codecov-action@v7
         with:
