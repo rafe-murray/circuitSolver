@@ -42,10 +42,10 @@ void main() {
     await tester.tap(find.byType(ToolButton).first);
     await tester.pumpAndSettle();
 
-    // Representative button plus one per tool in the group.
+    // One representative button per group, plus one per tool in the open group.
     expect(
       find.byType(ToolButton),
-      findsNWidgets(1 + addComponentToolGroup.tools.length),
+      findsNWidgets(toolGroups.length + addComponentToolGroup.tools.length),
     );
     expect(find.byTooltip('Add Ideal Diode'), findsOneWidget);
   });
@@ -63,8 +63,8 @@ void main() {
 
     expect(picked, isNotNull);
     expect(picked!.id, AddComponentTool.voltageSourceId);
-    // Flyout closed again.
-    expect(find.byType(ToolButton), findsOneWidget);
+    // Flyout closed again: back to one representative button per group.
+    expect(find.byType(ToolButton), findsNWidgets(toolGroups.length));
   });
 
   testWidgets('tapping the entry again closes the flyout', (tester) async {
@@ -89,7 +89,7 @@ void main() {
       wrap(selectedTool: resistor, onToolSelected: (_) {}),
     );
 
-    final button = tester.widget<ToolButton>(find.byType(ToolButton));
+    final button = tester.widget<ToolButton>(find.byType(ToolButton).first);
     expect(button.selected, isTrue);
     expect(button.meta.id, AddComponentTool.resistorId);
   });

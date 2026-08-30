@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../data/model/circuit_models.dart';
+import '../../data/model/selection.dart';
 import '../../diff/circuit_diff.dart';
 import 'tool/tool.dart';
 
@@ -34,6 +35,22 @@ class SelectedTool extends _$SelectedTool {
 
   /// Sets [meta] as the active tool, or clears the selection when `null`.
   void select(ToolMeta? meta) => state = meta;
+}
+
+/// The user's current selection of components and endpoints for [circuitId].
+///
+/// Transient UI state: it is not persisted and takes no part in the circuit
+/// model or the undo history.
+@riverpod
+class CurrentSelection extends _$CurrentSelection {
+  @override
+  Selection build({required UuidValue circuitId}) => Selection.empty;
+
+  /// Replaces the selection with [selection].
+  void set(Selection selection) => state = selection;
+
+  /// Clears the selection.
+  void clear() => state = Selection.empty;
 }
 
 @riverpod

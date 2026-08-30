@@ -4,10 +4,14 @@ import 'package:frontend/config/repository_providers.dart';
 import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/ui/view_models/editor_view_model.dart';
 import 'package:frontend/ui/view_models/tool/tool.dart';
+import 'package:frontend/ui/widgets/circuit_hit_test_view.dart';
 import 'package:frontend/ui/widgets/circuit_view.dart';
 import 'package:frontend/ui/widgets/tool_bank.dart';
 import 'package:frontend/ui/widgets/tools/add_component_canvas_gesture_detector.dart';
 import 'package:frontend/ui/widgets/tools/add_component_keyboard_listener.dart';
+import 'package:frontend/ui/widgets/tools/lasso_selection_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/selection_indicators.dart';
+import 'package:frontend/ui/widgets/tools/selection_keyboard_listener.dart';
 import 'package:uuid/uuid_value.dart';
 
 /// Screen for viewing and editing a single circuit.
@@ -112,6 +116,26 @@ class _CircuitCanvasState extends ConsumerState<_CircuitCanvas> {
                       ),
                     ),
                 child: CircuitView(circuitModel: circuit.value),
+              ),
+            );
+          case SelectionTool():
+            final selection = ref.read(
+              currentSelectionProvider(circuitId: widget.circuitId).notifier,
+            );
+            return SelectionKeyboardListener(
+              focusNode: _focusNode,
+              onClear: selection.clear,
+              onSelectAll: () => selection.set(tool.selectAll()),
+              child: LassoSelectionGestureDetector(
+                onLassoComplete: (region) =>
+                    selection.set(tool.selectWithin(region)),
+                onTapClear: selection.clear,
+                child: Stack(
+                  children: [
+                    CircuitHitTestView(circuitModel: model),
+                    SelectionIndicators(circuitModel: model),
+                  ],
+                ),
               ),
             );
         }

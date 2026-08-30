@@ -8,10 +8,14 @@ import 'package:frontend/data/services/local/model/circuit_local_storage_model.d
 import 'package:frontend/ui/screens/editor_screen.dart';
 import 'package:frontend/ui/view_models/editor_view_model.dart';
 import 'package:frontend/ui/view_models/tool/tool.dart';
+import 'package:frontend/ui/widgets/circuit_hit_test_view.dart';
 import 'package:frontend/ui/widgets/circuit_view.dart';
 import 'package:frontend/ui/widgets/tool_bank.dart';
 import 'package:frontend/ui/widgets/tools/add_component_canvas_gesture_detector.dart';
 import 'package:frontend/ui/widgets/tools/add_component_keyboard_listener.dart';
+import 'package:frontend/ui/widgets/tools/lasso_selection_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/selection_indicators.dart';
+import 'package:frontend/ui/widgets/tools/selection_keyboard_listener.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
@@ -159,6 +163,41 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AddComponentCanvasGestureDetector),
+          matching: find.byType(CircuitView),
+        ),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('EditorScreen selection tool input layer', () {
+    Widget app() => ProviderScope(
+      overrides: [databaseProvider.overrideWithValue(db)],
+      child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
+    );
+
+    testWidgets('wraps the canvas in the lasso selection widgets once the '
+        'lasso tool is selected', (tester) async {
+      tester.view.physicalSize = const Size(2400, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      // Open the selection group's flyout, then pick the lasso sub-tool.
+      await tester.tap(find.byTooltip('Lasso select'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Lasso select').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SelectionKeyboardListener), findsOneWidget);
+      expect(find.byType(LassoSelectionGestureDetector), findsOneWidget);
+      expect(find.byType(CircuitHitTestView), findsOneWidget);
+      expect(find.byType(SelectionIndicators), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(LassoSelectionGestureDetector),
           matching: find.byType(CircuitView),
         ),
         findsOneWidget,
