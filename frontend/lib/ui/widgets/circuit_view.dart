@@ -3,11 +3,11 @@ import 'package:frontend/data/model/circuit_models.dart';
 
 import 'component_painter.dart';
 
-class CircuitWidget extends StatelessWidget {
+class CircuitView extends StatelessWidget {
   final CircuitModel circuitModel;
   final Size size;
 
-  const CircuitWidget({
+  const CircuitView({
     super.key,
     required this.circuitModel,
     this.size = const Size(1080, 720),

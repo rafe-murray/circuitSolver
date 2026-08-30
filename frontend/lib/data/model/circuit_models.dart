@@ -114,25 +114,26 @@ class EndpointModel with EndpointModelMappable {
 
 @MappableClass(discriminatorKey: 'type')
 sealed class BranchModel with BranchModelMappable {
-  const BranchModel._();
+  final String kind;
+  const BranchModel._(this.kind);
 }
 
 @MappableClass(discriminatorValue: 'currentSource')
 class CurrentSource extends BranchModel with CurrentSourceMappable {
   final Voltage? voltage;
-  const CurrentSource({this.voltage}) : super._();
+  const CurrentSource({this.voltage}) : super._("Current Source");
 }
 
 @MappableClass(discriminatorValue: 'idealDiode')
 class IdealDiode extends BranchModel with IdealDiodeMappable {
   final Voltage? voltage;
-  const IdealDiode({this.voltage}) : super._();
+  const IdealDiode({this.voltage}) : super._("Ideal Diode");
 }
 
 @MappableClass(discriminatorValue: 'resistor')
 class Resistor extends BranchModel with ResistorMappable {
   final Resistance? resistance;
-  Resistor({this.resistance}) : super._();
+  const Resistor({this.resistance}) : super._("Resistor");
 }
 
 @MappableClass(discriminatorValue: 'realDiode')
@@ -140,13 +141,13 @@ class RealDiode extends BranchModel with RealDiodeMappable {
   final Current? i0;
   final Voltage? vt;
   final double? n;
-  const RealDiode({this.i0, this.vt, this.n}) : super._();
+  const RealDiode({this.i0, this.vt, this.n}) : super._("Real Diode");
 }
 
 @MappableClass(discriminatorValue: 'voltageSource')
 class VoltageSource extends BranchModel with VoltageSourceMappable {
   final Voltage? voltage;
-  const VoltageSource({this.voltage}) : super._();
+  const VoltageSource({this.voltage}) : super._("Voltage Source");
 }
 
 @MappableClass(discriminatorValue: 'zenerDiode')
@@ -155,7 +156,7 @@ class ZenerDiode extends BranchModel with ZenerDiodeMappable {
   final Resistance? rzt;
   final Current? izt;
 
-  const ZenerDiode({this.vzt, this.rzt, this.izt}) : super._();
+  const ZenerDiode({this.vzt, this.rzt, this.izt}) : super._("Zener Diode");
 }
 
 @MappableClass()

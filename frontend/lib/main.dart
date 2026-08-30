@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/ui/widgets/editor_screen.dart';
+import 'package:frontend/ui/screens/editor_screen.dart';
+import 'package:frontend/ui/screens/home_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:uuid/uuid.dart';
-
-import 'ui/widgets/home_screen.dart';
 
 part 'main.g.dart';
 
