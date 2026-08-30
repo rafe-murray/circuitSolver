@@ -47,7 +47,7 @@ jobs:
           path: native_lib/build/vcpkg_installed
           key: ${{ steps.restore-build-cache.outputs.cache-primary-key }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         name: Upload compile_commands.json
         with:
           name: native-lib-compile-commands
