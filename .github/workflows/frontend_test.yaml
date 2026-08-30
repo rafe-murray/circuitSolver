@@ -1,8 +1,7 @@
 name: Frontend Tests
 
-# Builds the native libcircuitsolver (cached vcpkg) and runs both the mocked
-# unit suite (frontend/test/) and the end-to-end solve test
-# (frontend/test_native/) in a single job.
+# Builds native_lib and runs the mocked unit suite (frontend/test/) and the
+# end-to-end tests (frontend/test_native/)
 
 on:
   push:

@@ -1,6 +1,6 @@
 name: Setup native build
 description: >
-  Set up the toolchain needed to build the native libcircuitsolver via the
+  Set up the toolchain needed to build native_lib via the
   ffi_bridge build hook: a cached vcpkg, CMake/Ninja, Flutter, and the .env
   file the hook reads VCPKG_ROOT from.
 
