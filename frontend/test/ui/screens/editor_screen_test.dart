@@ -85,6 +85,40 @@ void main() {
 
       expect(viewModel.canUndo, isTrue);
     });
+
+    test('addComponentBetween places endpoints at the given offsets', () async {
+      final container = makeContainer();
+      final viewModel = container.read(
+        editorViewModelProvider(circuitId: circuitId).notifier,
+      );
+      final circuit = await container.read(
+        editorViewModelProvider(circuitId: circuitId).future,
+      );
+
+      final tool =
+          Tool.fromMeta(
+                meta: resistorMeta(),
+                uuid: const Uuid(),
+                circuit: circuit,
+              )
+              as AddComponentTool;
+      await viewModel.updateCircuit(
+        tool.addComponentBetween(
+          circuit,
+          from: const Offset(10, 20),
+          to: const Offset(200, 220),
+        ),
+      );
+
+      final updated =
+          (await container
+                  .read(circuitRepositoryProvider)
+                  .getCircuit(circuitId))
+              .valueOrThrow();
+      final component = updated.components.single;
+      expect(updated.endpoints[component.fromId]!.pos, const Offset(10, 20));
+      expect(updated.endpoints[component.toId]!.pos, const Offset(200, 220));
+    });
   });
 
   group('EditorScreen tool input layer', () {
@@ -129,6 +163,80 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+  });
+
+  group('AddComponentCanvasGestureDetector', () {
+    Widget harness({
+      required void Function(Offset) onTap,
+      required void Function({required Offset from, required Offset to}) onDrag,
+    }) => MaterialApp(
+      home: AddComponentCanvasGestureDetector(
+        branch: const Resistor(),
+        addComponentCallback: onTap,
+        addComponentBetweenCallback: onDrag,
+        child: const SizedBox.expand(),
+      ),
+    );
+
+    testWidgets('a drag reports its start and end offsets', (tester) async {
+      Offset? tapped;
+      ({Offset from, Offset to})? dragged;
+
+      await tester.pumpWidget(
+        harness(
+          onTap: (pos) => tapped = pos,
+          onDrag: ({required from, required to}) =>
+              dragged = (from: from, to: to),
+        ),
+      );
+
+      await tester.dragFrom(const Offset(100, 100), const Offset(80, 120));
+      await tester.pumpAndSettle();
+
+      expect(tapped, isNull);
+      expect(dragged, isNotNull);
+      expect(dragged!.from, const Offset(100, 100));
+      expect(dragged!.to, const Offset(180, 220));
+    });
+
+    testWidgets('a drag that returns near its start falls back to tap '
+        'placement', (tester) async {
+      Offset? tapped;
+      ({Offset from, Offset to})? dragged;
+
+      await tester.pumpWidget(
+        harness(
+          onTap: (pos) => tapped = pos,
+          onDrag: ({required from, required to}) =>
+              dragged = (from: from, to: to),
+        ),
+      );
+
+      final gesture = await tester.startGesture(const Offset(100, 100));
+      await gesture.moveBy(const Offset(40, 0));
+      await gesture.moveBy(const Offset(-38, 2));
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      expect(dragged, isNull);
+      expect(tapped, isNotNull);
+    });
+
+    testWidgets('a tap reports the tapped offset', (tester) async {
+      Offset? tapped;
+
+      await tester.pumpWidget(
+        harness(
+          onTap: (pos) => tapped = pos,
+          onDrag: ({required from, required to}) {},
+        ),
+      );
+
+      await tester.tapAt(const Offset(140, 160));
+      await tester.pumpAndSettle();
+
+      expect(tapped, const Offset(140, 160));
     });
   });
 }

@@ -100,8 +100,17 @@ class _CircuitCanvasState extends ConsumerState<_CircuitCanvas> {
                   _execute(tool.addComponent(circuit.value)),
               focusNode: _focusNode,
               child: AddComponentCanvasGestureDetector(
+                branch: tool.branch,
                 addComponentCallback: (pos) =>
                     _execute(tool.addComponentAtPos(circuit.value, pos)),
+                addComponentBetweenCallback: ({required from, required to}) =>
+                    _execute(
+                      tool.addComponentBetween(
+                        circuit.value,
+                        from: from,
+                        to: to,
+                      ),
+                    ),
                 child: CircuitView(circuitModel: circuit.value),
               ),
             );
