@@ -89,8 +89,7 @@ jobs:
         if: github.event_name == 'pull_request'
         id: review
         with:
-          build_dir: ./build
-          base_dir: ${{ github.workspace }}/native_lib
+          build_dir: ./native_lib/build
 
       # Uploads an artefact containing clang_fixes.json
       - uses: ZedThree/clang-tidy-review/upload@v0.23.1
