@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/config/repository_providers.dart';
@@ -176,6 +177,40 @@ void main() {
       child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
     );
 
+    Widget appWith(ProviderContainer container) => UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
+    );
+
+    /// Adds a single resistor (and its two endpoints) to the test circuit so
+    /// there is something for the selection shortcuts to act on.
+    Future<void> seedResistor(ProviderContainer container) async {
+      final viewModel = container.read(
+        editorViewModelProvider(circuitId: circuitId).notifier,
+      );
+      final circuit = await container.read(
+        editorViewModelProvider(circuitId: circuitId).future,
+      );
+      final tool =
+          Tool.fromMeta(
+                meta: resistorMeta(),
+                uuid: const Uuid(),
+                circuit: circuit,
+              )
+              as AddComponentTool;
+      await viewModel.updateCircuit(
+        tool.addComponentAtPos(circuit, const Offset(120, 90)),
+      );
+    }
+
+    Future<void> selectLassoTool(WidgetTester tester) async {
+      // Open the selection group's flyout, then pick the lasso sub-tool.
+      await tester.tap(find.byTooltip('Lasso select'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Lasso select').last);
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('wraps the canvas in the lasso selection widgets once the '
         'lasso tool is selected', (tester) async {
       tester.view.physicalSize = const Size(2400, 1800);
@@ -185,11 +220,7 @@ void main() {
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
 
-      // Open the selection group's flyout, then pick the lasso sub-tool.
-      await tester.tap(find.byTooltip('Lasso select'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Lasso select').last);
-      await tester.pumpAndSettle();
+      await selectLassoTool(tester);
 
       expect(find.byType(SelectionKeyboardListener), findsOneWidget);
       expect(find.byType(LassoSelectionGestureDetector), findsOneWidget);
@@ -201,6 +232,63 @@ void main() {
           matching: find.byType(CircuitView),
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('Ctrl + A selects every component and endpoint', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(2400, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final container = makeContainer();
+      await seedResistor(container);
+
+      await tester.pumpWidget(appWith(container));
+      await tester.pumpAndSettle();
+      await selectLassoTool(tester);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump();
+
+      final selection = container.read(
+        currentSelectionProvider(circuitId: circuitId),
+      );
+      expect(selection.componentIds, hasLength(1));
+      expect(selection.endpointIds, hasLength(2));
+    });
+
+    testWidgets('Escape clears an existing selection', (tester) async {
+      tester.view.physicalSize = const Size(2400, 1800);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      final container = makeContainer();
+      await seedResistor(container);
+
+      await tester.pumpWidget(appWith(container));
+      await tester.pumpAndSettle();
+      await selectLassoTool(tester);
+
+      // Populate a selection via the select-all shortcut first.
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump();
+      expect(
+        container.read(currentSelectionProvider(circuitId: circuitId)).isEmpty,
+        isFalse,
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+
+      expect(
+        container.read(currentSelectionProvider(circuitId: circuitId)).isEmpty,
+        isTrue,
       );
     });
   });
