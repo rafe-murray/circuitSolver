@@ -128,7 +128,7 @@ if(CIRCUITSOLVER_BUILD_TESTS)
   # configuration for the tests
   enable_testing()
   add_executable(circuitsolverTests
-    test/api.cpp
+    test/cApi.cpp
     test/circuit.cpp
     test/math.cpp
     test/utils.cpp
