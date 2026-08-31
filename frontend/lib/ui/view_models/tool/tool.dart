@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'package:frontend/data/model/circuit_models.dart';
+import 'package:frontend/data/model/selection.dart';
+import 'package:frontend/ui/core/themes/circuit_theme.dart';
 import 'package:frontend/ui/widgets/component_icon.dart';
 import 'package:uuid/uuid.dart';
 
 part 'add_component_tool.dart';
+part 'selection_tool.dart';
 
 final class ToolMeta {
   final String id;
@@ -18,7 +21,7 @@ final class ToolGroup {
   const ToolGroup(this.tools);
 }
 
-final toolGroups = <ToolGroup>[addComponentToolGroup];
+final toolGroups = <ToolGroup>[addComponentToolGroup, selectionToolGroup];
 
 sealed class Tool {
   final ToolMeta meta;
@@ -40,8 +43,8 @@ final Map<
   String,
   Tool Function({required Uuid uuid, required CircuitModel circuit})
 >
-_toolsById = Map.fromEntries(
-  componentToolIdToBranch.entries.map(
+_toolsById = Map.fromEntries([
+  ...componentToolIdToBranch.entries.map(
     (entry) => MapEntry(
       entry.key,
       ({required Uuid uuid, required CircuitModel circuit}) =>
@@ -53,4 +56,5 @@ _toolsById = Map.fromEntries(
           ),
     ),
   ),
-);
+  ...selectionToolConstructors.entries,
+]);

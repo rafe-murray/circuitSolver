@@ -202,6 +202,131 @@ abstract class _$SelectedTool extends $Notifier<ToolMeta?> {
   }
 }
 
+/// The user's current selection of components and endpoints for [circuitId].
+///
+/// Transient UI state: it is not persisted and takes no part in the circuit
+/// model or the undo history.
+
+@ProviderFor(CurrentSelection)
+final currentSelectionProvider = CurrentSelectionFamily._();
+
+/// The user's current selection of components and endpoints for [circuitId].
+///
+/// Transient UI state: it is not persisted and takes no part in the circuit
+/// model or the undo history.
+final class CurrentSelectionProvider
+    extends $NotifierProvider<CurrentSelection, Selection> {
+  /// The user's current selection of components and endpoints for [circuitId].
+  ///
+  /// Transient UI state: it is not persisted and takes no part in the circuit
+  /// model or the undo history.
+  CurrentSelectionProvider._({
+    required CurrentSelectionFamily super.from,
+    required UuidValue super.argument,
+  }) : super(
+         retry: null,
+         name: r'currentSelectionProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$currentSelectionHash();
+
+  @override
+  String toString() {
+    return r'currentSelectionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  CurrentSelection create() => CurrentSelection();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(Selection value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<Selection>(value),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is CurrentSelectionProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$currentSelectionHash() => r'ab4bc2fdabc80aeb4ba456a783dd3f3378f2c38e';
+
+/// The user's current selection of components and endpoints for [circuitId].
+///
+/// Transient UI state: it is not persisted and takes no part in the circuit
+/// model or the undo history.
+
+final class CurrentSelectionFamily extends $Family
+    with
+        $ClassFamilyOverride<
+          CurrentSelection,
+          Selection,
+          Selection,
+          Selection,
+          UuidValue
+        > {
+  CurrentSelectionFamily._()
+    : super(
+        retry: null,
+        name: r'currentSelectionProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// The user's current selection of components and endpoints for [circuitId].
+  ///
+  /// Transient UI state: it is not persisted and takes no part in the circuit
+  /// model or the undo history.
+
+  CurrentSelectionProvider call({required UuidValue circuitId}) =>
+      CurrentSelectionProvider._(argument: circuitId, from: this);
+
+  @override
+  String toString() => r'currentSelectionProvider';
+}
+
+/// The user's current selection of components and endpoints for [circuitId].
+///
+/// Transient UI state: it is not persisted and takes no part in the circuit
+/// model or the undo history.
+
+abstract class _$CurrentSelection extends $Notifier<Selection> {
+  late final _$args = ref.$arg as UuidValue;
+  UuidValue get circuitId => _$args;
+
+  Selection build({required UuidValue circuitId});
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<Selection, Selection>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<Selection, Selection>,
+              Selection,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, () => build(circuitId: _$args));
+  }
+}
+
 @ProviderFor(EditorViewModel)
 final editorViewModelProvider = EditorViewModelFamily._();
 
