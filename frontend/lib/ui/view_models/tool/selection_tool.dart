@@ -1,29 +1,22 @@
 part of 'tool.dart';
 
 /// Tools that select existing circuit items rather than mutating the circuit.
-///
-/// Currently the group holds a single sub-tool, the lasso: the user drags a
-/// free-form loop and every component and endpoint whose hitbox intersects it
-/// becomes selected.
-class SelectionTool extends Tool {
-  /// Stable id of the lasso sub-tool.
+class LassoTool extends Tool {
+  /// Lasso tool id
   static const lassoId = "lassoSelect";
 
   /// Radius, in canvas units, of an endpoint's circular hitbox.
   static const endpointHitRadius = 12.0;
 
   /// Builds the [ToolMeta] for the selection sub-tool with the given [id].
-  static ToolMeta createMeta({required String id}) => ToolMeta._(
-    id: id,
+  static const metadata = ToolMeta._(
+    id: lassoId,
     name: "Lasso select",
-    icon: const Icon(Icons.gesture, size: 20),
+    icon: Icon(Icons.gesture, size: 20),
   );
 
-  SelectionTool._({
-    required String id,
-    required super.uuid,
-    required super.circuit,
-  }) : super._(meta: createMeta(id: id));
+  LassoTool._({required super.uuid, required super.circuit})
+    : super._(meta: metadata);
 
   /// The components and endpoints whose hitbox intersects [region].
   ///
@@ -64,9 +57,7 @@ class SelectionTool extends Tool {
 }
 
 /// The selection tool group shown in the editor's tool bank.
-final selectionToolGroup = ToolGroup([
-  SelectionTool.createMeta(id: SelectionTool.lassoId),
-]);
+final selectionToolGroup = ToolGroup([LassoTool.metadata]);
 
 /// Constructors for each selection sub-tool, keyed by [ToolMeta.id].
 final Map<
@@ -74,6 +65,6 @@ final Map<
   Tool Function({required Uuid uuid, required CircuitModel circuit})
 >
 selectionToolConstructors = {
-  SelectionTool.lassoId: ({required uuid, required circuit}) =>
-      SelectionTool._(id: SelectionTool.lassoId, uuid: uuid, circuit: circuit),
+  LassoTool.lassoId: ({required uuid, required circuit}) =>
+      LassoTool._(uuid: uuid, circuit: circuit),
 };

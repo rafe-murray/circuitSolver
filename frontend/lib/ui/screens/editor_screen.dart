@@ -118,7 +118,7 @@ class _CircuitCanvasState extends ConsumerState<_CircuitCanvas> {
                 child: CircuitView(circuitModel: circuit.value),
               ),
             );
-          case SelectionTool():
+          case LassoTool():
             final selection = ref.read(
               currentSelectionProvider(circuitId: widget.circuitId).notifier,
             );

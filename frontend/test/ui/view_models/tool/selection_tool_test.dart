@@ -33,16 +33,16 @@ void main() {
     endpoints: {aFrom.id: aFrom, aTo.id: aTo, bFrom.id: bFrom, bTo.id: bTo},
   );
 
-  SelectionTool tool(CircuitModel c) =>
+  LassoTool tool(CircuitModel c) =>
       Tool.fromMeta(
             meta: selectionToolGroup.tools.single,
             uuid: uuid,
             circuit: c,
           )
-          as SelectionTool;
+          as LassoTool;
 
   test('the lasso group exposes a single sub-tool', () {
-    expect(selectionToolGroup.tools.single.id, SelectionTool.lassoId);
+    expect(selectionToolGroup.tools.single.id, LassoTool.lassoId);
   });
 
   test(
