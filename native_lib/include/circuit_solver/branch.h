@@ -2,7 +2,6 @@
 #define BRANCH_H
 
 #include <memory>
-#include <span>
 
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
@@ -40,14 +39,6 @@ class Branch {
   /// @param proto the `proto::Edge` to add this `Branch`'s information to
   virtual void toProto(proto::Edge* proto) const;
 
-  /// Converts this branch to its protobuf representation
-  ///
-  /// @param proto the `proto::Edge` to add this `Branch`'s information to
-  /// @param arguments the values to use for the encompassing `CircuitGraph`'s
-  /// unknowns
-  virtual void toProto(proto::Edge* proto,
-                       std::span<const double> arguments) const;
-
  protected:
   /// Creates a new `Branch`
   explicit Branch(BranchConnections connections);
@@ -78,8 +69,6 @@ class CurrentSource : public Branch {
   auto getCurrent() const -> Expression override;
   auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 
  private:
   // The voltage gain from the from to to, in Volts
@@ -103,8 +92,6 @@ class IdealDiode : public Branch {
   auto getCurrent() const -> Expression override;
   auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 
  private:
   IdealDiodeParameters parameters;
@@ -127,8 +114,6 @@ class RealDiode : public Branch {
             RealDiodeParameters parameters);
   auto getCurrent() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 
  private:
   RealDiodeParameters parameters;
@@ -145,8 +130,6 @@ class Resistor : public Branch {
   auto getCurrent() const -> Expression override;
 
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 };
 
 class VoltageSource : public Branch {
@@ -160,8 +143,6 @@ class VoltageSource : public Branch {
   auto getCurrent() const -> Expression override;
   auto getConstraint() const -> Expression override;
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 };
 
 /// Parameters needed to describe a Zener diode
@@ -181,8 +162,6 @@ class ZenerDiode : public Branch {
   auto getCurrent() const -> Expression override;
 
   void toProto(proto::Edge* proto) const override;
-  void toProto(proto::Edge* proto,
-               std::span<const double> arguments) const override;
 
  private:
   ZenerDiodeParameters parameters;

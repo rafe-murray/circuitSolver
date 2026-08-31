@@ -1,19 +1,49 @@
 #include "utils.h"
 
 #include <absl/status/status.h>
+#include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <stduuid/uuid.h>
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <functional>
+#include <iterator>
+#include <random>
 #include <sstream>
 #include <stdexcept>
+#include <string>
 
 #include "circuit_solver/proto.h"
+#include "gtest/gtest.h"
 
-testing::AssertionResult IsWithinRelativeTolerance(double expected,
-                                                   double actual, double tol) {
-  bool succeeded;
+using google::protobuf::json::MessageToJsonString;
+using google::protobuf::util::MessageDifferencer;
+
+auto IsEqual(const char* actualExpression, const char* expectedExpression,
+             const proto::CircuitGraph& actual,
+             const proto::CircuitGraph& expected) -> testing::AssertionResult {
+  bool equal = MessageDifferencer::Equals(actual, expected);
+  if (equal) {
+    return testing::AssertionSuccess();
+  }
+  std::string actualJson{};
+  std::string expectedJson{};
+  (void)MessageToJsonString(actual, &actualJson);
+  (void)MessageToJsonString(expected, &expectedJson);
+  return testing::AssertionFailure() << "Value of: IsEqual(" << actualExpression
+                                     << ", " << expectedExpression << ")\n"
+                                     << "  Actual: " << actualJson << "\n"
+                                     << "  Expected: " << expectedJson;
+}
+
+auto IsWithinRelativeTolerance(double expected, double actual, double tol)
+    -> testing::AssertionResult {
+  bool succeeded{};
   if (expected == 0) {
     succeeded = fabs(expected - actual) <= tol;
   } else {
@@ -21,14 +51,13 @@ testing::AssertionResult IsWithinRelativeTolerance(double expected,
   }
   if (succeeded) {
     return testing::AssertionSuccess();
-  } else {
-    return testing::AssertionFailure()
-           << "Expected " << expected << " but got " << actual
-           << " which was not within the relative tolerance of " << tol;
   }
+  return testing::AssertionFailure()
+         << "Expected " << expected << " but got " << actual
+         << " which was not within the relative tolerance of " << tol;
 }
 
-proto::CircuitGraph GetMessageFromJsonFile(const char* filename) {
+auto GetMessageFromJsonFile(const char* filename) -> proto::CircuitGraph {
   proto::CircuitGraph cgm;
   std::filesystem::path filePath =
       std::filesystem::path(TEST_DATA_DIR) / filename;
@@ -46,10 +75,10 @@ proto::CircuitGraph GetMessageFromJsonFile(const char* filename) {
   return cgm;
 }
 
-uuids::uuid_random_generator getUuidGenerator() {
+auto getUuidGenerator() -> uuids::uuid_random_generator {
   std::random_device rd;
   auto seed_data = std::array<int, std::mt19937::state_size>{};
-  std::generate(std::begin(seed_data), std::end(seed_data), std::ref(rd));
+  std::ranges::generate(seed_data, std::ref(rd));
   std::seed_seq seq(std::begin(seed_data), std::end(seed_data));
   std::mt19937 generator(seq);
   uuids::uuid_random_generator gen{generator};

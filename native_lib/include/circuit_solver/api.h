@@ -17,7 +17,8 @@
  * If the circuit is successfully solved, `outputBuffer` will contain a
  * protobuf-serialized CircuitGraphMessage with the solution, and outputLength
  * will contain the size of that buffer. These values are only valid if the
- * return value is 0
+ * return value is 0. Additionally passing any pointer as `NULL` results in
+ * undefined behaviour, and likely a segfault.
  * @param inputBuffer a buffer containing a protobuf-serialized
  * CircuitGraphMessage representing the circuit to solve
  * @param inputLength length of the input buffer

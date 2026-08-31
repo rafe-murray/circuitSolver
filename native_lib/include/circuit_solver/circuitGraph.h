@@ -95,10 +95,6 @@ class CircuitGraph {
   /// Converts a `CircuitGraph` to its protobuf representation
   /// @pre: the circuit is solved
   [[nodiscard]] auto toProto() const -> proto::CircuitGraph;
-  /// Converts a `CircuitGraph` to its protobuf representation
-  /// @param parameters the parameters to use for the unknowns
-  [[nodiscard]] auto toProto(std::span<const double> parameters) const
-      -> proto::CircuitGraph;
   /// Creates a `CircuitGraph` from a protobuf message
   ///
   /// @param proto the protobuf representation of the circuit
@@ -127,15 +123,6 @@ class CircuitGraph {
   /// correct
   auto solvePartition(const std::vector<double*>& basis,
                       const std::vector<bool>& isHigh) -> partitionSolution;
-
-  /// Prints a circuit
-  ///
-  /// @param out the stream to write to
-  /// @param cg the circuit to print
-  /// @param parameters a list of values to use for the unknowns
-  static void print(std::ostream& out, const CircuitGraph& cg,
-                    std::span<const double> parameters);
-  // TODO: replace with std::ostream implementation
 
  private:
   /// Get the list of discontinuities for the circuit

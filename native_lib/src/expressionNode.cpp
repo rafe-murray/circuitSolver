@@ -1,8 +1,10 @@
 #include "circuit_solver/expressionNode.h"
 
 #include <memory>
+#include <ostream>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 BinaryOpNode::BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
                            BinaryOp op)
@@ -43,32 +45,14 @@ UnaryOpNode::UnaryOpNode(ExpressionNodePtr operand, UnaryOp op)
 VariableNode::VariableNode() : value(1.0), known(false) {}
 VariableNode::VariableNode(double value) : value(value), known(true) {}
 
-void BinaryOpNode::getUnknowns(
-    std::unordered_set<const double*>& unknowns) const {
-  lhs->getUnknowns(unknowns);
-  rhs->getUnknowns(unknowns);
-}
-
 void BinaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
   lhs->getUnknowns(unknowns);
   rhs->getUnknowns(unknowns);
 }
 
-void Condition::getUnknowns(std::unordered_set<const double*>& unknowns) const {
-  val->getUnknowns(unknowns);
-  constraint->getUnknowns(unknowns);
-}
-
 void Condition::getUnknowns(std::unordered_set<double*>& unknowns) const {
   val->getUnknowns(unknowns);
   constraint->getUnknowns(unknowns);
-}
-
-void TernaryOpNode::getUnknowns(
-    std::unordered_set<const double*>& unknowns) const {
-  condition->getUnknowns(unknowns);
-  valIfTrue->getUnknowns(unknowns);
-  valIfFalse->getUnknowns(unknowns);
 }
 
 void TernaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
@@ -77,20 +61,8 @@ void TernaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
   valIfFalse->getUnknowns(unknowns);
 }
 
-void UnaryOpNode::getUnknowns(
-    std::unordered_set<const double*>& unknowns) const {
-  operand->getUnknowns(unknowns);
-}
-
 void UnaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
   operand->getUnknowns(unknowns);
-}
-
-void VariableNode::getUnknowns(
-    std::unordered_set<const double*>& unknowns) const {
-  if (!known) {
-    unknowns.insert(&value);
-  }
 }
 
 void VariableNode::getUnknowns(std::unordered_set<double*>& unknowns) {
