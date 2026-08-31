@@ -16,7 +16,7 @@ dependencies:
     path: ../circuit_solver_proto
   code_assets: ^1.0.0
   ffi: ^2.1.3
-  hooks: ^1.0.1
+  hooks: ^2.2.0
   logging: ^1.3.0
   native_toolchain_cmake: ^0.3.2
 
