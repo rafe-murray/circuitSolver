@@ -1,6 +1,7 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <ostream>
@@ -36,14 +37,6 @@ auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
 struct ExpressionNode {
   /// virtual destructor to enable dynamic dispatch
   virtual ~ExpressionNode() = default;
-
-  /// Stores const pointers to all unknown values in the AST with `this` as a
-  /// root in `unknowns`
-  ///
-  /// @param unknowns a set of unknown values to add the unknowns in this AST
-  /// to. Unknowns in this AST may or may not be already present already;
-  virtual void getUnknowns(
-      std::unordered_set<const double*>& unknowns) const = 0;
 
   /// Stores pointers to all unknown values in the AST with `this` as a root in
   /// `unknowns`
@@ -125,8 +118,6 @@ struct BinaryOpNode : ExpressionNode {
     }
   }
 
-  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
-
   void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   auto serialize(std::ostream& out) const -> std::ostream& override;
@@ -183,13 +174,6 @@ struct Condition {
 
   [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
 
-  /// Stores pointers to all unknown values in the AST with `this` as a root in
-  /// `unknowns`
-  ///
-  /// @param unknowns a set of unknown values to add the unknowns in this AST
-  /// to. Unknowns in this AST may or may not be already present already;
-  void getUnknowns(std::unordered_set<const double*>& unknowns) const;
-
   void getUnknowns(std::unordered_set<double*>& unknowns) const;
 
   /// Prints the node to `out`
@@ -236,8 +220,6 @@ struct TernaryOpNode : ExpressionNode {
                ? expressionNode::evaluate(valIfTrue, parameters, map)
                : expressionNode::evaluate(valIfFalse, parameters, map);
   }
-
-  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
@@ -287,8 +269,6 @@ struct UnaryOpNode : ExpressionNode {
     }
   }
 
-  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
-
   void getUnknowns(std::unordered_set<double*>& unknowns) override;
 
   auto serialize(std::ostream& out) const -> std::ostream& override;
@@ -330,8 +310,6 @@ struct VariableNode : ExpressionNode {
     }
     return parameters[map.at(&value)];
   }
-
-  void getUnknowns(std::unordered_set<const double*>& unknowns) const override;
 
   void getUnknowns(std::unordered_set<double*>& unknowns) override;
 

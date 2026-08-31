@@ -5,6 +5,8 @@
 
 #include <memory>
 #include <optional>
+#include <string>
+#include <unordered_map>
 
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
@@ -23,11 +25,6 @@ class Vertex {
     std::string idString = uuids::to_string(id);
     proto->set_id(idString);
     proto->set_voltage(voltage.evaluate());
-  }
-  void toProto(proto::Vertex* proto, std::span<const double> parameters) {
-    std::string idString = uuids::to_string(id);
-    proto->set_id(idString);
-    proto->set_voltage(voltage.evaluate(parameters));
   }
   static auto fromProto(const proto::Vertex& proto) -> std::optional<Vertex> {
     if (!proto.has_id()) {

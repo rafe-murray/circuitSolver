@@ -42,7 +42,6 @@ class Edge {
   [[nodiscard]] auto getConstraint() const -> Expression;
   auto operator==(const Edge& rhs) const -> bool;
   void toProto(proto::Edge* proto);
-  void toProto(proto::Edge* proto, std::span<const double> parameters);
   static auto fromProto(const proto::Edge& proto, const VertexMap& vertices)
       -> std::optional<Edge>;
 

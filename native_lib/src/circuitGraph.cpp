@@ -384,23 +384,6 @@ auto CircuitGraph::toProto() const -> proto::CircuitGraph {
   }
   return proto;
 }
-auto CircuitGraph::toProto(std::span<const double> parameters) const
-    -> proto::CircuitGraph {
-  proto::CircuitGraph proto;
-  for (auto& vertex : getVertices()) {
-    const std::string vertexId = uuids::to_string(vertex.getId());
-    (*proto.mutable_vertices()).insert({vertexId, proto::Vertex()});
-    auto* protoVertex = &proto.mutable_vertices()->at(vertexId);
-    vertex.toProto(protoVertex, parameters);
-  }
-  for (auto& edge : getEdges()) {
-    const std::string edgeId = uuids::to_string(edge.getId());
-    (*proto.mutable_edges()).insert({edgeId, proto::Edge()});
-    auto* protoEdge = &proto.mutable_edges()->at(edgeId);
-    edge.toProto(protoEdge, parameters);
-  }
-  return proto;
-}
 auto CircuitGraph::fromProto(const proto::CircuitGraph& proto)
     -> std::optional<std::unique_ptr<CircuitGraph>> {
   auto cg = std::make_unique<CircuitGraph>();
@@ -444,12 +427,4 @@ auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream& {
   (void)google::protobuf::json::MessageToJsonString(cg.toProto(), &output);
   out << output << '\n';
   return out;
-}
-
-void CircuitGraph::print(std::ostream& out, const CircuitGraph& cg,
-                         std::span<const double> parameters) {
-  std::string output;
-  (void)google::protobuf::json::MessageToJsonString(cg.toProto(parameters),
-                                                    &output);
-  out << output << '\n';
 }

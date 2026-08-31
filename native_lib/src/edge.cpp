@@ -57,10 +57,6 @@ void Edge::toProto(proto::Edge* proto) {
   branch->toProto(proto);
   proto->set_id(uuids::to_string(id));
 }
-void Edge::toProto(proto::Edge* proto, std::span<const double> parameters) {
-  branch->toProto(proto, parameters);
-  proto->set_id(uuids::to_string(id));
-}
 
 inline auto parseCurrentSource(const proto::Edge& proto, const Vertex& from,
                                const Vertex& to)
