@@ -20,8 +20,8 @@ dependencies:
     path: ../circuit_solver_proto
   uuid: ^4.6.0
   json_annotation: ^4.12.0
-  flutter_riverpod: ^3.3.2
-  riverpod_annotation: ^4.0.3
+  flutter_riverpod: ^3.4.2
+  riverpod_annotation: ^4.0.6
   freezed_annotation: ^3.1.0
   diffutil_dart: ^5.0.0
   dart_mappable: ^4.8.0
@@ -33,12 +33,12 @@ dev_dependencies:
   mocktail: ^1.0.4
   flutter_lints: ^6.0.0
   build_runner: ^2.4.6
-  drift_dev: ^2.21.0
+  drift_dev: ^2.34.5
   protoc_plugin: ^25.0.0
-  freezed: ^3.2.6-dev.1
+  freezed: ^4.0.1
   json_serializable: ^6.14.1
-  riverpod_generator: ^4.0.4
-  dart_mappable_builder: ^4.8.0
+  riverpod_generator: ^4.0.8
+  dart_mappable_builder: ^4.9.0
   go_router_builder: ^4.4.1
   build_verify: ^3.1.1
 
