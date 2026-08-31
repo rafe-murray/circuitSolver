@@ -3,6 +3,7 @@
 #include <absl/status/status.h>
 #include <google/protobuf/json/json.h>
 #include <google/protobuf/util/json_util.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <stduuid/uuid.h>
 
 #include <algorithm>
@@ -19,6 +20,26 @@
 
 #include "circuit_solver/proto.h"
 #include "gtest/gtest.h"
+
+using google::protobuf::json::MessageToJsonString;
+using google::protobuf::util::MessageDifferencer;
+
+auto IsEqual(const char* actualExpression, const char* expectedExpression,
+             const proto::CircuitGraph& actual,
+             const proto::CircuitGraph& expected) -> testing::AssertionResult {
+  bool equal = MessageDifferencer::Equals(actual, expected);
+  if (equal) {
+    return testing::AssertionSuccess();
+  }
+  std::string actualJson{};
+  std::string expectedJson{};
+  (void)MessageToJsonString(actual, &actualJson);
+  (void)MessageToJsonString(expected, &expectedJson);
+  return testing::AssertionFailure() << "Value of: IsEqual(" << actualExpression
+                                     << ", " << expectedExpression << ")\n"
+                                     << "  Actual: " << actualJson << "\n"
+                                     << "  Expected: " << expectedJson;
+}
 
 auto IsWithinRelativeTolerance(double expected, double actual, double tol)
     -> testing::AssertionResult {

@@ -130,6 +130,7 @@ if(CIRCUITSOLVER_BUILD_TESTS)
   add_executable(circuitsolverTests
     test/cApi.cpp
     test/circuit.cpp
+    test/cppApi.cpp
     test/math.cpp
     test/utils.cpp
   )

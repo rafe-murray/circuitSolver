@@ -21,6 +21,7 @@
 
 class CApiTest : public ::testing::Test {
  protected:
+  // NOLINTBEGIN(cppcoreguidelines-non-private-member-variables-in-classes)
   proto::CircuitGraph cg{};
 
   proto::Vertex ref{};
@@ -36,6 +37,7 @@ class CApiTest : public ::testing::Test {
   uuids::uuid edgeId0;
   uuids::uuid edgeId1;
   uuids::uuid edgeId2;
+  // NOLINTEND(cppcoreguidelines-non-private-member-variables-in-classes)
 
   void SetUp() override {
     auto gen = getUuidGenerator();
