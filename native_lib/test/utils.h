@@ -11,12 +11,11 @@
 #endif
 
 // NOTE: falls back to absolute tolerance if expected == 0.0
-testing::AssertionResult IsWithinRelativeTolerance(double expected,
-                                                   double actual,
-                                                   double tol = 1e-4);
+auto IsWithinRelativeTolerance(double expected, double actual,
+                               double tol = 1e-4) -> testing::AssertionResult;
 
-proto::CircuitGraph GetMessageFromJsonFile(const char* filename);
+auto GetMessageFromJsonFile(const char* filename) -> proto::CircuitGraph;
 
-uuids::uuid_random_generator getUuidGenerator();
+auto getUuidGenerator() -> uuids::uuid_random_generator;
 
 #endif  // TEST_UTILS_H

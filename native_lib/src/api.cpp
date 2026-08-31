@@ -31,7 +31,8 @@ auto getErrorMessage(int errorNumber) -> const char* {
       {CIRCUITSOLVER_ERROR_INVALID_INPUT, "Invalid input"},
       {CIRCUITSOLVER_ERROR_NO_SOLUTION, "No solution"},
       {CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION, "Failed serialization"},
-  };
+      {CIRCUITSOLVER_ERROR_TOO_MANY_DISCONTINUITIES,
+       "Too many discontinuities"}};
   auto it = errorMessages.find(errorNumber);
   if (it != errorMessages.end()) {
     return it->second;
