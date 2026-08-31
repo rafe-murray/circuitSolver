@@ -21,7 +21,7 @@ auto Branch::getConstraint() const -> Expression { return 0; }
 
 void Branch::toProto(proto::Edge* proto) const {
   std::string fromId = uuids::to_string(connections.from.getId());
-  std::string toId = uuids::to_string(connections.from.getId());
+  std::string toId = uuids::to_string(connections.to.getId());
   proto->set_from_id(fromId);
   proto->set_to_id(toId);
   proto->set_current(this->getCurrent().evaluate());
