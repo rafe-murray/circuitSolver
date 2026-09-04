@@ -1,17 +1,15 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:frontend/config/repository_providers.dart';
 import 'package:frontend/data/model/circuit_models.dart';
+import 'package:frontend/ui/view_models/editor_shortcuts.dart';
 import 'package:frontend/ui/view_models/editor_view_model.dart';
-import 'package:frontend/ui/view_models/tool/tool.dart';
+import 'package:frontend/ui/view_models/tool/tool_catalog.dart';
 import 'package:frontend/ui/widgets/circuit_hit_test_view.dart';
 import 'package:frontend/ui/widgets/circuit_view.dart';
-import 'package:frontend/ui/widgets/tools/add_component_canvas_gesture_detector.dart';
-import 'package:frontend/ui/widgets/tools/add_component_keyboard_listener.dart';
-import 'package:frontend/ui/widgets/tools/lasso_selection_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/add_component_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/lasso_gesture_detector.dart';
 import 'package:frontend/ui/widgets/tools/selection_indicators.dart';
-import 'package:frontend/ui/widgets/tools/selection_keyboard_listener.dart';
 import 'package:uuid/uuid_value.dart';
 
 /// Size of the editor's scrollable canvas, in canvas coordinates.
@@ -24,12 +22,15 @@ import 'package:uuid/uuid_value.dart';
 /// outside it.
 const Size kEditorCanvasSize = Size(4000, 4000);
 
-/// Renders the circuit inside a pan/zoom [InteractiveViewer] and routes canvas /
-/// keyboard input to the active tool.
+/// Renders the circuit inside a pan/zoom [InteractiveViewer] and mounts the
+/// active tool's gesture detector and keyboard shortcuts.
 ///
 /// One-finger / primary-button drags are claimed by the active tool's gesture
 /// detector (drawing, lassoing). The [InteractiveViewer] pans and zooms on
 /// trackpad, mouse-wheel and pinch input; a middle-mouse-button drag also pans.
+///
+/// The tool's gestures and shortcuts dispatch [Intent]s that are resolved by
+/// the `Actions` widget wrapping the editor screen.
 class EditorCanvas extends ConsumerStatefulWidget {
   /// Id of the circuit being edited.
   final UuidValue circuitId;
@@ -42,7 +43,6 @@ class EditorCanvas extends ConsumerStatefulWidget {
 
 class _EditorCanvasState extends ConsumerState<EditorCanvas> {
   final _controller = TransformationController();
-  final _focusNode = FocusNode();
 
   /// Pointer position at the previous middle-mouse-drag event, or `null` when no
   /// middle-mouse pan is in progress.
@@ -51,14 +51,7 @@ class _EditorCanvasState extends ConsumerState<EditorCanvas> {
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
     super.dispose();
-  }
-
-  Future<void> _execute(CircuitModel Function() toolCallBack) async {
-    await ref
-        .read(editorViewModelProvider(circuitId: widget.circuitId).notifier)
-        .updateCircuit(toolCallBack);
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -102,58 +95,60 @@ class _EditorCanvasState extends ConsumerState<EditorCanvas> {
             maxScale: 8,
             child: SizedBox.fromSize(
               size: kEditorCanvasSize,
-              child: _toolLayer(circuit.value),
+              child: _ToolLayer(
+                circuitId: widget.circuitId,
+                model: circuit.value,
+              ),
             ),
           ),
         );
     }
   }
+}
 
-  Widget _toolLayer(CircuitModel model) {
-    final selectedTool = ref.watch(
-      selectedToolProvider(circuitId: widget.circuitId),
+/// The circuit plus the active tool's gesture detector and shortcuts.
+///
+/// A plain [Focus] node inside the per-tool [Shortcuts] holds keyboard focus,
+/// so both the per-tool shortcuts and the editor-wide shortcuts (mounted higher
+/// up) sit above the focused node and receive key events.
+class _ToolLayer extends ConsumerWidget {
+  const _ToolLayer({required this.circuitId, required this.model});
+
+  final UuidValue circuitId;
+  final CircuitModel model;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tool = ref.watch(selectedToolProvider(circuitId: circuitId));
+    return Shortcuts(
+      shortcuts: shortcutsForTool(tool),
+      child: Focus(
+        autofocus: true,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            _canvasFor(tool),
+            // The selection can be set from an editor-wide shortcut under any
+            // tool, so its indicators are always drawn.
+            SelectionIndicators(circuitModel: model),
+          ],
+        ),
+      ),
     );
-    if (selectedTool == null) {
-      return CircuitView(circuitModel: model);
-    }
-    final tool = Tool.fromMeta(
-      meta: selectedTool,
-      uuid: ref.read(uuidProvider),
-      circuit: model,
-    );
-    switch (tool) {
-      case AddComponentTool():
-        return AddComponentKeyboardListener(
-          focusNode: _focusNode,
-          addComponentCallback: () => _execute(tool.addComponent(model)),
-          child: AddComponentCanvasGestureDetector(
-            branch: tool.branch,
-            addComponentCallback: (pos) =>
-                _execute(tool.addComponentAtPos(model, pos)),
-            addComponentBetweenCallback: ({required from, required to}) =>
-                _execute(tool.addComponentBetween(model, from: from, to: to)),
-            child: CircuitView(circuitModel: model),
-          ),
+  }
+
+  Widget _canvasFor(ToolMeta? tool) {
+    switch (toolKindOf(tool)) {
+      case EditorToolKind.none:
+        return CircuitView(circuitModel: model);
+      case EditorToolKind.addComponent:
+        return AddComponentGestureDetector(
+          branch: branchOf(tool!)!,
+          child: CircuitView(circuitModel: model),
         );
-      case LassoTool():
-        final selection = ref.read(
-          currentSelectionProvider(circuitId: widget.circuitId).notifier,
-        );
-        return SelectionKeyboardListener(
-          focusNode: _focusNode,
-          onClear: selection.clear,
-          onSelectAll: () => selection.set(tool.selectAll()),
-          child: LassoSelectionGestureDetector(
-            onLassoComplete: (region) =>
-                selection.set(tool.selectWithin(region)),
-            onTapClear: selection.clear,
-            child: Stack(
-              children: [
-                CircuitHitTestView(circuitModel: model),
-                SelectionIndicators(circuitModel: model),
-              ],
-            ),
-          ),
+      case EditorToolKind.lasso:
+        return LassoGestureDetector(
+          child: CircuitHitTestView(circuitModel: model),
         );
     }
   }

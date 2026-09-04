@@ -45,7 +45,9 @@ void main() {
     ),
   );
 
-  testWidgets('renders the circuit inside an InteractiveViewer', (tester) async {
+  testWidgets('renders the circuit inside an InteractiveViewer', (
+    tester,
+  ) async {
     await tester.pumpWidget(app());
     await tester.pumpAndSettle();
 
