@@ -1,36 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/data/model/selection.dart';
+import 'package:frontend/ui/view_models/editor_intents.dart';
 
-/// Catches canvas gestures for the lasso selection sub-tool.
+/// Catches canvas gestures for the lasso selection tool and dispatches
+/// selection [Intent]s.
 ///
-/// A drag traces a free-form path; on release the closed path is reported as a
-/// [LassoRegion] through [onLassoComplete]. A plain tap on the canvas reports
-/// through [onTapClear] so callers can clear the current selection. The path in
-/// progress is drawn as a translucent blue overlay under the pointer.
-class LassoSelectionGestureDetector extends StatefulWidget {
-  /// Called with the closed lasso path when a drag completes.
-  final void Function(LassoRegion region) onLassoComplete;
-
-  /// Called when the user taps the canvas without dragging.
-  final VoidCallback onTapClear;
-
+/// A drag traces a free-form path; on release the closed path is dispatched as
+/// a [SelectWithinLassoIntent]. A plain tap dispatches a [ClearSelectionIntent].
+/// The path in progress is drawn as a translucent blue overlay under the
+/// pointer.
+class LassoGestureDetector extends StatefulWidget {
   /// The widget drawn beneath the lasso overlay (the circuit).
   final Widget child;
 
-  const LassoSelectionGestureDetector({
-    super.key,
-    required this.onLassoComplete,
-    required this.onTapClear,
-    required this.child,
-  });
+  const LassoGestureDetector({super.key, required this.child});
 
   @override
-  State<LassoSelectionGestureDetector> createState() =>
-      _LassoSelectionGestureDetectorState();
+  State<LassoGestureDetector> createState() => _LassoGestureDetectorState();
 }
 
-class _LassoSelectionGestureDetectorState
-    extends State<LassoSelectionGestureDetector> {
+class _LassoGestureDetectorState extends State<LassoGestureDetector> {
   /// Fewest points a path needs before it encloses an area worth reporting.
   static const _minPoints = 3;
 
@@ -41,7 +30,8 @@ class _LassoSelectionGestureDetectorState
     final points = _points;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTapUp: (_) => widget.onTapClear(),
+      onTapUp: (_) =>
+          Actions.maybeInvoke(context, const ClearSelectionIntent()),
       onPanDown: (details) {
         setState(() => _points = [details.localPosition]);
       },
@@ -53,7 +43,10 @@ class _LassoSelectionGestureDetectorState
         final path = _points;
         setState(() => _points = null);
         if (path != null && path.length >= _minPoints) {
-          widget.onLassoComplete(LassoRegion(List.unmodifiable(path)));
+          Actions.maybeInvoke(
+            context,
+            SelectWithinLassoIntent(LassoRegion(List.unmodifiable(path))),
+          );
         }
       },
       child: Stack(

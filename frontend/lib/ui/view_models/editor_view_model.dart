@@ -8,7 +8,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/model/circuit_models.dart';
 import '../../data/model/selection.dart';
 import '../../diff/circuit_diff.dart';
-import 'tool/tool.dart';
+import 'tool/tool_meta.dart';
 
 part 'editor_view_model.g.dart';
 
@@ -40,8 +40,9 @@ class SelectedTool extends _$SelectedTool {
 /// The user's current selection of components and endpoints for [circuitId].
 ///
 /// Transient UI state: it is not persisted and takes no part in the circuit
-/// model or the undo history.
-@riverpod
+/// model or the undo history. Kept alive because it can be set from an
+/// editor-wide shortcut (select-all) at a moment when nothing is watching it.
+@Riverpod(keepAlive: true)
 class CurrentSelection extends _$CurrentSelection {
   @override
   Selection build({required UuidValue circuitId}) => Selection.empty;
@@ -122,13 +123,15 @@ class EditorViewModel extends _$EditorViewModel {
   Future<void> undo() async {
     assert(canUndo);
     final previousCircuit = _manager.undo(await circuitModel);
-    ref.read(circuitRepositoryProvider).saveCircuit(previousCircuit);
+    await ref.read(circuitRepositoryProvider).saveCircuit(previousCircuit);
+    ref.invalidate(circuitRepositoryProvider);
   }
 
   Future<void> redo() async {
     assert(canRedo);
     final newCircuit = _manager.redo(await circuitModel);
-    ref.read(circuitRepositoryProvider).saveCircuit(newCircuit);
+    await ref.read(circuitRepositoryProvider).saveCircuit(newCircuit);
+    ref.invalidate(circuitRepositoryProvider);
   }
 
   Future<void> updateCircuit(UpdateAction action) async {
