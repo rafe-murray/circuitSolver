@@ -39,7 +39,7 @@ dev_dependencies:
   json_serializable: ^6.14.1
   riverpod_generator: ^4.0.8
   dart_mappable_builder: ^4.9.0
-  go_router_builder: ^4.4.1
+  go_router_builder: ^4.5.0
   build_verify: ^3.1.1
 
 flutter:
