@@ -69,6 +69,7 @@ target_sources(
     src/expression.cpp
     src/expressionNode.cpp
     src/logging.cpp
+    src/solver.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../proto/circuit_solver/v1alpha1/circuit_graph_message.proto
 )
 target_include_directories(circuitsolver PUBLIC include)

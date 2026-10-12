@@ -2,9 +2,14 @@
 #define EXPRESSION_H
 
 #include <ceres/ceres.h>
+#include <ceres/problem.h>
 
+#include <cstddef>
 #include <iostream>
 #include <memory>
+#include <span>
+#include <unordered_set>
+#include <vector>
 
 #include "circuit_solver/expressionCostFunctor.h"
 #include "circuit_solver/expressionNode.h"
@@ -102,9 +107,11 @@ class Expression {
   /// of the unknowns of this expression
   // auto getUnknowns() const -> const std::vector<double*>&;
 
-  auto getDiscontinuities() -> std::unordered_set<double*>;
-
-  auto getDiscontinuityErrors() -> std::vector<Expression>;
+  /// Gets the `Conditions` this expression depends on
+  ///
+  /// @return a set of the `Condition`s used in `this`
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>>;
 
   auto getUnknowns() -> std::vector<double*>;
 
@@ -134,18 +141,28 @@ class Expression {
 
   void markKnown();
 
-  void addToProblem(ceres::Problem& problem);
+  void addToProblem(ceres::Problem& problem,
+                    const ConditionMap& conditionMap) const;
+  void addToProblem(ceres::Problem& problem) const;
+
+  void setConditionMap(const ConditionMap& conditionMap);
 
  private:
   /// Obtain a mapping of double* to array indices for function arguments.
   /// Since the unknowns are stored in a tree ADT we need a way to translate
   /// between
   auto getMap() const -> const ExpressionMap&;
-  void updateMapAndUnknowns() const;
+  void updateInternalState() const;
+  auto defaultConditionMap() const -> ConditionMap;
   Expression(ExpressionNodePtr root);
+
   ExpressionNodePtr root;
+
+  // Lazily computed values
   mutable std::shared_ptr<ExpressionMap> map;
   mutable std::shared_ptr<std::vector<double*>> unknowns;
+  mutable std::shared_ptr<ConditionMap> conditionMap;
+
   friend auto operator<<(std::ostream& out, const Expression& e)
       -> std::ostream&;
   friend auto circuitsolver::expression::exp(Expression arg) -> Expression;

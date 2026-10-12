@@ -33,7 +33,7 @@ Condition::Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
   constraint = std::make_shared<VariableNode>();
 }
 
-TernaryOpNode::TernaryOpNode(std::shared_ptr<Condition> condition,
+TernaryOpNode::TernaryOpNode(std::shared_ptr<const Condition> condition,
                              ExpressionNodePtr valIfTrue,
                              ExpressionNodePtr valIfFalse)
     : condition(std::move(std::move(condition))),
@@ -91,65 +91,38 @@ void UnaryOpNode::markKnown() { operand->markKnown(); }
 
 void VariableNode::markKnown() { known = true; }
 
-void BinaryOpNode::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) {
-  lhs->getDiscontinuities(discontinuities);
-  rhs->getDiscontinuities(discontinuities);
+auto BinaryOpNode::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  auto conditions = lhs->getConditions();
+  conditions.merge(rhs->getConditions());
+  return conditions;
 }
 
-void Condition::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) const {
-  discontinuities.insert(&constraint->value);
-  // Unlikely, but we could have nested conditionals, so we recurse
-  val->getDiscontinuities(discontinuities);
+auto Condition::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  auto conditions = std::unordered_set<std::shared_ptr<const Condition>>{
+      shared_from_this(),
+  };
+  conditions.merge(val->getConditions());
+  return conditions;
 }
 
-void TernaryOpNode::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) {
-  condition->getDiscontinuities(discontinuities);
-  valIfTrue->getDiscontinuities(discontinuities);
-  valIfFalse->getDiscontinuities(discontinuities);
+auto TernaryOpNode::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  auto conditions = condition->getConditions();
+  conditions.merge(valIfTrue->getConditions());
+  conditions.merge(valIfFalse->getConditions());
+  return conditions;
 }
 
-void UnaryOpNode::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) {
-  operand->getDiscontinuities(discontinuities);
+auto UnaryOpNode::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  return operand->getConditions();
 }
 
-void VariableNode::getDiscontinuities(
-    std::unordered_set<double*>& discontinuities) {
-  (void)discontinuities;
-  // Do nothing
-}
-
-void BinaryOpNode::getDiscontinuityError(
-    std::vector<ExpressionNodePtr>& error) {
-  lhs->getDiscontinuityError(error);
-  rhs->getDiscontinuityError(error);
-}
-
-void Condition::getDiscontinuityError(
-    std::vector<ExpressionNodePtr>& error) const {
-  error.push_back(getError());
-  // Unlikely, but we could have nested conditionals, so we recurse
-  val->getDiscontinuityError(error);
-}
-
-void TernaryOpNode::getDiscontinuityError(
-    std::vector<ExpressionNodePtr>& error) {
-  condition->getDiscontinuityError(error);
-  valIfTrue->getDiscontinuityError(error);
-  valIfFalse->getDiscontinuityError(error);
-}
-
-void UnaryOpNode::getDiscontinuityError(std::vector<ExpressionNodePtr>& error) {
-  operand->getDiscontinuityError(error);
-}
-
-void VariableNode::getDiscontinuityError(
-    std::vector<ExpressionNodePtr>& error) {
-  (void)error;
-  // Do nothing
+auto VariableNode::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  return {};
 }
 
 auto Condition::getError() const -> std::shared_ptr<BinaryOpNode> {
@@ -176,15 +149,15 @@ auto BinaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
   return out;
 }
 
-auto operator<<(std::ostream& out, const std::shared_ptr<Condition>& condition)
+auto operator<<(std::ostream& out, const Condition& condition)
     -> std::ostream& {
-  out << "(" << condition->val << (condition->includeZero ? " >= " : " > ")
+  out << "(" << condition.val << (condition.includeZero ? " >= " : " > ")
       << "0)";
   return out;
 }
 
 auto TernaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
-  out << "(" << condition << " ? " << valIfTrue << " : " << valIfFalse << ")";
+  out << "(" << *condition << " ? " << valIfTrue << " : " << valIfFalse << ")";
   return out;
 }
 

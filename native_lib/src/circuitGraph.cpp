@@ -8,29 +8,24 @@
 #include <spdlog/spdlog.h>
 #include <uuid.h>
 
-#include <bitset>
 #include <cassert>
-#include <cstdint>
-#include <cstdio>
 #include <expected>
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <random>
+#include <span>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "absl/strings/match.h"
 #include "circuit_solver/config.h"
 #include "circuit_solver/edge.h"
 #include "circuit_solver/errors.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
+#include "circuit_solver/solver.h"
 #include "circuit_solver/vertex.h"
 
 using circuitsolver::CircuitSolverError;
@@ -41,52 +36,6 @@ using circuitsolver::constants::unknownSeedStdDeviation;
 
 // TODO: ensure that ternaryOpNodes will always add an expression that equates
 // the basis with a valid expression as its constraint method
-auto CircuitGraph::solvePartition(const std::vector<double*>& basis,
-                                  const std::vector<bool>& isHigh)
-    -> partitionSolution {
-  // std::cout << "Starting state:";
-  // print(std::cout, *this, getUnknowns());
-  ceres::Problem problem;
-  std::vector<Expression> expressions = getExpressions();
-  for (auto expression : expressions) {
-    expression.addToProblem(problem);
-  }
-  assert(basis.size() == isHigh.size());
-  for (size_t i = 0; i < basis.size(); i++) {
-    if (isHigh.at(i)) {
-      // std::cout << "Setting lower limit on " << basis[i] << " to 0"
-      //           << std::endl;
-      problem.SetParameterLowerBound(basis.at(i), 0, 0);
-    } else {
-      // std::cout << "Setting upper limit on " << basis[i] << " to 0"
-      //           << std::endl;
-      problem.SetParameterUpperBound(basis.at(i), 0, 0);
-    }
-  }
-  // std::cout << std::endl;
-  ceres::Solver::Options options = getDefaultOptions();
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
-  std::vector<std::vector<double>> allParameters;
-  // std::unordered_set<const double*> allUnknowns;
-  for (auto& expression : expressions) {
-    auto unknowns = expression.getUnknowns();
-    std::vector<double> parameters;
-    parameters.reserve(unknowns.size());
-    for (auto* unknown : unknowns) {
-      parameters.push_back(*unknown);
-    }
-    allParameters.push_back(parameters);
-    // auto constUnknowns = expression.getUnknowns();
-    // allUnknowns.merge(constUnknowns);
-  }
-  // std::cout << "Cost: " << summary.final_cost << summary.message <<
-  // std::endl; print(std::cout, *this, allUnknowns);
-  partitionSolution solution{.summary = summary,
-                             .expressions = expressions,
-                             .parameters = allParameters};
-  return solution;
-}
 
 /**
  * At start we have:
@@ -100,108 +49,18 @@ auto CircuitGraph::solvePartition(const std::vector<double*>& basis,
 // TODO: fix case of no discontinuities
 auto CircuitGraph::solveCircuit()
     -> std::expected<std::reference_wrapper<CircuitGraph>, CircuitSolverError> {
-  // TODO: Find a non-exponential solution for discontinuities
-  constexpr int maxBasisSize = 32;
-  std::vector<double*> basis = getDiscontinuities();
-  int basisSize = static_cast<int>(basis.size());
-  if (basisSize >= maxBasisSize) {
-    return std::unexpected{CircuitSolverError{
-        circuitsolver::ErrorType::TooManyDiscontinuities,
-        fmt::format("Cannot solve circuit since it has too many elements with "
-                    "discontinuous behaviour. The max is {}; you had {}",
-                    maxBasisSize, basisSize)}};
+  auto solver = circuitsolver::solver::Solver{};
+  auto expressions = getExpressions();
+  auto solution = solver.Solve(expressions);
+  if (!solution.has_value()) {
+    return std::unexpected{solution.error()};
   }
-  uint32_t numPartitions = 0;
-  if (basisSize > 0) {
-    // 2^n partitions: combinations for each discontinuity's high and low case
-    numPartitions = uint32_t{1} << basisSize;
-  } else {
-    numPartitions = 1;
-  }
-  SPDLOG_DEBUG("numPartitions: {}, basisSize: {}", numPartitions, basisSize);
-  std::vector<partitionSolution> solutions(numPartitions);
-  std::vector<std::vector<bool>> isHigh;
-  for (uint32_t i = 0; i < numPartitions; i++) {
-    isHigh.emplace_back(basisSize);
-    for (int j = 0; j < basisSize; j++) {
-      auto bits = std::bitset<maxBasisSize>(i);
-      isHigh.at(i).at(j) = bits[j];
-    }
-    solutions.insert(solutions.begin() + i,
-                     solvePartition(basis, isHigh.at(i)));
-    resetUnknowns();
-  }
-  double minError = std::numeric_limits<double>::max();
-  // use a flag over a sentinel value to avoid integer overflow concerns
-  bool isSolutionUsable = false;
-  size_t bestIndex = 0;
-  for (size_t i = 0; i < solutions.size(); i++) {
-    if (!solutions.at(i).summary.IsSolutionUsable()) {
-      continue;
-    }
-    if (solutions.at(i).summary.final_cost < minError) {
-      minError = solutions.at(i).summary.final_cost;
-      bestIndex = i;
-      isSolutionUsable = true;
-    }
-  }
-  if (!isSolutionUsable) {
-    return std::unexpected{CircuitSolverError{
-        circuitsolver::ErrorType::NoSolution, "No usable solution found"}};
-  }
-
-  partitionSolution solution = solutions.at(bestIndex);
-  if (!absl::StrContains(solution.summary.message, "Gradient tolerance") &&
-      solution.summary.final_cost > solutionCostThreshold) {
-    if (solveAttempts < maxSolveAttempts) {
-      solveAttempts++;
-      resetUnknowns();
-      return solveCircuit();
-    }  // Exceeded max solve attempts
-    return std::unexpected{CircuitSolverError{
-        circuitsolver::ErrorType::NoSolution,
-        fmt::format("Exceeded maximum solve attempts of {}. No solution was "
-                    "within cost threshold {}",
-                    maxSolveAttempts, solutionCostThreshold)}};
-  }
-  assert(solution.expressions.size() == solution.parameters.size());
-  for (size_t i = 0; i < solution.expressions.size(); i++) {
-    auto unknowns = solution.expressions.at(i).getUnknowns();
-    auto parameters = solution.parameters.at(i);
-    for (size_t j = 0; j < unknowns.size(); j++) {
-      *(unknowns.at(j)) = parameters.at(j);
-    }
-    solution.expressions.at(i).markKnown();
+  solution->apply();
+  for (auto expression : expressions) {
+    expression.markKnown();
   }
   return *this;
 }
-
-void CircuitGraph::resetUnknowns() {
-  std::random_device rd;
-  std::default_random_engine rng(rd());
-  std::normal_distribution<> distrib(0.0, unknownSeedStdDeviation);
-
-  auto expressions = getExpressions();
-  for (auto expression : expressions) {
-    auto unknowns = expression.getUnknowns();
-    for (auto* unknown : unknowns) {
-      *unknown = distrib(rng);
-    }
-  }
-  auto discontinuities = getDiscontinuities();
-  for (auto* discontinuity : discontinuities) {
-    *discontinuity = distrib(rng);
-  }
-}
-
-// std::unordered_set<const double*> CircuitGraph::getUnknowns() {
-//   std::unordered_set<const double*> unknowns;
-//   auto expressions = getExpressions();
-//   for (auto expression : expressions) {
-//     unknowns.merge(expression.getUnknowns());
-//   }
-//   return unknowns;
-// }
 
 auto CircuitGraph::getExpressions() -> std::vector<Expression> {
   std::vector<Expression> expressions;
@@ -252,18 +111,6 @@ auto CircuitGraph::addVertex(const Vertex& v) -> bool {
   return false;
 }
 
-// TODO: remove this method
-// bool CircuitGraph::removeVertex(const Vertex& v) {
-//   if (!hasVertex(v)) return false;
-//
-//   // Remove from adjacencyList
-//   adjacencyList[v.getId()] = std::vector<unsigned>();
-//
-//   // Remove the vertex itself
-//   vertices[v.getId()] = nullptr;
-//   return true;
-// }
-
 auto CircuitGraph::addEdge(std::unique_ptr<Edge> e) -> bool {
   if (hasEdge(*e)) {
     return false;
@@ -280,25 +127,6 @@ auto CircuitGraph::addEdge(std::unique_ptr<Edge> e) -> bool {
   edges.insert_or_assign(e->getId(), std::move(e));
   return true;
 }
-
-// NOTE: this is probably slightly less efficient since we have to fetch the
-// Edge again, but it is easier to maintain
-// @pre this.hasEdge(e) == true
-// bool CircuitGraph::removeEdge(const Edge& e) {
-//   adjacencyList[e.getFrom().getId()].erase(adjacencyList.find()
-//   return removeEdge(e.getFrom(), e.getTo());
-// }
-
-// bool CircuitGraph::removeEdge(const Vertex& from, const Vertex& to) {
-//   if (hasVertex(from) && ) {
-//     int id = adjacencyList[v1][v2]->getId();
-//     adjacencyList[v1].erase(v2);
-//     adjacencyList[v2].erase(v1);
-//     edges.erase(id);
-//     return true;
-//   }
-//   return false;
-// }
 
 auto CircuitGraph::getIncident(const Vertex& v) -> std::vector<Edge> {
   std::vector<Edge> incidentEdges;
@@ -404,22 +232,6 @@ auto CircuitGraph::fromProto(const proto::CircuitGraph& proto)
     }
   }
   return cg;
-}
-auto CircuitGraph::getDiscontinuities() -> std::vector<double*> {
-  std::unordered_set<double*> discontinuities;
-  auto expressions = getExpressions();
-  for (auto expression : expressions) {
-    discontinuities.merge(expression.getDiscontinuities());
-  }
-  std::vector<double*> discontinuitiesVector;
-  discontinuitiesVector.reserve(discontinuities.size());
-  // Solving algorithm is already non-deterministic
-  // NOLINTBEGIN(bugprone-nondeterministic-pointer-iteration-order)
-  for (auto* el : discontinuities) {
-    discontinuitiesVector.push_back(el);
-  }
-  // NOLINTEND(bugprone-nondeterministic-pointer-iteration-order)
-  return discontinuitiesVector;
 }
 
 auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream& {

@@ -8,7 +8,6 @@
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <span>
 #include <unordered_map>
 #include <vector>
 
@@ -22,13 +21,6 @@
 //  - Cases where there are too few equations for the number of unknowns
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
-
-/// The solution to a single partition of the solution space
-struct partitionSolution {
-  ceres::Solver::Summary summary;
-  std::vector<Expression> expressions;
-  std::vector<std::vector<double>> parameters;
-};
 
 class CircuitGraph {
  public:
@@ -113,20 +105,7 @@ class CircuitGraph {
    */
   auto operator==(const CircuitGraph& other) const -> bool;
 
-  /// Solves a single partition of the solution space
-  ///
-  /// @param basis a list of variables that act as optimization constraints; for
-  /// a given partition each one will be constrained to either above or below 0
-  /// @param isHigh a list of `bool`s that correspond to whether a particular
-  /// value in `basis` should be held above 0
-  /// @return a solution summary. This does not indicate that a solution is
-  /// correct
-  auto solvePartition(const std::vector<double*>& basis,
-                      const std::vector<bool>& isHigh) -> partitionSolution;
-
  private:
-  /// Get the list of discontinuities for the circuit
-  auto getDiscontinuities() -> std::vector<double*>;
   /// Reset the unknowns
   ///
   /// This will seed the unknowns from a random distribution so that different
@@ -177,7 +156,7 @@ class CircuitGraph {
   EdgeMap edges;
 
   int solveAttempts = 0;
-  static constexpr int maxSolveAttempts = 100;  // High but bounded
+  static constexpr int maxSolveAttempts = 2;  // High but bounded
 };
 
 /// Writes a string representation of a graph

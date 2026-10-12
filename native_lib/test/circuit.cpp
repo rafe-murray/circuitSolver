@@ -113,7 +113,8 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  ASSERT_TRUE(cg.solveCircuit());
+  auto result = cg.solveCircuit();
+  ASSERT_TRUE(result) << result.error().message();
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 300, r1.getCurrent().evaluate()));
@@ -166,7 +167,6 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   absl::Status status =
       google::protobuf::json::MessageToJsonString(buffer, &output);
   ASSERT_TRUE(status.ok());
-  // std::cout << output << std::endl;
 }
 
 // TEST(CircuitTest, LargeCircuit) {}

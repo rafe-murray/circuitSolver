@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <ostream>
 #include <span>
@@ -15,6 +16,7 @@ struct ExpressionNode;
 struct TernaryOpNode;
 struct UnaryOpNode;
 struct VariableNode;
+class Condition;
 
 // NOTE: if this class needs to have improved performance, we can do the
 // following:
@@ -26,11 +28,12 @@ struct VariableNode;
 
 using ExpressionMap = std::unordered_map<const double*, size_t>;
 using ExpressionNodePtr = std::shared_ptr<ExpressionNode>;
+using ConditionMap = std::unordered_map<std::shared_ptr<const Condition>, bool>;
 
 namespace expressionNode {
 template <typename T>
 auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
-              const ExpressionMap& map) -> T;
+              const ExpressionMap& map, const ConditionMap& conditionMap) -> T;
 }
 
 /// A single node in the AST of an `Expression`
@@ -56,22 +59,9 @@ struct ExpressionNode {
 
   // TODO: find a better name for discontinuities
 
-  /// gets a list of discontinuities for this subtree and stores it in
-  /// `discontinuities`
-  ///
-  /// A discontinuity is defined here to be a constraint on a conditional
-  /// branch. I.e., a conditional path will change when the value passes zero,
-  /// causing the cost function we are optimizing to be discontinuous at that
-  /// point
-  /// @param discontinuities the set to store the discontinuities in
-  virtual void getDiscontinuities(
-      std::unordered_set<double*>& discontinuities) = 0;
-
-  /// gets a list of `Expressions` that represent the error for all of the
-  /// discontinuities in this subtree
-  ///
-  /// @param error the list of errors to insert into
-  virtual void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) = 0;
+  /// gets a list of conditions for this subtree
+  [[nodiscard]] virtual auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>> = 0;
 
  protected:
   ExpressionNode() = default;
@@ -100,21 +90,21 @@ struct BinaryOpNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(std::span<T> parameters,
-                              const ExpressionMap& map) const -> T {
+  auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
+                              const ConditionMap& conditionMap) const -> T {
     switch (op) {
       case BinaryOp::MUL:
-        return expressionNode::evaluate(lhs, parameters, map) *
-               expressionNode::evaluate(rhs, parameters, map);
+        return expressionNode::evaluate(lhs, parameters, map, conditionMap) *
+               expressionNode::evaluate(rhs, parameters, map, conditionMap);
       case BinaryOp::DIV:
-        return expressionNode::evaluate(lhs, parameters, map) /
-               expressionNode::evaluate(rhs, parameters, map);
+        return expressionNode::evaluate(lhs, parameters, map, conditionMap) /
+               expressionNode::evaluate(rhs, parameters, map, conditionMap);
       case BinaryOp::ADD:
-        return expressionNode::evaluate(lhs, parameters, map) +
-               expressionNode::evaluate(rhs, parameters, map);
+        return expressionNode::evaluate(lhs, parameters, map, conditionMap) +
+               expressionNode::evaluate(rhs, parameters, map, conditionMap);
       case BinaryOp::SUB:
-        return expressionNode::evaluate(lhs, parameters, map) -
-               expressionNode::evaluate(rhs, parameters, map);
+        return expressionNode::evaluate(lhs, parameters, map, conditionMap) -
+               expressionNode::evaluate(rhs, parameters, map, conditionMap);
     }
   }
 
@@ -124,10 +114,8 @@ struct BinaryOpNode : ExpressionNode {
 
   void markKnown() override;
 
-  void getDiscontinuities(
-      std::unordered_set<double*>& discontinuities) override;
-
-  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
   /// The left hand side of the operation
   ExpressionNodePtr lhs;
@@ -144,7 +132,8 @@ enum class BooleanBinaryOp : uint8_t { LT, LEQ, GT, GEQ };
 
 /// A Binary operation node in the AST that return a boolean value.
 /// NOTE: all other nodes return `double` values
-struct Condition {
+class Condition : public std::enable_shared_from_this<Condition> {
+ public:
   /// Creates a `Condition`
   ///
   /// @param lhs the left hand side of the operation
@@ -152,25 +141,6 @@ struct Condition {
   /// @param op the type of operation
   Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
             BooleanBinaryOp op);
-
-  /// Evaluates the AST with `this` as a root.
-  ///
-  /// Note that this is templated so that `ceres` can do automatic
-  /// differentiation
-  /// @param parameters an array of values to be used for the unknowns
-  /// @param map a mapping from pointers to the unknown values to the index of
-  /// the corresponding value to use in `parameters`
-  /// @return a curve between 0 and 1 centered around
-  /// lhs->evaluate()==rhs->evaluate() such that it goes to 0 when the condition
-  /// is false and it goes to 1 when the condition is true
-  template <typename T>
-  auto evaluate(std::span<const T> parameters, const ExpressionMap& map) const
-      -> bool {
-    if (includeZero) {
-      return expressionNode::evaluate(val, parameters, map) >= 0;
-    }
-    return expressionNode::evaluate(val, parameters, map) > 0;
-  }
 
   [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
 
@@ -183,9 +153,11 @@ struct Condition {
   auto serialize(std::ostream& out) const -> std::ostream&;
 
   void markKnown() const;
-  void getDiscontinuities(std::unordered_set<double*>& discontinuities) const;
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>>;
   void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) const;
 
+ private:
   /// Value of the condition. The condition is true if this is greater than zero
   ExpressionNodePtr val;
 
@@ -195,6 +167,8 @@ struct Condition {
 
   /// Whether to consider the condition true if val == 0
   bool includeZero;
+  friend auto operator<<(std::ostream& out, const Condition& condition)
+      -> std::ostream&;
 };
 
 /// A Ternary operation node in the AST
@@ -204,7 +178,7 @@ struct TernaryOpNode : ExpressionNode {
   /// @param condition what to test to determine which expression to use
   /// @param valIfTrue expression to use if `condition` is true
   /// @param valIfFalse expression to use if `condition` is false
-  TernaryOpNode(std::shared_ptr<Condition> condition,
+  TernaryOpNode(std::shared_ptr<const Condition> condition,
                 ExpressionNodePtr valIfTrue, ExpressionNodePtr valIfFalse);
 
   /// Evaluates this node in the AST
@@ -215,10 +189,13 @@ struct TernaryOpNode : ExpressionNode {
   /// @return the value of the AST with `this` as a root
   template <typename T>
   auto evaluateImplementation(std::span<T> parameters,
-                              const ExpressionMap& map) const -> T {
-    return condition->evaluate(parameters, map)
-               ? expressionNode::evaluate(valIfTrue, parameters, map)
-               : expressionNode::evaluate(valIfFalse, parameters, map);
+                              const ExpressionMap& expressionMap,
+                              const ConditionMap& conditionMap) const -> T {
+    return conditionMap.at(condition)
+               ? expressionNode::evaluate(valIfTrue, parameters, expressionMap,
+                                          conditionMap)
+               : expressionNode::evaluate(valIfFalse, parameters, expressionMap,
+                                          conditionMap);
   }
 
   void getUnknowns(std::unordered_set<double*>& unknowns) override;
@@ -226,13 +203,12 @@ struct TernaryOpNode : ExpressionNode {
   auto serialize(std::ostream& out) const -> std::ostream& override;
 
   /// The condition used to determine which expression to evaluate
-  std::shared_ptr<Condition> condition;
+  std::shared_ptr<const Condition> condition;
 
   void markKnown() override;
 
-  void getDiscontinuities(
-      std::unordered_set<double*>& discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
   /// The expression to evaluate if `condition` is true
   ExpressionNodePtr valIfTrue;
@@ -259,13 +235,15 @@ struct UnaryOpNode : ExpressionNode {
   /// the corresponding value to use in `parameters`
   /// @return the value of the AST with `this` as a root
   template <typename T>
-  auto evaluateImplementation(std::span<T> parameters,
-                              const ExpressionMap& map) const -> T {
+  auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
+                              const ConditionMap& conditionMap) const -> T {
     switch (op) {
       case UnaryOp::EXP:
-        return exp(expressionNode::evaluate(operand, parameters, map));
+        return exp(
+            expressionNode::evaluate(operand, parameters, map, conditionMap));
       case UnaryOp::NEG:
-        return -(expressionNode::evaluate(operand, parameters, map));
+        return -(
+            expressionNode::evaluate(operand, parameters, map, conditionMap));
     }
   }
 
@@ -275,9 +253,8 @@ struct UnaryOpNode : ExpressionNode {
 
   void markKnown() override;
 
-  void getDiscontinuities(
-      std::unordered_set<double*>& discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
   /// The operand for the operation
   ExpressionNodePtr operand;
@@ -317,9 +294,8 @@ struct VariableNode : ExpressionNode {
 
   void markKnown() override;
 
-  void getDiscontinuities(
-      std::unordered_set<double*>& discontinuities) override;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) override;
+  [[nodiscard]] auto getConditions() const
+      -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
   /// The value of this node
   double value;
@@ -329,6 +305,15 @@ struct VariableNode : ExpressionNode {
 };
 
 namespace expressionNode {
+class InvalidNodeTypeException : public std::exception {
+  [[nodiscard]] auto what() const noexcept -> const char* override {
+    return "Invalid ExpressionNode type. Valid types are VariableNode, "
+           "BinaryOpNode, UnaryOpNode, and TernaryOpNode";
+  }
+};
+
+// TODO: add a NodeType enum and use that instead of RTTI for evaluate since
+// this is called very frequently
 
 /// Evaluates the AST with `root` as a root.
 ///
@@ -340,24 +325,24 @@ namespace expressionNode {
 /// @return the value of the AST with `root` as a root
 template <typename T>
 auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
-              const ExpressionMap& map) -> T {
+              const ExpressionMap& map, const ConditionMap& conditionMap) -> T {
   if (std::shared_ptr<VariableNode> node =
           std::dynamic_pointer_cast<VariableNode>(root)) {
     return node->evaluateImplementation(parameters, map);
   }
   if (std::shared_ptr<BinaryOpNode> node =
           std::dynamic_pointer_cast<BinaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map);
+    return node->evaluateImplementation(parameters, map, conditionMap);
   }
   if (std::shared_ptr<UnaryOpNode> node =
           std::dynamic_pointer_cast<UnaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map);
+    return node->evaluateImplementation(parameters, map, conditionMap);
   }
   if (std::shared_ptr<TernaryOpNode> node =
           std::dynamic_pointer_cast<TernaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map);
+    return node->evaluateImplementation(parameters, map, conditionMap);
   }
-  return T();
+  throw InvalidNodeTypeException{};
 }
 }  // namespace expressionNode
 
