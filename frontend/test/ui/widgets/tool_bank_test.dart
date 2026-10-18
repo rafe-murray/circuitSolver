@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:frontend/ui/view_models/tool/tool.dart';
+import 'package:frontend/ui/view_models/tool/tool_catalog.dart';
 import 'package:frontend/ui/widgets/tool_bank.dart';
 
 void main() {
@@ -19,7 +19,7 @@ void main() {
   }
 
   final voltageSource = addComponentToolGroup.tools.firstWhere(
-    (tool) => tool.id == AddComponentTool.voltageSourceId,
+    (tool) => tool.id == voltageSourceToolId,
   );
 
   testWidgets('shows one entry per tool group with the flyout collapsed', (
@@ -62,7 +62,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(picked, isNotNull);
-    expect(picked!.id, AddComponentTool.voltageSourceId);
+    expect(picked!.id, voltageSourceToolId);
     // Flyout closed again: back to one representative button per group.
     expect(find.byType(ToolButton), findsNWidgets(toolGroups.length));
   });
@@ -83,7 +83,7 @@ void main() {
     tester,
   ) async {
     final resistor = addComponentToolGroup.tools.firstWhere(
-      (tool) => tool.id == AddComponentTool.resistorId,
+      (tool) => tool.id == resistorToolId,
     );
     await tester.pumpWidget(
       wrap(selectedTool: resistor, onToolSelected: (_) {}),
@@ -91,6 +91,6 @@ void main() {
 
     final button = tester.widget<ToolButton>(find.byType(ToolButton).first);
     expect(button.selected, isTrue);
-    expect(button.meta.id, AddComponentTool.resistorId);
+    expect(button.meta.id, resistorToolId);
   });
 }
