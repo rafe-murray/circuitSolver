@@ -32,7 +32,7 @@ dev_dependencies:
     sdk: flutter
   mocktail: ^1.0.4
   flutter_lints: ^6.0.0
-  build_runner: ^2.4.6
+  build_runner: ^2.16.1
   drift_dev: ^2.34.5
   protoc_plugin: ^25.1.0
   freezed: ^4.0.1
