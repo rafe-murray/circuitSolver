@@ -124,6 +124,23 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 1800, d.getCurrent().evaluate()));
 }
 
+TEST(CircuitTest, ContradictoryCircuitHasNoSolution) {
+  CircuitGraph cg;
+  auto gen = getUuidGenerator();
+  Vertex ref(gen(), 0);
+  Vertex v1(gen());
+  Edge vs1(gen(), VoltageSource({.from = ref, .to = v1}, 5));
+  Edge vs2(gen(), VoltageSource({.from = ref, .to = v1}, 10));
+  EXPECT_TRUE(cg.addVertex(ref));
+  EXPECT_TRUE(cg.addVertex(v1));
+  EXPECT_TRUE(cg.addEdge(vs1));
+  EXPECT_TRUE(cg.addEdge(vs2));
+
+  auto result = cg.solveCircuit();
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), circuitsolver::ErrorType::NoSolution);
+}
+
 // TODO: update these files
 TEST(CircuitTest, BasicCircuitFromProtobuf) {
   auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");

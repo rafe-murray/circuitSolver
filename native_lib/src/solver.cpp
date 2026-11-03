@@ -22,6 +22,7 @@
 #include "circuit_solver/expressionNode.h"
 
 namespace circuitsolver::solver {
+using constants::solutionCostThreshold;
 using constants::unknownSeedStdDeviation;
 
 Solution::Solution(const std::vector<Expression>& solvedExpressions,
@@ -132,10 +133,30 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
     }
     auto solution = partitionSolver->Solve(expressions, conditionMaps.at(i));
     if (solution.has_value()) {
-      solutions.insert(solutions.begin() + i, solution.value());
-      resetUnknowns(expressions);
+      solutions.push_back(std::move(solution.value()));
     }
+    resetUnknowns(expressions);
   }
-  return *std::ranges::min_element(solutions, {}, &Solution::getCost);
+  if (solutions.empty()) {
+    return std::unexpected{
+        CircuitSolverError{
+            ErrorType::NoSolution,
+            "No solution was found for the given inputs",
+        },
+    };
+  }
+  const auto& bestSolution =
+      *std::ranges::min_element(solutions, {}, &Solution::getCost);
+  if (bestSolution.getCost() > solutionCostThreshold) {
+    return std::unexpected{
+        CircuitSolverError{
+            ErrorType::NoSolution,
+            fmt::format("No solution was within cost threshold {}. The best "
+                        "cost was {}",
+                        solutionCostThreshold, bestSolution.getCost()),
+        },
+    };
+  }
+  return bestSolution;
 }
 }  // namespace circuitsolver::solver

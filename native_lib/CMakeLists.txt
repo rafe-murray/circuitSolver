@@ -133,6 +133,7 @@ if(CIRCUITSOLVER_BUILD_TESTS)
     test/circuit.cpp
     test/cppApi.cpp
     test/math.cpp
+    test/solver.cpp
     test/utils.cpp
   )
   target_compile_definitions(circuitsolverTests PRIVATE
