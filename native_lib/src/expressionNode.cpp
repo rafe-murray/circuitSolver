@@ -129,6 +129,8 @@ auto Condition::getError() const -> std::shared_ptr<BinaryOpNode> {
   return std::make_shared<BinaryOpNode>(val, constraint, BinaryOp::SUB);
 }
 
+auto Condition::getConstraint() const -> double* { return &constraint->value; }
+
 auto BinaryOpNode::serialize(std::ostream& out) const -> std::ostream& {
   out << "(" << lhs;
   switch (op) {

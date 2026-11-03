@@ -57,6 +57,10 @@ auto NonLinearPartitionSolver::Solve(
   for (const auto& expression : expressions) {
     expression.addToProblem(problem, conditionMap);
   }
+  for (const auto& conditionPair : conditionMap) {
+    Expression::addConditionToProblem(problem, conditionPair.first,
+                                      conditionMap);
+  }
   ceres::Solver::Summary summary;
   // TODO: move default options to inline here
   ceresSolver->Solve(getDefaultOptions(), &problem, &summary);

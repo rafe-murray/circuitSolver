@@ -337,13 +337,6 @@ void Expression::addToProblem(ceres::Problem& problem,
   for (size_t i = 0; i < unknowns->size(); i++) {
     costFunction->AddParameterBlock(1);
   }
-  // for (int i = 0; i < numDiscontinuities; i++) {
-  // problem.SetParameterLowerBound(unknowns, i, val)
-  // }
-  // auto discontinuityErrors = getDiscontinuityErrors();
-  // for (auto error : discontinuityErrors) {
-  //   error.addToProblem(problem);
-  // }
   costFunction->SetNumResiduals(1);
 
   // NOLINTBEGIN(cppcoreguidelines-owning-memory)
@@ -352,6 +345,19 @@ void Expression::addToProblem(ceres::Problem& problem,
                            *unknowns);
   // NOLINTEND(cppcoreguidelines-owning-memory)
 }
+
+void Expression::addConditionToProblem(
+    ceres::Problem& problem, const std::shared_ptr<const Condition>& condition,
+    const ConditionMap& conditionMap) {
+  Expression{condition->getError()}.addToProblem(problem, conditionMap);
+  double* constraint = condition->getConstraint();
+  if (conditionMap.at(condition)) {
+    problem.SetParameterLowerBound(constraint, 0, 0.0);
+  } else {
+    problem.SetParameterUpperBound(constraint, 0, 0.0);
+  }
+}
+
 auto Expression::defaultConditionMap() const -> ConditionMap {
   auto cm = ConditionMap{};
   auto conditions = getConditions();

@@ -3,6 +3,7 @@
 
 #include <span>
 #include <utility>
+#include <vector>
 
 #include "circuit_solver/expressionNode.h"
 
@@ -16,14 +17,17 @@ class ExpressionCostFunctor {
 
   template <typename T>
   auto operator()(T const* const* parameters, T* residuals) -> bool {
-    // We have only one residual and parameters block
-    std::span<T const* const> parameters_by_residual_span{parameters, 1};
+    // Each unknown is its own size 1 parameter block. Ceres only stores blocks
+    // contiguously when computing jacobians, so they must be read individually
+    std::span<T const* const> parameters_by_block_span{parameters, map.size()};
     std::span<T> residuals_span{residuals, 1};
 
-    std::span<const T> parameters_span{
-        parameters_by_residual_span[0],
-        map.size(),
-    };
+    std::vector<T> parameter_values;
+    parameter_values.reserve(map.size());
+    for (T const* block : parameters_by_block_span) {
+      parameter_values.push_back(*block);
+    }
+    std::span<const T> parameters_span{parameter_values};
     residuals_span[0] = expressionNode::evaluate(
         expressionNode, parameters_span, map, conditionMap);
     return true;

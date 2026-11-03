@@ -144,6 +144,17 @@ class Condition : public std::enable_shared_from_this<Condition> {
 
   [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
 
+  /// Gets the unknown that `getError` equates with the value of this condition.
+  /// Bounding it during optimization bounds the value of this condition
+  ///
+  /// @return a pointer to the value of the unknown
+  [[nodiscard]] auto getConstraint() const -> double*;
+
+  /// Stores pointers to all unknown values in the AST with `this` as a root in
+  /// `unknowns`
+  ///
+  /// @param unknowns a set of unknown values to add the unknowns in this AST
+  /// to. Unknowns in this AST may or may not be already present already;
   void getUnknowns(std::unordered_set<double*>& unknowns) const;
 
   /// Prints the node to `out`

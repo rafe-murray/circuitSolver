@@ -145,6 +145,17 @@ class Expression {
                     const ConditionMap& conditionMap) const;
   void addToProblem(ceres::Problem& problem) const;
 
+  /// Restricts `problem` to solutions where `condition` has the value given by
+  /// `conditionMap`
+  ///
+  /// @param problem the problem to add the restriction to
+  /// @param condition the condition to enforce
+  /// @param conditionMap the assumed value of each condition
+  static void addConditionToProblem(
+      ceres::Problem& problem,
+      const std::shared_ptr<const Condition>& condition,
+      const ConditionMap& conditionMap);
+
   void setConditionMap(const ConditionMap& conditionMap);
 
  private:
