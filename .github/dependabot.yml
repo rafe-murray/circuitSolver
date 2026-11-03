@@ -14,6 +14,10 @@ updates:
     directories:
       - "/native_lib"
       - "/backend"
+    groups:
+      vcpkg:
+        patterns:
+          - "*"
     schedule:
       interval: "weekly"
 
