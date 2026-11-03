@@ -12,5 +12,5 @@ inline constexpr int maxIterations = 1000;
 /// Maximum non-monotonic steps
 inline constexpr int maxConsecutiveNonMonotonicSteps = 10;
 /// Cost threshold below which solutions are considered solved
-inline constexpr double solutionCostThreshold = 1e-15;
+inline constexpr double solutionCostThreshold = 1e-9;
 }  // namespace circuitsolver::constants

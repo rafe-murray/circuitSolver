@@ -13,6 +13,7 @@
       "name": "tests",
       "inherits": "vcpkg",
       "cacheVariables": {
+        "VCPKG_MANIFEST_FEATURES": "test",
         "CIRCUITSOLVER_BUILD_TESTS": "ON",
         "CIRCUITSOLVER_TEST_COVERAGE": true
       }

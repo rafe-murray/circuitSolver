@@ -113,7 +113,8 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  ASSERT_TRUE(cg.solveCircuit());
+  auto result = cg.solveCircuit();
+  ASSERT_TRUE(result) << result.error().message();
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(25.0 / 3, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 300, r1.getCurrent().evaluate()));
@@ -121,6 +122,23 @@ TEST(CircuitTest, IdealDiode) {
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 450, r3.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 360, r4.getCurrent().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1.0 / 1800, d.getCurrent().evaluate()));
+}
+
+TEST(CircuitTest, ContradictoryCircuitHasNoSolution) {
+  CircuitGraph cg;
+  auto gen = getUuidGenerator();
+  Vertex ref(gen(), 0);
+  Vertex v1(gen());
+  Edge vs1(gen(), VoltageSource({.from = ref, .to = v1}, 5));
+  Edge vs2(gen(), VoltageSource({.from = ref, .to = v1}, 10));
+  EXPECT_TRUE(cg.addVertex(ref));
+  EXPECT_TRUE(cg.addVertex(v1));
+  EXPECT_TRUE(cg.addEdge(vs1));
+  EXPECT_TRUE(cg.addEdge(vs2));
+
+  auto result = cg.solveCircuit();
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), circuitsolver::ErrorType::NoSolution);
 }
 
 // TODO: update these files
@@ -166,7 +184,6 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   absl::Status status =
       google::protobuf::json::MessageToJsonString(buffer, &output);
   ASSERT_TRUE(status.ok());
-  // std::cout << output << std::endl;
 }
 
 // TEST(CircuitTest, LargeCircuit) {}

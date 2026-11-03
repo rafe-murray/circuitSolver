@@ -2,41 +2,21 @@
 
 #include <uuid.h>
 
+#include <cassert>
+#include <memory>
 #include <optional>
+#include <span>
+#include <utility>
 
 #include "circuit_solver/branch.h"
+#include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 
 Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
     : id(id), branch(std::move(branch)) {}
-// template<typename T>
-// Edge::Edge(int id, const T& branch)
-//     : id(id), branch(std::make_unique<T>(branch)) {}
-// For hash map; do not use
-Edge::Edge() = default;
 
-// NOTE: these might not be correct
 Edge::Edge(const Edge& other) : id(other.id), branch(other.branch->copy()) {}
-auto Edge::operator=(const Edge& other) -> Edge& {
-  if (this == &other) {
-    return *this;
-  }
-  this->id = other.id;
-  this->branch = other.branch->copy();
-  return *this;
-}
-// Edge::Edge(Edge&& rhs) noexcept : id(rhs.id), branch(std::move(rhs.branch)) {
-//   rhs.branch = nullptr;
-// }
-// auto Edge::operator=(Edge&& other) noexcept -> Edge& {
-//   if (this == &other) {
-//     return *this;
-//   }
-//   this->id = other.id;
-//   this->branch = std::move(other.branch);
-//   return *this;
-// }
 
 auto Edge::getId() const -> uuids::uuid { return id; };
 auto Edge::getFrom() const -> Vertex { return branch->getFrom(); };
@@ -50,8 +30,6 @@ auto Edge::getCurrent() const -> Expression { return branch->getCurrent(); }
 auto Edge::getConstraint() const -> Expression {
   return branch->getConstraint();
 }
-auto Edge::operator==(const Edge& rhs) const -> bool { return id == rhs.id; }
-// Edge& operator=(const Edge& other);
 
 void Edge::toProto(proto::Edge* proto) {
   branch->toProto(proto);

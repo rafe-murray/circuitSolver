@@ -1,11 +1,20 @@
 #include "circuit_solver/expression.h"
 
+#include <ceres/dynamic_autodiff_cost_function.h>
+#include <ceres/loss_function.h>
+#include <ceres/problem.h>
+#include <ceres/solver.h>
+#include <ceres/types.h>
+
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <span>
 #include <stdexcept>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "circuit_solver/config.h"
@@ -251,14 +260,18 @@ auto Expression::isConstant() const -> bool {
 //   return *unknowns;
 // }
 
+void Expression::setConditionMap(const ConditionMap& conditionMap) {
+  this->conditionMap = std::make_shared<ConditionMap>(conditionMap);
+}
+
 auto Expression::getUnknowns() -> std::vector<double*> {
   if (unknowns == nullptr) {
-    updateMapAndUnknowns();
+    updateInternalState();
   }
   return *unknowns;
 }
 
-void Expression::updateMapAndUnknowns() const {
+void Expression::updateInternalState() const {
   map = std::make_shared<ExpressionMap>();
   unknowns = std::make_shared<std::vector<double*>>();
 
@@ -277,33 +290,21 @@ void Expression::updateMapAndUnknowns() const {
   // NOLINTEND(bugprone-nondeterministic-pointer-iteration-order)
 }
 
-auto Expression::getDiscontinuities() -> std::unordered_set<double*> {
-  std::unordered_set<double*> discontinuities;
-  root->getDiscontinuities(discontinuities);
-  return discontinuities;
-}
-
-auto Expression::getDiscontinuityErrors() -> std::vector<Expression> {
-  std::vector<ExpressionNodePtr> errors;
-  std::vector<Expression> errorExpressions;
-  root->getDiscontinuityError(errors);
-  errorExpressions.reserve(errors.size());
-  for (const auto& error : errors) {
-    errorExpressions.push_back(Expression(error));
-  }
-  return errorExpressions;
+auto Expression::getConditions() const
+    -> std::unordered_set<std::shared_ptr<const Condition>> {
+  return root->getConditions();
 }
 
 auto Expression::getNumUnknowns() const -> size_t {
   if (unknowns == nullptr) {
-    updateMapAndUnknowns();
+    updateInternalState();
   }
   return unknowns->size();
 }
 
 auto Expression::getMap() const -> const ExpressionMap& {
   if (map == nullptr) {
-    updateMapAndUnknowns();
+    updateInternalState();
   }
   return *map;
 }
@@ -316,13 +317,18 @@ auto Expression::getMap() const -> const ExpressionMap& {
 //       costFunctor);
 // }
 
-void Expression::addToProblem(ceres::Problem& problem) {
+void Expression::addToProblem(ceres::Problem& problem) const {
+  addToProblem(problem, defaultConditionMap());
+}
+
+void Expression::addToProblem(ceres::Problem& problem,
+                              const ConditionMap& conditionMap) const {
   if (map == nullptr) {
-    updateMapAndUnknowns();
+    updateInternalState();
   }
   // Ceres takes ownership
   // NOLINTBEGIN(cppcoreguidelines-owning-memory)
-  auto* costFunctor = new ExpressionCostFunctor(root, *map);
+  auto* costFunctor = new ExpressionCostFunctor(root, *map, conditionMap);
   auto* costFunction =
       new ceres::DynamicAutoDiffCostFunction<ExpressionCostFunctor>(
           costFunctor);
@@ -330,10 +336,6 @@ void Expression::addToProblem(ceres::Problem& problem) {
 
   for (size_t i = 0; i < unknowns->size(); i++) {
     costFunction->AddParameterBlock(1);
-  }
-  auto discontinuityErrors = getDiscontinuityErrors();
-  for (auto error : discontinuityErrors) {
-    error.addToProblem(problem);
   }
   costFunction->SetNumResiduals(1);
 
@@ -344,16 +346,43 @@ void Expression::addToProblem(ceres::Problem& problem) {
   // NOLINTEND(cppcoreguidelines-owning-memory)
 }
 
+void Expression::addConditionToProblem(
+    ceres::Problem& problem, const std::shared_ptr<const Condition>& condition,
+    const ConditionMap& conditionMap) {
+  Expression{condition->getError()}.addToProblem(problem, conditionMap);
+  double* constraint = condition->getConstraint();
+  if (conditionMap.at(condition)) {
+    problem.SetParameterLowerBound(constraint, 0, 0.0);
+  } else {
+    problem.SetParameterUpperBound(constraint, 0, 0.0);
+  }
+}
+
+auto Expression::defaultConditionMap() const -> ConditionMap {
+  auto cm = ConditionMap{};
+  auto conditions = getConditions();
+  for (const auto& condition : conditions) {
+    cm[condition] = false;
+  }
+  return cm;
+}
+
 auto Expression::evaluate() const -> double {
   auto parameters = std::vector<double>(getNumUnknowns());
   ExpressionMap map = getMap();
+  if (conditionMap == nullptr) {
+    conditionMap = std::make_shared<ConditionMap>(defaultConditionMap());
+  }
   return expressionNode::evaluate(root, std::span<const double>{parameters},
-                                  map);
+                                  map, *conditionMap);
 }
 
 auto Expression::evaluate(std::span<const double> parameters) const -> double {
   ExpressionMap map = getMap();
-  return expressionNode::evaluate(root, parameters, map);
+  if (conditionMap == nullptr) {
+    conditionMap = std::make_shared<ConditionMap>(defaultConditionMap());
+  }
+  return expressionNode::evaluate(root, parameters, map, *conditionMap);
 }
 
 auto Expression::getPtrToUnknown() -> double* {
