@@ -1,5 +1,4 @@
-#ifndef EXPRESSION_H
-#define EXPRESSION_H
+#pragma once
 
 #include <ceres/ceres.h>
 #include <ceres/problem.h>
@@ -14,16 +13,13 @@
 #include "circuit_solver/expressionCostFunctor.h"
 #include "circuit_solver/expressionNode.h"
 
-class Expression;
-
-// TODO: use this namespace for whole file
 namespace circuitsolver::expression {
+class Expression;
 
 /// Exponentiates an expression
 ///
 /// @return an Expression representing e^this
 auto exp(Expression arg) -> Expression;
-}  // namespace circuitsolver::expression
 
 /// Represents an arithmetic expression that can be built with variables of
 /// unknown values
@@ -42,19 +38,19 @@ class Expression {
 
   /// Creates an expression with a single known value
   ///
-  /// @param value - the value of the resultant Expression
+  /// @param value the value of the resultant Expression
   Expression(double value);
 
   /// Adds two expressions
   ///
-  /// @param rhs - the expression to add to this one
+  /// @param rhs the expression to add to this one
   /// @return a new Expression that represents this + rhs
   auto operator+(Expression rhs) const -> Expression;
 
   /// Subtracts two expressions
   ///
-  /// @param rhs - the expression to subtract from this one
-  /// @return a new Expression that represents this - rhs
+  /// @param rhs the expression to subtract from this one
+  /// @return a new Expression that represents `this - rhs`
   auto operator-(Expression rhs) const -> Expression;
 
   /// Multiplies two expressions
@@ -100,6 +96,8 @@ class Expression {
   /// @return true if this is a constant or false if there are one or more
   /// unknowns
   auto isConstant() const -> bool;
+
+  auto isLinear() const -> bool;
 
   /// Gets the unknowns this Expression depends on
   ///
@@ -176,9 +174,9 @@ class Expression {
 
   friend auto operator<<(std::ostream& out, const Expression& e)
       -> std::ostream&;
-  friend auto circuitsolver::expression::exp(Expression arg) -> Expression;
+  friend auto exp(Expression arg) -> Expression;
 };
 
 auto getDefaultOptions() -> ceres::Solver::Options;
 
-#endif
+}  // namespace circuitsolver::expression

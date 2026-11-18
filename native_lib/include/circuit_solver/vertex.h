@@ -1,5 +1,4 @@
-#ifndef VERTEX_H
-#define VERTEX_H
+#pragma once
 
 #include <stduuid/uuid.h>
 
@@ -11,6 +10,8 @@
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 
+namespace circuitsolver::vertex {
+using circuitsolver::expression::Expression;
 // TODO: add a cpp file
 class Vertex {
  public:
@@ -47,5 +48,4 @@ class Vertex {
   Expression voltage;
 };
 using VertexMap = std::unordered_map<uuids::uuid, std::unique_ptr<Vertex>>;
-
-#endif
+}  // namespace circuitsolver::vertex

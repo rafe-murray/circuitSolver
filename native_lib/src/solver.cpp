@@ -24,9 +24,11 @@
 namespace circuitsolver::solver {
 using constants::solutionCostThreshold;
 using constants::unknownSeedStdDeviation;
+using errors::ErrorType;
 
-Solution::Solution(const std::vector<Expression>& solvedExpressions,
-                   ConditionMap conditionMap, double cost)
+Solution::Solution(
+    const std::vector<circuitsolver::expression::Expression>& solvedExpressions,
+    ConditionMap conditionMap, double cost)
     : cost(cost), conditionMap(std::move(conditionMap)) {
   for (auto expression : solvedExpressions) {
     for (auto* unknown : expression.getUnknowns()) {
@@ -53,7 +55,7 @@ NonLinearPartitionSolver::NonLinearPartitionSolver(
 auto NonLinearPartitionSolver::Solve(
     const std::vector<Expression>& expressions,
     std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
-    -> std::expected<Solution, CircuitSolverError> {
+    -> std::expected<Solution, Error> {
   auto problem = ceres::Problem{};
   for (const auto& expression : expressions) {
     expression.addToProblem(problem, conditionMap);
@@ -64,10 +66,10 @@ auto NonLinearPartitionSolver::Solve(
   }
   ceres::Solver::Summary summary;
   // TODO: move default options to inline here
-  ceresSolver->Solve(getDefaultOptions(), &problem, &summary);
+  ceresSolver->Solve(expression::getDefaultOptions(), &problem, &summary);
   if (!summary.IsSolutionUsable()) {
     return std::unexpected{
-        CircuitSolverError{
+        Error{
             ErrorType::NoSolution,
             "No solution was found for the given inputs",
         },
@@ -77,10 +79,61 @@ auto NonLinearPartitionSolver::Solve(
   return Solution{expressions, conditionMap, summary.final_cost};
 }
 
+auto LinearPartitionSolver::Solve(
+    const std::vector<Expression>& expressions,
+    std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+    -> std::expected<Solution, Error> {
+  // We have a set of expressions that we know are equal to 0.
+  // We want to determine if they can all be represented as linear combinations
+  // of the unknowns If yes, then we also need to determine the coefficients of
+  // this matrix
+  // We have already applied arithmetic identities to simplify the expressions
+  // (we do this in the factory constructors for `Expression`) Some rules:
+  // - If there is an exp node then there is no linear system
+  // - If any Variable multiplies or divides another variable at any level,
+  // there is no linear system
+  // - If any Variable is a divisor, a linear system can only be constructed if
+  // it is not used anywhere else, except also as a divisor (simpler to say it
+  // is never a linear system)
+  //
+  // We have a tree to walk
+  //
+  // Some examples:
+  // x + y + z: linear
+  //
+  //     +
+  //    / \
+  //   +   z
+  //  / \
+  // x   y
+  //
+  // x * y + 1: non-linear
+  //
+  //     +
+  //    / \
+  //   *   1
+  //  / \
+  // x   y
+  //
+  // (x + y) / 3: linear
+  //
+  // Let f(x) denote a set of nodes dependent on variable x that is connected by
+  // * and / nodes. Then f(x) +- y is only linear if y is either:
+  // - not dependent on x
+  // - A constant multiple of f(x)
+  // ---------------------------------------------------------------------------
+  // After we've determined that the system is linear:
+  //
+  // - Need the coefficients of each Variable (or reciprocal, see above)
+  // - We also need to ensure that we properly manage cases where there are
+  // multiple terms with the same variable but different coefficients. E.g., x +
+  // 1 + 2x
+}
+
 void Solver::resetUnknowns(const std::vector<Expression>& expressions) {
   auto rd = std::random_device{};
   auto rng = std::mt19937{rd()};
-  auto dist = std::normal_distribution<>{0.0, unknownSeedStdDeviation};
+  auto dist = std::normal_distribution{0.0, unknownSeedStdDeviation};
   for (auto expression : expressions) {
     for (auto* unknown : expression.getUnknowns()) {
       *unknown = dist(rng);
@@ -93,7 +146,7 @@ Solver::Solver()
 Solver::Solver(std::unique_ptr<PartitionSolver> partitionSolver)
     : partitionSolver(std::move(partitionSolver)) {}
 auto Solver::Solve(const std::vector<Expression>& expressions)
-    -> std::expected<Solution, CircuitSolverError> {
+    -> std::expected<Solution, errors::Error> {
   constexpr int maxNumConditions = 32;
   auto conditions = std::unordered_set<std::shared_ptr<const Condition>>{};
   for (const auto& expression : expressions) {
@@ -102,7 +155,7 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
   int numConditions = static_cast<int>(conditions.size());
   if (numConditions >= maxNumConditions) {
     return std::unexpected{
-        CircuitSolverError{
+        Error{
             ErrorType::TooManyDiscontinuities,
             fmt::format(
                 "Cannot solve circuit since it has too many elements with "
@@ -139,7 +192,7 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
   }
   if (solutions.empty()) {
     return std::unexpected{
-        CircuitSolverError{
+        Error{
             ErrorType::NoSolution,
             "No solution was found for the given inputs",
         },
@@ -149,7 +202,7 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
       *std::ranges::min_element(solutions, {}, &Solution::getCost);
   if (bestSolution.getCost() > solutionCostThreshold) {
     return std::unexpected{
-        CircuitSolverError{
+        Error{
             ErrorType::NoSolution,
             fmt::format("No solution was within cost threshold {}. The best "
                         "cost was {}",
@@ -158,5 +211,11 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
     };
   }
   return bestSolution;
+}
+auto isExpressionLinear(const Expression& expression) -> bool { return {}; }
+
+auto isPartitionLinear(const std::vector<Expression>& expressions,
+                       ConditionMap conditionMap) -> bool {
+  return {};
 }
 }  // namespace circuitsolver::solver

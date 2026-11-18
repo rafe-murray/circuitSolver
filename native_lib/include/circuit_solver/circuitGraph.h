@@ -22,13 +22,21 @@
 //  - Cases where there is no solution (e.g. no possible intersection)
 //  - Maybe include the relative tolerance in the printed results
 
+namespace circuitsolver::circuitgraph {
+
+using circuitsolver::edge::Edge;
+using circuitsolver::edge::EdgeMap;
+using circuitsolver::expression::Expression;
+using circuitsolver::vertex::Vertex;
+using circuitsolver::vertex::VertexMap;
+
 class CircuitGraph {
  public:
   /// Solves a circuit
   ///
   /// @return a reference to `this` or an error
   auto solveCircuit() -> std::expected<std::reference_wrapper<CircuitGraph>,
-                                       circuitsolver::CircuitSolverError>;
+                                       circuitsolver::errors::Error>;
 
   /**
    * Creates a new graph instance
@@ -158,9 +166,12 @@ class CircuitGraph {
   int solveAttempts = 0;
   static constexpr int maxSolveAttempts = 2;  // High but bounded
 };
+}  // namespace circuitsolver::circuitgraph
 
 /// Writes a string representation of a graph
 /// @param out the stream to write to
 /// @param cg the graph to write
 /// @return `out`
-auto operator<<(std::ostream& out, const CircuitGraph& cg) -> std::ostream&;
+auto operator<<(std::ostream& out,
+                const circuitsolver::circuitgraph::CircuitGraph& cg)
+    -> std::ostream&;

@@ -7,6 +7,7 @@
 #else
 #define EXPORT
 #endif
+#include "circuit_solver/c_errors.h"
 
 // NOLINTBEGIN(modernize-*,cppcoreguidelines-macro-usage)
 
@@ -30,8 +31,9 @@
  * message use `getErrorMessage(errno)`
  */
 EXPORT
-int solveGraphFromBuffer(void* inputBuffer, int inputLength,
-                         void** outputBuffer, int* outputLength);
+circuitsolver_error_t solveGraphFromBuffer(void* inputBuffer, int inputLength,
+                                           void** outputBuffer,
+                                           int* outputLength);
 
 /**
  * Frees the memory associated with a __returned__ CircuitGraphMessage buffer
@@ -70,7 +72,8 @@ void destroyGraphJson(const char* graphJson);
  * message use `getErrorMessage(errno)`
  */
 EXPORT
-int solveGraphFromJson(const char* inputJson, char** outputJson);
+circuitsolver_error_t solveGraphFromJson(const char* inputJson,
+                                         char** outputJson);
 
 /**
  * Get a human readable message given an error number
@@ -80,11 +83,7 @@ int solveGraphFromJson(const char* inputJson, char** outputJson);
  * not be freed
  */
 EXPORT
-const char* getErrorMessage(int errorNumber);
-
-#define CIRCUITSOLVER_ERROR_INVALID_INPUT 1
-#define CIRCUITSOLVER_ERROR_NO_SOLUTION 2
-#define CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION 3
+const char* getErrorMessage(circuitsolver_error_t errorNumber);
 
 // NOLINTEND(modernize-*,cppcoreguidelines-macro-usage)
 
@@ -98,26 +97,27 @@ const char* getErrorMessage(int errorNumber);
 #include "circuit_solver/proto.h"
 
 namespace circuitsolver {
+using errors::Error;
 /// Solve a circuit
 ///
 /// @param input the circuit to solve
 /// @return the solved circuit or an error
 auto solveCircuit(const proto::CircuitGraph& input)
-    -> std::expected<proto::CircuitGraph, CircuitSolverError>;
+    -> std::expected<proto::CircuitGraph, Error>;
 
 /// Solves a circuit from the string representation of its protobuf
 ///
 /// @param input the circuit to solve
 /// @return the solved circuit, serialized from a protobuf, or an error
 auto solveGraphFromString(std::string_view input)
-    -> std::expected<std::string, CircuitSolverError>;
+    -> std::expected<std::string, Error>;
 
 /// Solves a circuit from its JSON representation
 ///
 /// @param input the circuit to solve
 /// @return the solved circuit, serialized as JSON, or an error
 auto solveGraphFromJson(std::string_view input)
-    -> std::expected<std::string, CircuitSolverError>;
+    -> std::expected<std::string, Error>;
 
 }  // namespace circuitsolver
 
