@@ -1,6 +1,7 @@
 #include "circuit_solver/expressionIterator.h"
 
 #include <memory>
+#include <utility>
 
 #include "circuit_solver/expressionNode.h"
 namespace circuitsolver::expression {
@@ -27,30 +28,26 @@ auto ExpressionIterator::operator==(const ExpressionIterator& other) const
   return current == other.current;
 }
 void ExpressionIterator::advance() {
+  auto insertIfNotVisited = [&](const ExpressionNodePtr& node) -> void {
+    if (node != nullptr && !visited.contains(node)) {
+      stack.push({.node = node});
+    }
+  };
   while (!stack.empty()) {
-    Frame& f = stack.top();
+    // copy out of the stack so the frame stays valid across pushes/pops
+    Frame f = std::move(stack.top());
     stack.pop();
-    auto insertIfNotVisited = [&](const ExpressionNodePtr& node) -> void {
-      if (!visited.contains(node)) {
-        stack.push({.node = node});
-      }
-    };
     if (f.expanded) {  // all children already emitted
-      current = f.node;
-      stack.pop();
+      current = std::move(f.node);
       return;
     }
     if (!visited.insert(f.node).second) {  // already handled via another parent
-      stack.pop();
       continue;
     }
-    f.expanded = true;
-    ExpressionNodePtr node =
-        f.node;  // copy before pushing; don't hold f across pushes
+    ExpressionNodePtr node = f.node;
+    // Re-push this node so it is emitted after its children
+    stack.push({.node = std::move(f.node), .expanded = true});
     // Push children onto the stack
-    if (node == nullptr) {
-      continue;
-    }
     switch (node->kind()) {
       case ExpressionNode::Kind::BinaryOp: {
         auto binOp = std::static_pointer_cast<BinaryOpNode>(node);
