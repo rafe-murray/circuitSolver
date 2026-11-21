@@ -165,6 +165,7 @@ class Expression {
               throw InvalidEnumValue{fmt::format("Unknown Binary Op: {}",
                                                  fmt::underlying(binOp->op))};
           }
+          break;
         }
         case ExpressionNode::Kind::TernaryOp: {
           auto ternOp = std::static_pointer_cast<TernaryOpNode>(node);
@@ -173,6 +174,7 @@ class Expression {
           } else {
             values[ternOp] = values[ternOp->valIfFalse];
           }
+          break;
         }
         case ExpressionNode::Kind::UnaryOp: {
           auto unOp = std::static_pointer_cast<UnaryOpNode>(node);
@@ -187,6 +189,7 @@ class Expression {
               throw InvalidEnumValue{fmt::format("Unknown Unary Op: {}",
                                                  fmt::underlying(unOp->op))};
           }
+          break;
         }
         case ExpressionNode::Kind::Variable: {
           auto variable = std::static_pointer_cast<VariableNode>(node);
