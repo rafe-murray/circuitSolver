@@ -5,13 +5,23 @@
 #include <stduuid/uuid.h>
 
 #include <string>
+#include <utility>
 
 #include "circuit_solver/branch.h"
 #include "circuit_solver/circuitGraph.h"
 #include "circuit_solver/edge.h"
+#include "circuit_solver/errors.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 #include "utils.h"
+
+using circuitsolver::branch::IdealDiode;
+using circuitsolver::branch::RealDiode;
+using circuitsolver::branch::Resistor;
+using circuitsolver::branch::VoltageSource;
+using circuitsolver::circuitgraph::CircuitGraph;
+using circuitsolver::edge::Edge;
+using circuitsolver::vertex::Vertex;
 
 TEST(CircuitTest, BuildBasicCircuit) {
   CircuitGraph cg;
@@ -34,7 +44,7 @@ TEST(CircuitTest, BuildBasicCircuit) {
   EXPECT_TRUE(cg.addEdge(vs));
   EXPECT_TRUE(cg.addEdge(r1));
   EXPECT_TRUE(cg.addEdge(r2));
-  ASSERT_TRUE(cg.solveCircuit());
+  ASSERT_TRUE(cg.solveCircuit().has_value());
   EXPECT_TRUE(IsWithinRelativeTolerance(ref.getVoltage().evaluate(), 0));
   EXPECT_TRUE(IsWithinRelativeTolerance(5, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(3, v2.getVoltage().evaluate()));
@@ -76,7 +86,7 @@ TEST(CircuitTest, RealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  ASSERT_TRUE(cg.solveCircuit());
+  ASSERT_TRUE(cg.solveCircuit().has_value());
   EXPECT_TRUE(IsWithinRelativeTolerance(8.595, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(8.006, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(337.17e-6, d.getCurrent().evaluate()));
@@ -138,7 +148,8 @@ TEST(CircuitTest, ContradictoryCircuitHasNoSolution) {
 
   auto result = cg.solveCircuit();
   ASSERT_FALSE(result);
-  EXPECT_EQ(result.error().type(), circuitsolver::ErrorType::NoSolution);
+  EXPECT_EQ(result.error().type(),
+            circuitsolver::errors::ErrorType::NoSolution);
 }
 
 // TODO: update these files
@@ -146,13 +157,14 @@ TEST(CircuitTest, BasicCircuitFromProtobuf) {
   auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");
   auto cgOptionalUnsolved = CircuitGraph::fromProto(cgmUnsolved);
   ASSERT_TRUE(cgOptionalUnsolved.has_value());
-  auto cgUnsolved = cgOptionalUnsolved->get();
-  ASSERT_TRUE(cgUnsolved->solveCircuit());
+  auto cgUnsolved = std::move(cgOptionalUnsolved.value());
+  auto result = cgUnsolved->solveCircuit();
+  ASSERT_TRUE(result.has_value());
 
   auto cgmSolved = GetMessageFromJsonFile("001-solved.json");
   auto cgOptionalSolved = CircuitGraph::fromProto(cgmSolved);
   ASSERT_TRUE(cgOptionalSolved.has_value());
-  auto cgSolved = cgOptionalSolved->get();
+  auto cgSolved = std::move(cgOptionalSolved.value());
   ASSERT_EQ(*cgUnsolved, *cgSolved);
 }
 
@@ -178,7 +190,8 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   EXPECT_TRUE(cg.addEdge(vs));
   EXPECT_TRUE(cg.addEdge(r1));
   EXPECT_TRUE(cg.addEdge(r2));
-  cg.solveCircuit();
+  auto result = cg.solveCircuit();
+  ASSERT_TRUE(result.has_value());
   auto buffer = cg.toProto();
   std::string output;
   absl::Status status =

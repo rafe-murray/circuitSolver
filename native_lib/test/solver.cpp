@@ -15,9 +15,10 @@
 #include "circuit_solver/expression.h"
 #include "circuit_solver/expressionNode.h"
 
-using circuitsolver::CircuitSolverError;
-using circuitsolver::ErrorType;
 using circuitsolver::constants::solutionCostThreshold;
+using circuitsolver::errors::Error;
+using circuitsolver::errors::ErrorType;
+using circuitsolver::expression::Expression;
 using circuitsolver::solver::PartitionSolver;
 using circuitsolver::solver::Solution;
 using circuitsolver::solver::Solver;
@@ -33,11 +34,11 @@ class FakePartitionSolver : public PartitionSolver {
   auto Solve(
       const std::vector<Expression>& expressions,
       std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
-      -> std::expected<Solution, CircuitSolverError> override {
+      -> std::expected<Solution, Error> override {
     auto cost = costs.at(nextPartition++);
     if (!cost.has_value()) {
       return std::unexpected{
-          CircuitSolverError{ErrorType::NoSolution, "Partition failed"},
+          Error{ErrorType::NoSolution, "Partition failed"},
       };
     }
     return Solution{expressions, std::move(conditionMap), *cost};
@@ -50,13 +51,12 @@ class FakePartitionSolver : public PartitionSolver {
 
 /// Solves an expression with two conditions, which has four partitions
 auto solveWithCosts(std::vector<std::optional<double>> costs)
-    -> std::expected<Solution, CircuitSolverError> {
+    -> std::expected<Solution, Error> {
   auto x = Expression{};
   auto y = Expression{};
   auto expression = Expression::makeConditional(x > Expression(0.0), x, y) +
                     Expression::makeConditional(y > Expression(0.0), y, x);
-  auto solver =
-      Solver{std::make_unique<FakePartitionSolver>(std::move(costs))};
+  auto solver = Solver{std::make_unique<FakePartitionSolver>(std::move(costs))};
   return solver.Solve({expression});
 }
 }  // namespace
@@ -74,8 +74,8 @@ TEST(SolverTest, SkipsFailedPartitions) {
 }
 
 TEST(SolverTest, NoSolutionWhenAllPartitionsFail) {
-  auto result = solveWithCosts(
-      {std::nullopt, std::nullopt, std::nullopt, std::nullopt});
+  auto result =
+      solveWithCosts({std::nullopt, std::nullopt, std::nullopt, std::nullopt});
   ASSERT_FALSE(result);
   EXPECT_EQ(result.error().type(), ErrorType::NoSolution);
 }

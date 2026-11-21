@@ -3,6 +3,9 @@
 #include "circuit_solver/expression.h"
 #include "utils.h"
 
+using circuitsolver::expression::Expression;
+using circuitsolver::expression::getDefaultOptions;
+
 TEST(MathTest, BasicEquality) {
   Expression zero = 0;
   EXPECT_EQ(zero.evaluate(), 0);
