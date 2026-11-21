@@ -67,6 +67,7 @@ target_sources(
     src/edge.cpp
     src/errors.cpp
     src/expression.cpp
+    src/expressionIterator.cpp
     src/expressionNode.cpp
     src/logging.cpp
     src/solver.cpp

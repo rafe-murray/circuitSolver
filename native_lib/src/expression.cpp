@@ -5,6 +5,7 @@
 #include <ceres/problem.h>
 #include <ceres/solver.h>
 #include <ceres/types.h>
+#include <fmt/format.h>
 
 #include <cassert>
 #include <cmath>
@@ -13,6 +14,8 @@
 #include <memory>
 #include <span>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -37,6 +40,7 @@ using circuitsolver::constants::huberLossDelta;
 using circuitsolver::constants::maxConsecutiveNonMonotonicSteps;
 using circuitsolver::constants::maxIterations;
 
+namespace circuitsolver::expression {
 Expression::Expression() : Expression(std::make_shared<VariableNode>()) {}
 
 Expression::Expression(double value)
@@ -64,12 +68,13 @@ auto Expression::operator+(Expression rhs) const -> Expression {
 
   std::shared_ptr<UnaryOpNode> n =
       std::dynamic_pointer_cast<UnaryOpNode>(rhs.root);
-  if (n && n->op == UnaryOp::NEG) {
-    return {std::make_shared<BinaryOpNode>(root, n->operand, BinaryOp::SUB)};
+  if (n && n->op == UnaryOpNode::Op::NEG) {
+    return {std::make_shared<BinaryOpNode>(root, n->operand,
+                                           BinaryOpNode::Op::SUB)};
   }
 
-  return {
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::ADD)};
+  return {std::make_shared<BinaryOpNode>(root, std::move(rhs.root),
+                                         BinaryOpNode::Op::ADD)};
 }
 
 auto Expression::operator-(Expression rhs) const -> Expression {
@@ -96,8 +101,8 @@ auto Expression::operator-(Expression rhs) const -> Expression {
     return {0.0};
   }
 
-  return {
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::SUB)};
+  return {std::make_shared<BinaryOpNode>(root, std::move(rhs.root),
+                                         BinaryOpNode::Op::SUB)};
 }
 
 auto Expression::operator*(Expression rhs) const -> Expression {
@@ -127,8 +132,8 @@ auto Expression::operator*(Expression rhs) const -> Expression {
     return {u->value * v->value};
   }
 
-  return {
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::MUL)};
+  return {std::make_shared<BinaryOpNode>(root, std::move(rhs.root),
+                                         BinaryOpNode::Op::MUL)};
 }
 
 auto Expression::operator/(Expression rhs) const -> Expression {
@@ -149,8 +154,8 @@ auto Expression::operator/(Expression rhs) const -> Expression {
     return {1.0};
   }
 
-  return {
-      std::make_shared<BinaryOpNode>(root, std::move(rhs.root), BinaryOp::DIV)};
+  return {std::make_shared<BinaryOpNode>(root, std::move(rhs.root),
+                                         BinaryOpNode::Op::DIV)};
 }
 
 auto Expression::operator-() const -> Expression {
@@ -159,16 +164,16 @@ auto Expression::operator-() const -> Expression {
   if (v && v->known) {
     return {-v->value};
   }
-  return {std::make_shared<UnaryOpNode>(root, UnaryOp::NEG)};
+  return {std::make_shared<UnaryOpNode>(root, UnaryOpNode::Op::NEG)};
 }
 
-auto circuitsolver::expression::exp(Expression arg) -> Expression {
+auto exp(Expression arg) -> Expression {
   std::shared_ptr<VariableNode> v =
       dynamic_pointer_cast<VariableNode>(arg.root);
   if (v && v->known) {
     return {std::exp(v->value)};
   }
-  return {make_shared<UnaryOpNode>(std::move(arg.root), UnaryOp::EXP)};
+  return {make_shared<UnaryOpNode>(std::move(arg.root), UnaryOpNode::Op::EXP)};
 }
 
 auto Expression::operator==(const Expression& rhs) const -> bool {
@@ -221,23 +226,23 @@ auto Expression::operator-=(const Expression& rhs) -> Expression& {
 }
 
 auto Expression::operator<(const Expression& rhs) const -> Condition {
-  return {root, rhs.root, BooleanBinaryOp::LT};
+  return {root, rhs.root, Condition::Op::LT};
 }
 
 auto Expression::operator<=(const Expression& rhs) const -> Condition {
-  return {root, rhs.root, BooleanBinaryOp::LEQ};
+  return {root, rhs.root, Condition::Op::LEQ};
 }
 auto Expression::operator>(const Expression& rhs) const -> Condition {
-  return {root, rhs.root, BooleanBinaryOp::GT};
+  return {root, rhs.root, Condition::Op::GT};
 }
 auto Expression::operator>=(const Expression& rhs) const -> Condition {
-  return {root, rhs.root, BooleanBinaryOp::GEQ};
+  return {root, rhs.root, Condition::Op::GEQ};
 }
 // Condition Expression::operator!=(Expression rhs) const {
-//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::NEQ);
+//   return Condition(root, std::move(rhs.root), Condition::Op::NEQ);
 // }
 // Condition Expression::equals(Expression rhs) const {
-//   return Condition(root, std::move(rhs.root), BooleanBinaryOp::EQ);
+//   return Condition(root, std::move(rhs.root), Condition::Op::EQ);
 // }
 auto Expression::makeConditional(const Condition& condition,
                                  Expression valIfTrue, Expression valIfFalse)
@@ -373,16 +378,7 @@ auto Expression::evaluate() const -> double {
   if (conditionMap == nullptr) {
     conditionMap = std::make_shared<ConditionMap>(defaultConditionMap());
   }
-  return expressionNode::evaluate(root, std::span<const double>{parameters},
-                                  map, *conditionMap);
-}
-
-auto Expression::evaluate(std::span<const double> parameters) const -> double {
-  ExpressionMap map = getMap();
-  if (conditionMap == nullptr) {
-    conditionMap = std::make_shared<ConditionMap>(defaultConditionMap());
-  }
-  return expressionNode::evaluate(root, parameters, map, *conditionMap);
+  return evaluate(std::span<const double>{parameters}, map, *conditionMap);
 }
 
 auto Expression::getPtrToUnknown() -> double* {
@@ -418,3 +414,4 @@ auto getDefaultOptions() -> ceres::Solver::Options {
   options.max_consecutive_nonmonotonic_steps = maxConsecutiveNonMonotonicSteps;
   return options;
 }
+}  // namespace circuitsolver::expression

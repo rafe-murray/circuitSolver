@@ -2,16 +2,24 @@
 
 #include <ceres/ceres.h>
 #include <ceres/problem.h>
+#include <fmt/format.h>
 
+#include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <span>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
-#include "circuit_solver/expressionCostFunctor.h"
+#include "circuit_solver/expressionIterator.h"
 #include "circuit_solver/expressionNode.h"
+
+class ExpressionCostFunctor;
 
 namespace circuitsolver::expression {
 class Expression;
@@ -123,8 +131,76 @@ class Expression {
   /// @return the value of the Expression
   auto evaluate() const -> double;
 
-  auto evaluate(std::span<const double> parameters) const -> double;
+  // auto evaluate(std::span<const double> parameters) const -> double;
+  class NodeNotFoundException : public std::runtime_error {};
+  class InvalidEnumValue : public std::runtime_error {
+   public:
+    explicit InvalidEnumValue(const std::string& msg)
+        : std::runtime_error(msg) {}
+  };
 
+  template <typename T>
+  auto evaluate(std::span<const T> parameters, const ExpressionMap& map,
+                const ConditionMap& conditionMap) const -> T {
+    auto values = std::unordered_map<ExpressionNodePtr, T>{};
+    for (const auto& node : nodes()) {
+      assert(node);
+      switch (node->kind()) {
+        case ExpressionNode::Kind::BinaryOp: {
+          auto binOp = std::static_pointer_cast<BinaryOpNode>(node);
+          switch (binOp->op) {
+            case BinaryOpNode::Op::MUL:
+              values[binOp] = values[binOp->lhs] * values[binOp->rhs];
+              break;
+            case BinaryOpNode::Op::DIV:
+              values[binOp] = values[binOp->lhs] / values[binOp->rhs];
+              break;
+            case BinaryOpNode::Op::ADD:
+              values[binOp] = values[binOp->lhs] + values[binOp->rhs];
+              break;
+            case BinaryOpNode::Op::SUB:
+              values[binOp] = values[binOp->lhs] - values[binOp->rhs];
+              break;
+            default:
+              throw InvalidEnumValue{fmt::format("Unknown Binary Op: {}",
+                                                 fmt::underlying(binOp->op))};
+          }
+        }
+        case ExpressionNode::Kind::TernaryOp: {
+          auto ternOp = std::static_pointer_cast<TernaryOpNode>(node);
+          if (conditionMap.at(ternOp->condition)) {
+            values[ternOp] = values[ternOp->valIfTrue];
+          } else {
+            values[ternOp] = values[ternOp->valIfFalse];
+          }
+        }
+        case ExpressionNode::Kind::UnaryOp: {
+          auto unOp = std::static_pointer_cast<UnaryOpNode>(node);
+          switch (unOp->op) {
+            case UnaryOpNode::Op::EXP:
+              values[unOp] = ceres::exp(values[unOp->operand]);
+              break;
+            case UnaryOpNode::Op::NEG:
+              values[unOp] = -values[unOp->operand];
+              break;
+            default:
+              throw InvalidEnumValue{fmt::format("Unknown Unary Op: {}",
+                                                 fmt::underlying(unOp->op))};
+          }
+        }
+        case ExpressionNode::Kind::Variable: {
+          auto variable = std::static_pointer_cast<VariableNode>(node);
+          if (variable->known) {
+            values[variable] = T(variable->value);
+          } else {
+            values[variable] = parameters[map.at(&variable->value)];
+          }
+          break;
+        }
+      }
+    }
+    return values[root];
+  }
   auto getPtrToUnknown() -> double*;
 
   /// If `this` represents a single unknown, changes that unknown to now have
@@ -163,6 +239,18 @@ class Expression {
   auto getMap() const -> const ExpressionMap&;
   void updateInternalState() const;
   auto defaultConditionMap() const -> ConditionMap;
+
+  class NodeTraversal {
+   public:
+    explicit NodeTraversal(ExpressionNodePtr root) : root(std::move(root)) {}
+    auto begin() -> ExpressionIterator { return ExpressionIterator{root}; }
+    auto end() -> ExpressionIterator { return ExpressionIterator{}; }
+
+   private:
+    ExpressionNodePtr root;
+  };
+
+  auto nodes() const -> NodeTraversal { return NodeTraversal{root}; }
   Expression(ExpressionNodePtr root);
 
   ExpressionNodePtr root;

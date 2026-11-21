@@ -1,21 +1,22 @@
-#ifndef EXPRESSIONNODE_H
-#define EXPRESSIONNODE_H
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <iterator>
 #include <memory>
 #include <ostream>
 #include <span>
+#include <stack>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-struct BinaryOpNode;
-struct ExpressionNode;
-struct TernaryOpNode;
-struct UnaryOpNode;
-struct VariableNode;
+class BinaryOpNode;
+class ExpressionNode;
+class TernaryOpNode;
+class UnaryOpNode;
+class VariableNode;
 class Condition;
 
 // NOTE: if this class needs to have improved performance, we can do the
@@ -37,7 +38,15 @@ auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
 }
 
 /// A single node in the AST of an `Expression`
-struct ExpressionNode {
+class ExpressionNode {
+ public:
+  enum class Kind : uint8_t {
+    BinaryOp,
+    TernaryOp,
+    UnaryOp,
+    Variable,
+  };
+
   /// virtual destructor to enable dynamic dispatch
   virtual ~ExpressionNode() = default;
 
@@ -63,6 +72,8 @@ struct ExpressionNode {
   [[nodiscard]] virtual auto getConditions() const
       -> std::unordered_set<std::shared_ptr<const Condition>> = 0;
 
+  [[nodiscard]] virtual auto kind() const -> Kind = 0;
+
  protected:
   ExpressionNode() = default;
   ExpressionNode(const ExpressionNode& other) = default;
@@ -71,17 +82,18 @@ struct ExpressionNode {
   auto operator=(ExpressionNode&& other) -> ExpressionNode& = default;
 };
 
-/// Types of binary operations
-enum class BinaryOp : uint8_t { MUL, DIV, ADD, SUB };
-
 /// A Binary operation node in the AST
-struct BinaryOpNode : ExpressionNode {
+class BinaryOpNode : public ExpressionNode {
+ public:
+  /// Types of binary operations
+  enum class Op : uint8_t { MUL, DIV, ADD, SUB };
+
   /// Creates a `BinaryOpNode`
   ///
   /// @param lhs the left hand side of the operation
   /// @param rhs the right hand side of the operation
   /// @param op the type of operation
-  BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BinaryOp op);
+  BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs, Op op);
 
   /// Evaluates this node in the AST
   ///
@@ -93,16 +105,16 @@ struct BinaryOpNode : ExpressionNode {
   auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
                               const ConditionMap& conditionMap) const -> T {
     switch (op) {
-      case BinaryOp::MUL:
+      case Op::MUL:
         return expressionNode::evaluate(lhs, parameters, map, conditionMap) *
                expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::DIV:
+      case Op::DIV:
         return expressionNode::evaluate(lhs, parameters, map, conditionMap) /
                expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::ADD:
+      case Op::ADD:
         return expressionNode::evaluate(lhs, parameters, map, conditionMap) +
                expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::SUB:
+      case Op::SUB:
         return expressionNode::evaluate(lhs, parameters, map, conditionMap) -
                expressionNode::evaluate(rhs, parameters, map, conditionMap);
     }
@@ -117,6 +129,8 @@ struct BinaryOpNode : ExpressionNode {
   [[nodiscard]] auto getConditions() const
       -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
+  [[nodiscard]] auto kind() const -> Kind override;
+
   /// The left hand side of the operation
   ExpressionNodePtr lhs;
 
@@ -124,23 +138,22 @@ struct BinaryOpNode : ExpressionNode {
   ExpressionNodePtr rhs;
 
   /// The type of operation
-  BinaryOp op;
+  Op op;
 };
-
-/// Types of binary operations that return booleans
-enum class BooleanBinaryOp : uint8_t { LT, LEQ, GT, GEQ };
 
 /// A Binary operation node in the AST that return a boolean value.
 /// NOTE: all other nodes return `double` values
 class Condition : public std::enable_shared_from_this<Condition> {
  public:
+  /// Types of binary operations that return booleans
+  enum class Op : uint8_t { LT, LEQ, GT, GEQ };
+
   /// Creates a `Condition`
   ///
   /// @param lhs the left hand side of the operation
   /// @param rhs the right hand side of the operation
   /// @param op the type of operation
-  Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
-            BooleanBinaryOp op);
+  Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs, Op op);
 
   [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
 
@@ -168,7 +181,6 @@ class Condition : public std::enable_shared_from_this<Condition> {
       -> std::unordered_set<std::shared_ptr<const Condition>>;
   void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) const;
 
- private:
   /// Value of the condition. The condition is true if this is greater than zero
   ExpressionNodePtr val;
 
@@ -183,7 +195,8 @@ class Condition : public std::enable_shared_from_this<Condition> {
 };
 
 /// A Ternary operation node in the AST
-struct TernaryOpNode : ExpressionNode {
+class TernaryOpNode : public ExpressionNode {
+ public:
   /// Creates a `TernaryOpNode`
   ///
   /// @param condition what to test to determine which expression to use
@@ -221,6 +234,8 @@ struct TernaryOpNode : ExpressionNode {
   [[nodiscard]] auto getConditions() const
       -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
+  [[nodiscard]] auto kind() const -> Kind override;
+
   /// The expression to evaluate if `condition` is true
   ExpressionNodePtr valIfTrue;
 
@@ -228,16 +243,17 @@ struct TernaryOpNode : ExpressionNode {
   ExpressionNodePtr valIfFalse;
 };
 
-/// Types of unary operations
-enum class UnaryOp : uint8_t { EXP, NEG };
-
 /// A Unary operation node in the AST
-struct UnaryOpNode : ExpressionNode {
+class UnaryOpNode : public ExpressionNode {
+ public:
+  /// Types of unary operations
+  enum class Op : uint8_t { EXP, NEG };
+
   /// Creates a `UnaryOpNode`
   ///
   /// @param operand the operand for the operation
   /// @param op the type of operation
-  UnaryOpNode(ExpressionNodePtr operand, UnaryOp op);
+  UnaryOpNode(ExpressionNodePtr operand, Op op);
 
   /// Evaluates this node in the AST
   ///
@@ -249,10 +265,10 @@ struct UnaryOpNode : ExpressionNode {
   auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
                               const ConditionMap& conditionMap) const -> T {
     switch (op) {
-      case UnaryOp::EXP:
+      case Op::EXP:
         return exp(
             expressionNode::evaluate(operand, parameters, map, conditionMap));
-      case UnaryOp::NEG:
+      case Op::NEG:
         return -(
             expressionNode::evaluate(operand, parameters, map, conditionMap));
     }
@@ -267,15 +283,18 @@ struct UnaryOpNode : ExpressionNode {
   [[nodiscard]] auto getConditions() const
       -> std::unordered_set<std::shared_ptr<const Condition>> override;
 
+  [[nodiscard]] auto kind() const -> Kind override;
+
   /// The operand for the operation
   ExpressionNodePtr operand;
 
   /// The type of operation
-  UnaryOp op;
+  Op op;
 };
 
 /// A node representing a single known or unknown value in the AST
-struct VariableNode : ExpressionNode {
+class VariableNode : public ExpressionNode {
+ public:
   /// Creates a `VariableNode` representing an unknown
   VariableNode();
 
@@ -307,6 +326,8 @@ struct VariableNode : ExpressionNode {
 
   [[nodiscard]] auto getConditions() const
       -> std::unordered_set<std::shared_ptr<const Condition>> override;
+
+  [[nodiscard]] auto kind() const -> Kind override;
 
   /// The value of this node
   double value;
@@ -359,4 +380,3 @@ auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
 
 auto operator<<(std::ostream& out, const ExpressionNodePtr& node)
     -> std::ostream&;
-#endif

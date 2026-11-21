@@ -5,13 +5,14 @@
 #include <utility>
 #include <vector>
 
+#include "circuit_solver/expression.h"
 #include "circuit_solver/expressionNode.h"
 
 class ExpressionCostFunctor {
  public:
-  ExpressionCostFunctor(ExpressionNodePtr expressionNode, ExpressionMap map,
-                        ConditionMap conditionMap)
-      : expressionNode(std::move(std::move(expressionNode))),
+  ExpressionCostFunctor(circuitsolver::expression::Expression expression,
+                        ExpressionMap map, ConditionMap conditionMap)
+      : expression(std::move(expression)),
         map(std::move(map)),
         conditionMap(std::move(conditionMap)) {}
 
@@ -28,13 +29,12 @@ class ExpressionCostFunctor {
       parameter_values.push_back(*block);
     }
     std::span<const T> parameters_span{parameter_values};
-    residuals_span[0] = expressionNode::evaluate(
-        expressionNode, parameters_span, map, conditionMap);
+    residuals_span[0] = expression.evaluate(parameters_span, map, conditionMap);
     return true;
   }
 
  private:
-  ExpressionNodePtr expressionNode;
+  circuitsolver::expression::Expression expression;
   ExpressionMap map;
   ConditionMap conditionMap;
 };
