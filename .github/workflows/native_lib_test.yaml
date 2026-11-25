@@ -49,14 +49,20 @@ jobs:
           path: native_lib/build/vcpkg_installed
           key: ${{ steps.restore-build-cache.outputs.cache-primary-key }}
 
-      - uses: actions/upload-artifact@v7
-        name: Upload compile_commands.json
-        with:
-          name: native-lib-compile-commands
-          path: native_lib/build/compile_commands.json
-
       - name: Build with CMake
         run: cmake --build native_lib/build
+
+      # clang-tidy needs the generated protobuf sources as well as
+      # compile_commands.json; vcpkg_installed is restored from the cache instead
+      - uses: actions/upload-artifact@v7
+        name: Upload clang-tidy inputs
+        with:
+          name: native-lib-compile-commands
+          path: |
+            native_lib/build/compile_commands.json
+            native_lib/build/**/*.pb.h
+            native_lib/build/**/*.pb.cc
+            !native_lib/build/vcpkg_installed/**
 
       - name: Test
         run: LLVM_PROFILE_FILE="profile-%p.profraw" ctest --test-dir native_lib/build
@@ -75,25 +81,36 @@ jobs:
 
   review:
     needs: build
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
       contents: read
     steps:
+      # clang-tidy-review reads the sources from the workspace
+      - uses: actions/checkout@v7
+
+      # Headers of third-party dependencies referenced by compile_commands.json
+      - name: Restore Vcpkg Cache
+        uses: actions/cache/restore@v6
+        with:
+          path: native_lib/build/vcpkg_installed
+          key: ${{ runner.os }}-${{ hashFiles('native_lib/vcpkg.json') }}
+
       - uses: actions/download-artifact@v8
         with:
           name: native-lib-compile-commands
+          path: native_lib/build
+
       # This needs compile_commands.json to already be generated
       - uses: ZedThree/clang-tidy-review@v0.23.1
-        if: github.event_name == 'pull_request'
         id: review
         with:
           build_dir: ./native_lib/build
 
       # Uploads an artefact containing clang_fixes.json
       - uses: ZedThree/clang-tidy-review/upload@v0.23.1
-        if: github.event_name == 'pull_request'
         id: upload-review
 
       # If there are any comments, fail the check
