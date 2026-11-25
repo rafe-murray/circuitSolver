@@ -207,6 +207,14 @@ class Expression {
   /// @return the value of the Expression
   auto evaluate() const -> double;
 
+  /// Evaluates the Expression using the current value of each unknown
+  ///
+  /// @param conditionMap the value of every condition this expression depends
+  /// on
+  /// @return the value of the Expression
+  auto evaluateAtCurrentValues(const ConditionMap& conditionMap) const
+      -> double;
+
   template <typename T>
   auto evaluate(std::span<const T> parameters, const ExpressionMap& map,
                 const ConditionMap& conditionMap) const -> T {
@@ -294,6 +302,16 @@ class Expression {
       ceres::Problem& problem,
       const std::shared_ptr<const Condition>& condition,
       const ConditionMap& conditionMap);
+
+  /// Evaluates the value of `condition` using the current value of each
+  /// unknown. The condition is true if the value is greater than zero
+  ///
+  /// @param condition the condition to evaluate
+  /// @param conditionMap the value of every condition `condition` depends on
+  /// @return the value of the condition
+  static auto evaluateCondition(
+      const std::shared_ptr<const Condition>& condition,
+      const ConditionMap& conditionMap) -> double;
 
   void setConditionMap(const ConditionMap& conditionMap);
 

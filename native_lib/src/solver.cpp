@@ -5,6 +5,7 @@
 #include <fmt/format.h>
 #include <spdlog/spdlog.h>
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <bitset>
 #include <cstdint>
@@ -83,51 +84,90 @@ auto LinearPartitionSolver::Solve(
     const std::vector<Expression>& expressions,
     std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
     -> std::expected<Solution, Error> {
-  // We have a set of expressions that we know are equal to 0.
-  // We want to determine if they can all be represented as linear combinations
-  // of the unknowns If yes, then we also need to determine the coefficients of
-  // this matrix
-  // We have already applied arithmetic identities to simplify the expressions
-  // (we do this in the factory constructors for `Expression`) Some rules:
-  // - If there is an exp node then there is no linear system
-  // - If any Variable multiplies or divides another variable at any level,
-  // there is no linear system
-  // - If any Variable is a divisor, a linear system can only be constructed if
-  // it is not used anywhere else, except also as a divisor (simpler to say it
-  // is never a linear system)
-  //
-  // We have a tree to walk
-  //
-  // Some examples:
-  // x + y + z: linear
-  //
-  //     +
-  //    / \
-  //   +   z
-  //  / \
-  // x   y
-  //
-  // x * y + 1: non-linear
-  //
-  //     +
-  //    / \
-  //   *   1
-  //  / \
-  // x   y
-  //
-  // (x + y) / 3: linear
-  //
-  // Let f(x) denote a set of nodes dependent on variable x that is connected by
-  // * and / nodes. Then f(x) +- y is only linear if y is either:
-  // - not dependent on x
-  // - A constant multiple of f(x)
-  // ---------------------------------------------------------------------------
-  // After we've determined that the system is linear:
-  //
-  // - Need the coefficients of each Variable (or reciprocal, see above)
-  // - We also need to ensure that we properly manage cases where there are
-  // multiple terms with the same variable but different coefficients. E.g., x +
-  // 1 + 2x
+  auto system = expression::linearize(expressions, conditionMap);
+  if (!system) {
+    return std::unexpected{
+        Error{
+            ErrorType::InvalidInput,
+            "The expressions are not linear in this partition",
+        },
+    };
+  }
+
+  // Each kernel is the unknown of one column
+  auto columns = std::vector<expression::KernelPtr>{};
+  columns.reserve(system->kernels.size());
+  auto columnIndices =
+      std::unordered_map<expression::KernelPtr, Eigen::Index>{};
+  for (const auto& [unknown, kernel] : system->kernels) {
+    columnIndices[kernel] = static_cast<Eigen::Index>(columns.size());
+    columns.push_back(kernel);
+  }
+  const auto numRows = static_cast<Eigen::Index>(system->rows.size());
+  const auto numColumns = static_cast<Eigen::Index>(columns.size());
+
+  // Each row is `constant + sum(coefficient * kernel) == 0`
+  Eigen::MatrixXd a = Eigen::MatrixXd::Zero(numRows, numColumns);
+  Eigen::VectorXd b(numRows);
+  for (Eigen::Index i = 0; i < numRows; i++) {
+    const auto& row = system->rows[i];
+    b(i) = -row.constant;
+    for (const auto& [kernel, coefficient] : row.coefficients) {
+      a(i, columnIndices.at(kernel)) = coefficient;
+    }
+  }
+
+  if (numColumns > 0) {
+    auto qr = a.colPivHouseholderQr();
+    if (qr.rank() < numColumns) {
+      return std::unexpected{
+          Error{
+              ErrorType::NoSolution,
+              "The linear system does not have a unique solution",
+          },
+      };
+    }
+    Eigen::VectorXd kernelValues = qr.solve(b);
+    for (Eigen::Index j = 0; j < numColumns; j++) {
+      const auto& kernel = columns[j];
+      auto value = kernel->invert(kernelValues(j));
+      if (!value) {
+        return std::unexpected{
+            Error{
+                ErrorType::NoSolution,
+                "The solution of the linear system is outside the range of "
+                "its substituted subexpressions",
+            },
+        };
+      }
+      *kernel->unknown = *value;
+    }
+  }
+
+  // The linear system doesn't encode the conditions, so check that the
+  // solution lies in this partition. Like the bounds used by
+  // NonLinearPartitionSolver, both sides include zero
+  for (const auto& [condition, isTrue] : conditionMap) {
+    const double value = Expression::evaluateCondition(condition, conditionMap);
+    if (isTrue ? value < 0 : value > 0) {
+      return std::unexpected{
+          Error{
+              ErrorType::NoSolution,
+              "The solution of the linear system is outside its partition",
+          },
+      };
+    }
+    *condition->getConstraint() = value;
+  }
+
+  // Match the cost ceres reports so solutions are comparable
+  double cost = 0;
+  for (const auto& expression : expressions) {
+    const double residual = expression.evaluateAtCurrentValues(conditionMap);
+    cost += 0.5 * residual * residual;
+  }
+  // Solving happens in place
+  return Solution{expressions, std::move(conditionMap), cost};
 }
 
 void Solver::resetUnknowns(const std::vector<Expression>& expressions) {
@@ -214,6 +254,6 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
 }
 auto isPartitionLinear(const std::vector<Expression>& expressions,
                        ConditionMap conditionMap) -> bool {
-  return {};
+  return expression::isLinear(expressions, conditionMap);
 }
 }  // namespace circuitsolver::solver

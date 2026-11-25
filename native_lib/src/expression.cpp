@@ -401,6 +401,22 @@ auto Expression::evaluate() const -> double {
   return evaluate(std::span<const double>{parameters}, map, *conditionMap);
 }
 
+auto Expression::evaluateAtCurrentValues(const ConditionMap& conditionMap) const
+    -> double {
+  const auto& map = getMap();
+  auto parameters = std::vector<double>(map.size());
+  for (const auto& [unknown, index] : map) {
+    parameters[index] = *unknown;
+  }
+  return evaluate(std::span<const double>{parameters}, map, conditionMap);
+}
+
+auto Expression::evaluateCondition(
+    const std::shared_ptr<const Condition>& condition,
+    const ConditionMap& conditionMap) -> double {
+  return Expression{condition->val}.evaluateAtCurrentValues(conditionMap);
+}
+
 auto Expression::getPtrToUnknown() -> double* {
   std::shared_ptr<VariableNode> v =
       std::dynamic_pointer_cast<VariableNode>(root);
@@ -592,11 +608,10 @@ auto exponential(const LinearForm& form, KernelPool& pool)
 ///
 /// @return the LinearForm, or std::nullopt if `node` is not an affine function
 /// of kernels
-auto nodeForm(
-    const ExpressionNodePtr& node,
-    const std::unordered_map<ExpressionNodePtr, std::optional<LinearForm>>&
-        forms,
-    const ConditionMap& conditionMap, KernelPool& pool)
+auto nodeForm(const ExpressionNodePtr& node,
+              const std::unordered_map<ExpressionNodePtr,
+                                       std::optional<LinearForm>>& forms,
+              const ConditionMap& conditionMap, KernelPool& pool)
     -> std::optional<LinearForm> {
   switch (node->kind()) {
     case ExpressionNode::Kind::BinaryOp: {
