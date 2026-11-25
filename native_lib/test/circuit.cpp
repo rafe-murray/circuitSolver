@@ -162,10 +162,7 @@ TEST(CircuitTest, BasicCircuitFromProtobuf) {
   ASSERT_TRUE(result.has_value());
 
   auto cgmSolved = GetMessageFromJsonFile("001-solved.json");
-  auto cgOptionalSolved = CircuitGraph::fromProto(cgmSolved);
-  ASSERT_TRUE(cgOptionalSolved.has_value());
-  auto cgSolved = std::move(cgOptionalSolved.value());
-  ASSERT_EQ(*cgUnsolved, *cgSolved);
+  EXPECT_PRED_FORMAT2(IsEqual, cgUnsolved->toProto(), cgmSolved);
 }
 
 // TODO: mock the UUID generation for better consistency

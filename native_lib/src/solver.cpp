@@ -144,30 +144,47 @@ auto LinearPartitionSolver::Solve(
     }
   }
 
-  // The linear system doesn't encode the conditions, so check that the
-  // solution lies in this partition. Like the bounds used by
-  // NonLinearPartitionSolver, both sides include zero
-  for (const auto& [condition, isTrue] : conditionMap) {
-    const double value = Expression::evaluateCondition(condition, conditionMap);
-    if (isTrue ? value < 0 : value > 0) {
-      return std::unexpected{
-          Error{
-              ErrorType::NoSolution,
-              "The solution of the linear system is outside its partition",
-          },
-      };
-    }
-    *condition->getConstraint() = value;
-  }
-
   // Match the cost ceres reports so solutions are comparable
   double cost = 0;
   for (const auto& expression : expressions) {
     const double residual = expression.evaluateAtCurrentValues(conditionMap);
     cost += 0.5 * residual * residual;
   }
+
+  // The linear system doesn't encode the conditions, so penalize solutions
+  // outside this partition the same way NonLinearPartitionSolver does: bound
+  // each constraint to its side of zero and add the distance between it and
+  // the condition's value to the cost. A hard check would reject solutions
+  // that lie on a partition boundary but are off by round-off error
+  for (const auto& [condition, isTrue] : conditionMap) {
+    const double value = Expression::evaluateCondition(condition, conditionMap);
+    const double constraint = isTrue ? std::max(value, 0.0)  //
+                                     : std::min(value, 0.0);
+    *condition->getConstraint() = constraint;
+    const double residual = value - constraint;
+    cost += 0.5 * residual * residual;
+  }
   // Solving happens in place
   return Solution{expressions, std::move(conditionMap), cost};
+}
+
+HybridPartitionSolver::HybridPartitionSolver()
+    : HybridPartitionSolver(std::make_unique<LinearPartitionSolver>(),
+                            std::make_unique<NonLinearPartitionSolver>()) {}
+HybridPartitionSolver::HybridPartitionSolver(
+    std::unique_ptr<PartitionSolver> linearSolver,
+    std::unique_ptr<PartitionSolver> nonLinearSolver)
+    : linearSolver(std::move(linearSolver)),
+      nonLinearSolver(std::move(nonLinearSolver)) {}
+
+auto HybridPartitionSolver::Solve(
+    const std::vector<Expression>& expressions,
+    std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+    -> std::expected<Solution, Error> {
+  if (isPartitionLinear(expressions, conditionMap)) {
+    return linearSolver->Solve(expressions, std::move(conditionMap));
+  }
+  return nonLinearSolver->Solve(expressions, std::move(conditionMap));
 }
 
 void Solver::resetUnknowns(const std::vector<Expression>& expressions) {
@@ -181,8 +198,7 @@ void Solver::resetUnknowns(const std::vector<Expression>& expressions) {
   }
 }
 
-Solver::Solver()
-    : partitionSolver(std::make_unique<NonLinearPartitionSolver>()) {}
+Solver::Solver() : partitionSolver(std::make_unique<HybridPartitionSolver>()) {}
 Solver::Solver(std::unique_ptr<PartitionSolver> partitionSolver)
     : partitionSolver(std::move(partitionSolver)) {}
 auto Solver::Solve(const std::vector<Expression>& expressions)

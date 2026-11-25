@@ -64,6 +64,26 @@ class LinearPartitionSolver : public PartitionSolver {
       -> std::expected<Solution, Error> override;
 };
 
+/// Solves linear partitions with a linear solver and all other partitions with
+/// a non-linear solver
+class HybridPartitionSolver : public PartitionSolver {
+ public:
+  HybridPartitionSolver();
+
+  /// @param linearSolver solves partitions where `isPartitionLinear` is true
+  /// @param nonLinearSolver solves all other partitions
+  HybridPartitionSolver(std::unique_ptr<PartitionSolver> linearSolver,
+                        std::unique_ptr<PartitionSolver> nonLinearSolver);
+  auto Solve(
+      const std::vector<Expression>& expressions,
+      std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+      -> std::expected<Solution, Error> override;
+
+ private:
+  std::unique_ptr<PartitionSolver> linearSolver;
+  std::unique_ptr<PartitionSolver> nonLinearSolver;
+};
+
 auto isPartitionLinear(const std::vector<Expression>& expressions,
                        ConditionMap conditionMap) -> bool;
 

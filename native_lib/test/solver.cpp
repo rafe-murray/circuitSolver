@@ -19,6 +19,7 @@ using circuitsolver::constants::solutionCostThreshold;
 using circuitsolver::errors::Error;
 using circuitsolver::errors::ErrorType;
 using circuitsolver::expression::Expression;
+using circuitsolver::solver::HybridPartitionSolver;
 using circuitsolver::solver::LinearPartitionSolver;
 using circuitsolver::solver::PartitionSolver;
 using circuitsolver::solver::Solution;
@@ -49,6 +50,37 @@ class FakePartitionSolver : public PartitionSolver {
   std::vector<std::optional<double>> costs;
   size_t nextPartition = 0;
 };
+
+/// Counts how many partitions it is asked to solve
+class CountingPartitionSolver : public PartitionSolver {
+ public:
+  explicit CountingPartitionSolver(int& calls) : calls(calls) {}
+
+  auto Solve(
+      const std::vector<Expression>& expressions,
+      std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+      -> std::expected<Solution, Error> override {
+    calls++;
+    return Solution{expressions, std::move(conditionMap), 0};
+  }
+
+ private:
+  int& calls;
+};
+
+/// Solves `expressions` with a HybridPartitionSolver
+///
+/// @return the number of calls to the linear and non-linear solvers
+auto countHybridCalls(const std::vector<Expression>& expressions)
+    -> std::pair<int, int> {
+  auto linearCalls = 0;
+  auto nonLinearCalls = 0;
+  auto solver = Solver{std::make_unique<HybridPartitionSolver>(
+      std::make_unique<CountingPartitionSolver>(linearCalls),
+      std::make_unique<CountingPartitionSolver>(nonLinearCalls))};
+  EXPECT_TRUE(solver.Solve(expressions));
+  return {linearCalls, nonLinearCalls};
+}
 
 /// Solves an expression with two conditions, which has four partitions
 auto solveWithCosts(std::vector<std::optional<double>> costs)
@@ -152,4 +184,25 @@ TEST(LinearPartitionSolverTest, SolverChoosesConsistentPartition) {
   ASSERT_TRUE(result) << result.error().message();
   result->apply();
   EXPECT_DOUBLE_EQ(*x.getPtrToUnknown(), 2);
+}
+
+TEST(HybridPartitionSolverTest, UsesLinearSolverForLinearPartitions) {
+  auto x = Expression{};
+  auto y = Expression{};
+  EXPECT_EQ(countHybridCalls({x + y - 3, x - y - 1}), std::pair(1, 0));
+}
+
+TEST(HybridPartitionSolverTest, UsesNonLinearSolverForNonLinearPartitions) {
+  auto x = Expression{};
+  auto y = Expression{};
+  EXPECT_EQ(countHybridCalls({x * y - 2, x - 1}), std::pair(0, 1));
+}
+
+TEST(HybridPartitionSolverTest, ChoosesSolverPerPartition) {
+  auto x = Expression{};
+  auto y = Expression{};
+  // Linear when x > 0, non-linear otherwise
+  auto expression =
+      Expression::makeConditional(x > Expression(0.0), x - 2, x * y - 2);
+  EXPECT_EQ(countHybridCalls({expression, y - 1}), std::pair(1, 1));
 }
