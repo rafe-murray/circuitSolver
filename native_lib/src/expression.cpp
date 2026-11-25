@@ -5,7 +5,6 @@
 #include <ceres/problem.h>
 #include <ceres/solver.h>
 #include <ceres/types.h>
-#include <fmt/format.h>
 
 #include <cassert>
 #include <cmath>
@@ -14,7 +13,6 @@
 #include <memory>
 #include <span>
 #include <stdexcept>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -258,13 +256,6 @@ auto Expression::isConstant() const -> bool {
   return v && v->known;
 }
 
-// auto Expression::getUnknowns() const -> const std::vector<double*>& {
-//   if (unknowns == nullptr) {
-//     updateMapAndUnknowns();
-//   }
-//   return *unknowns;
-// }
-
 void Expression::setConditionMap(const ConditionMap& conditionMap) {
   this->conditionMap = std::make_shared<ConditionMap>(conditionMap);
 }
@@ -280,14 +271,21 @@ void Expression::updateInternalState() const {
   map = std::make_shared<ExpressionMap>();
   unknowns = std::make_shared<std::vector<double*>>();
 
-  std::unordered_set<double*> unknown_set;
-  root->getUnknowns(unknown_set);
+  std::unordered_set<double*> unknownSet{};
+  for (const auto& node : nodes()) {
+    if (node->kind() == ExpressionNode::Kind::Variable) {
+      auto variable = std::static_pointer_cast<VariableNode>(node);
+      if (!variable->known) {
+        unknownSet.insert(&variable->value);
+      }
+    }
+  }
 
-  unknowns->reserve(unknown_set.size());
+  unknowns->reserve(unknownSet.size());
   unsigned i = 0;
   // Sorting algorithm is already non-deterministic
   // NOLINTBEGIN(bugprone-nondeterministic-pointer-iteration-order)
-  for (auto* unknown : unknown_set) {
+  for (auto* unknown : unknownSet) {
     unknowns->push_back(unknown);
     (*map)[unknown] = i;
     i++;
@@ -297,7 +295,14 @@ void Expression::updateInternalState() const {
 
 auto Expression::getConditions() const
     -> std::unordered_set<std::shared_ptr<const Condition>> {
-  return root->getConditions();
+  auto conditions = std::unordered_set<std::shared_ptr<const Condition>>{};
+  for (const auto& node : nodes()) {
+    if (node->kind() == ExpressionNode::Kind::TernaryOp) {
+      auto ternOp = std::static_pointer_cast<TernaryOpNode>(node);
+      conditions.insert(ternOp->condition);
+    }
+  }
+  return conditions;
 }
 
 auto Expression::getNumUnknowns() const -> size_t {
@@ -390,7 +395,14 @@ auto Expression::getPtrToUnknown() -> double* {
   return nullptr;
 }
 
-void Expression::markKnown() { root->markKnown(); }
+void Expression::markKnown() {
+  for (const auto& node : nodes()) {
+    if (node->kind() == ExpressionNode::Kind::Variable) {
+      auto variable = std::static_pointer_cast<VariableNode>(node);
+      variable->known = true;
+    }
+  }
+}
 
 auto operator<<(std::ostream& out, const Expression& e) -> std::ostream& {
   out << "(" << e.root.get() << ")" << e.root;

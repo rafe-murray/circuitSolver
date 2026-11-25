@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <ostream>
-#include <unordered_set>
 #include <utility>
 
 BinaryOpNode::BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs,
@@ -43,86 +42,6 @@ UnaryOpNode::UnaryOpNode(ExpressionNodePtr operand, UnaryOpNode::Op op)
 
 VariableNode::VariableNode() : value(1.0), known(false) {}
 VariableNode::VariableNode(double value) : value(value), known(true) {}
-
-void BinaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  lhs->getUnknowns(unknowns);
-  rhs->getUnknowns(unknowns);
-}
-
-void Condition::getUnknowns(std::unordered_set<double*>& unknowns) const {
-  val->getUnknowns(unknowns);
-  constraint->getUnknowns(unknowns);
-}
-
-void TernaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  condition->getUnknowns(unknowns);
-  valIfTrue->getUnknowns(unknowns);
-  valIfFalse->getUnknowns(unknowns);
-}
-
-void UnaryOpNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  operand->getUnknowns(unknowns);
-}
-
-void VariableNode::getUnknowns(std::unordered_set<double*>& unknowns) {
-  if (!known) {
-    unknowns.insert(&value);
-  }
-}
-
-void BinaryOpNode::markKnown() {
-  lhs->markKnown();
-  rhs->markKnown();
-}
-
-void Condition::markKnown() const {
-  val->markKnown();
-  constraint->markKnown();
-}
-
-void TernaryOpNode::markKnown() {
-  condition->markKnown();
-  valIfTrue->markKnown();
-  valIfFalse->markKnown();
-}
-
-void UnaryOpNode::markKnown() { operand->markKnown(); }
-
-void VariableNode::markKnown() { known = true; }
-
-auto BinaryOpNode::getConditions() const
-    -> std::unordered_set<std::shared_ptr<const Condition>> {
-  auto conditions = lhs->getConditions();
-  conditions.merge(rhs->getConditions());
-  return conditions;
-}
-
-auto Condition::getConditions() const
-    -> std::unordered_set<std::shared_ptr<const Condition>> {
-  auto conditions = std::unordered_set<std::shared_ptr<const Condition>>{
-      shared_from_this(),
-  };
-  conditions.merge(val->getConditions());
-  return conditions;
-}
-
-auto TernaryOpNode::getConditions() const
-    -> std::unordered_set<std::shared_ptr<const Condition>> {
-  auto conditions = condition->getConditions();
-  conditions.merge(valIfTrue->getConditions());
-  conditions.merge(valIfFalse->getConditions());
-  return conditions;
-}
-
-auto UnaryOpNode::getConditions() const
-    -> std::unordered_set<std::shared_ptr<const Condition>> {
-  return operand->getConditions();
-}
-
-auto VariableNode::getConditions() const
-    -> std::unordered_set<std::shared_ptr<const Condition>> {
-  return {};
-}
 
 auto Condition::getError() const -> std::shared_ptr<BinaryOpNode> {
   return std::make_shared<BinaryOpNode>(val, constraint, BinaryOpNode::Op::SUB);

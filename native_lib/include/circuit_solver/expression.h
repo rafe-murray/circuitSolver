@@ -2,15 +2,12 @@
 
 #include <ceres/ceres.h>
 #include <ceres/problem.h>
-#include <fmt/format.h>
 
 #include <cassert>
 #include <cstddef>
 #include <iostream>
 #include <memory>
 #include <span>
-#include <stdexcept>
-#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -131,14 +128,6 @@ class Expression {
   /// @return the value of the Expression
   auto evaluate() const -> double;
 
-  // auto evaluate(std::span<const double> parameters) const -> double;
-  class NodeNotFoundException : public std::runtime_error {};
-  class InvalidEnumValue : public std::runtime_error {
-   public:
-    explicit InvalidEnumValue(const std::string& msg)
-        : std::runtime_error(msg) {}
-  };
-
   template <typename T>
   auto evaluate(std::span<const T> parameters, const ExpressionMap& map,
                 const ConditionMap& conditionMap) const -> T {
@@ -161,9 +150,6 @@ class Expression {
             case BinaryOpNode::Op::SUB:
               values[binOp] = values[binOp->lhs] - values[binOp->rhs];
               break;
-            default:
-              throw InvalidEnumValue{fmt::format("Unknown Binary Op: {}",
-                                                 fmt::underlying(binOp->op))};
           }
           break;
         }
@@ -185,9 +171,6 @@ class Expression {
             case UnaryOpNode::Op::NEG:
               values[unOp] = -values[unOp->operand];
               break;
-            default:
-              throw InvalidEnumValue{fmt::format("Unknown Unary Op: {}",
-                                                 fmt::underlying(unOp->op))};
           }
           break;
         }
@@ -247,7 +230,7 @@ class Expression {
    public:
     explicit NodeTraversal(ExpressionNodePtr root) : root(std::move(root)) {}
     auto begin() -> ExpressionIterator { return ExpressionIterator{root}; }
-    auto end() -> ExpressionIterator { return ExpressionIterator{}; }
+    static auto end() -> ExpressionIterator { return ExpressionIterator{}; }
 
    private:
     ExpressionNodePtr root;
@@ -269,5 +252,4 @@ class Expression {
 };
 
 auto getDefaultOptions() -> ceres::Solver::Options;
-
 }  // namespace circuitsolver::expression
