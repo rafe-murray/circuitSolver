@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <expected>
 #include <memory>
+#include <optional>
 #include <random>
 #include <unordered_map>
 #include <unordered_set>
@@ -119,15 +120,28 @@ auto LinearPartitionSolver::Solve(
 
   if (numColumns > 0) {
     auto qr = a.colPivHouseholderQr();
+    Eigen::VectorXd kernelValues = qr.solve(b);
     if (qr.rank() < numColumns) {
+      // A rank deficient system either has no solution or infinitely many.
+      // Only the latter is underdetermined
+      const double cost = 0.5 * (a * kernelValues - b).squaredNorm();
+      if (cost > solutionCostThreshold) {
+        return std::unexpected{
+            Error{
+                ErrorType::NoSolution,
+                "The linear system is inconsistent",
+            },
+        };
+      }
       return std::unexpected{
           Error{
-              ErrorType::NoSolution,
-              "The linear system does not have a unique solution",
+              ErrorType::UnderdeterminedSystem,
+              "The system of equations does not have a unique solution. In a "
+              "circuit this usually means a node is floating or ideal voltage "
+              "sources form a loop",
           },
       };
     }
-    Eigen::VectorXd kernelValues = qr.solve(b);
     for (Eigen::Index j = 0; j < numColumns; j++) {
       const auto& kernel = columns[j];
       auto value = kernel->invert(kernelValues(j));
@@ -234,6 +248,9 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
   auto conditionMaps = std::vector<ConditionMap>{};
   auto orderedConditions = std::vector<std::shared_ptr<const Condition>>{
       conditions.begin(), conditions.end()};
+  // Reported instead of a generic error if no partition has a solution, since
+  // it tells the user what is wrong with their circuit
+  auto underdeterminedError = std::optional<Error>{};
   for (uint32_t i = 0; i < numPartitions; i++) {
     conditionMaps.emplace_back();
     for (int j = 0; j < numConditions; j++) {
@@ -243,10 +260,16 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
     auto solution = partitionSolver->Solve(expressions, conditionMaps.at(i));
     if (solution.has_value()) {
       solutions.push_back(std::move(solution.value()));
+    } else if (solution.error().type() == ErrorType::UnderdeterminedSystem &&
+               !underdeterminedError) {
+      underdeterminedError = solution.error();
     }
     resetUnknowns(expressions);
   }
   if (solutions.empty()) {
+    if (underdeterminedError) {
+      return std::unexpected{*underdeterminedError};
+    }
     return std::unexpected{
         Error{
             ErrorType::NoSolution,
@@ -257,6 +280,9 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
   const auto& bestSolution =
       *std::ranges::min_element(solutions, {}, &Solution::getCost);
   if (bestSolution.getCost() > solutionCostThreshold) {
+    if (underdeterminedError) {
+      return std::unexpected{*underdeterminedError};
+    }
     return std::unexpected{
         Error{
             ErrorType::NoSolution,

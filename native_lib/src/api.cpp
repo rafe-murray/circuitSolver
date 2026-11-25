@@ -36,6 +36,7 @@ auto getErrorMessage(circuitsolver_error_t errorNumber) -> const char* {
           CIRCUITSOLVER_ERROR_TOO_MANY_DISCONTINUITIES,
           "Too many discontinuities",
       },
+      {CIRCUITSOLVER_ERROR_UNDERDETERMINED_SYSTEM, "Underdetermined system"},
   };
   auto it = errorMessages.find(errorNumber);
   if (it != errorMessages.end()) {

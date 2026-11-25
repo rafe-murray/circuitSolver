@@ -82,6 +82,22 @@ auto countHybridCalls(const std::vector<Expression>& expressions)
   return {linearCalls, nonLinearCalls};
 }
 
+/// Fails every partition with an error of `type`
+class FailingPartitionSolver : public PartitionSolver {
+ public:
+  explicit FailingPartitionSolver(ErrorType type) : type(type) {}
+
+  auto Solve(const std::vector<Expression>& /*expressions*/,
+             std::unordered_map<std::shared_ptr<const Condition>,
+                                bool> /*conditionMap*/)
+      -> std::expected<Solution, Error> override {
+    return std::unexpected{Error{type, "Partition failed"}};
+  }
+
+ private:
+  ErrorType type;
+};
+
 /// Solves an expression with two conditions, which has four partitions
 auto solveWithCosts(std::vector<std::optional<double>> costs)
     -> std::expected<Solution, Error> {
@@ -162,7 +178,7 @@ TEST(LinearPartitionSolverTest, RejectsUnderdeterminedSystem) {
   auto y = Expression{};
   auto result = LinearPartitionSolver{}.Solve({x + y - 1}, {});
   ASSERT_FALSE(result);
-  EXPECT_EQ(result.error().type(), ErrorType::NoSolution);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
 }
 
 TEST(LinearPartitionSolverTest, RejectsKernelValueOutsideRange) {
@@ -205,4 +221,21 @@ TEST(HybridPartitionSolverTest, ChoosesSolverPerPartition) {
   auto expression =
       Expression::makeConditional(x > Expression(0.0), x - 2, x * y - 2);
   EXPECT_EQ(countHybridCalls({expression, y - 1}), std::pair(1, 1));
+}
+
+TEST(SolverTest, ReportsUnderdeterminedSystemWhenNoPartitionIsSolved) {
+  auto x = Expression{};
+  auto solver = Solver{std::make_unique<FailingPartitionSolver>(
+      ErrorType::UnderdeterminedSystem)};
+  auto result = solver.Solve({x});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
+}
+
+TEST(SolverTest, ReportsUnderdeterminedLinearSystem) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto result = Solver{}.Solve({x + y - 1});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
 }

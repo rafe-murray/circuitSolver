@@ -11,6 +11,7 @@ enum class ErrorType : uint8_t {
   FailedSerialization = CIRCUITSOLVER_ERROR_FAILED_SERIALIZATION,
   InvalidInput = CIRCUITSOLVER_ERROR_INVALID_INPUT,
   TooManyDiscontinuities = CIRCUITSOLVER_ERROR_TOO_MANY_DISCONTINUITIES,
+  UnderdeterminedSystem = CIRCUITSOLVER_ERROR_UNDERDETERMINED_SYSTEM,
 };
 
 class Error {

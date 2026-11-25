@@ -152,6 +152,31 @@ TEST(CircuitTest, ContradictoryCircuitHasNoSolution) {
             circuitsolver::errors::ErrorType::NoSolution);
 }
 
+TEST(CircuitTest, FloatingNodesAreUnderdetermined) {
+  CircuitGraph cg;
+  auto gen = getUuidGenerator();
+  Vertex ref(gen(), 0);
+  Vertex v1(gen());
+  // v2 and v3 are only connected to each other, so their voltages are arbitrary
+  Vertex v2(gen());
+  Vertex v3(gen());
+  Edge vs(gen(), VoltageSource({.from = ref, .to = v1}, 5));
+  Edge r1(gen(), Resistor({.from = v1, .to = ref}, 1000));
+  Edge r2(gen(), Resistor({.from = v2, .to = v3}, 1000));
+  EXPECT_TRUE(cg.addVertex(ref));
+  EXPECT_TRUE(cg.addVertex(v1));
+  EXPECT_TRUE(cg.addVertex(v2));
+  EXPECT_TRUE(cg.addVertex(v3));
+  EXPECT_TRUE(cg.addEdge(vs));
+  EXPECT_TRUE(cg.addEdge(r1));
+  EXPECT_TRUE(cg.addEdge(r2));
+
+  auto result = cg.solveCircuit();
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(),
+            circuitsolver::errors::ErrorType::UnderdeterminedSystem);
+}
+
 // TODO: update these files
 TEST(CircuitTest, BasicCircuitFromProtobuf) {
   auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");

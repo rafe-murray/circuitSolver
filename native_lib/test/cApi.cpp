@@ -120,6 +120,8 @@ TEST_F(CApiTest, ErrorMessages) {
                "Unknown error");
   EXPECT_STRNE(getErrorMessage(CIRCUITSOLVER_ERROR_TOO_MANY_DISCONTINUITIES),
                "Unknown error");
+  EXPECT_STRNE(getErrorMessage(CIRCUITSOLVER_ERROR_UNDERDETERMINED_SYSTEM),
+               "Unknown error");
 }
 
 TEST_F(CApiTest, InvalidInput) {
