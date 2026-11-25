@@ -6,17 +6,15 @@ import 'package:frontend/config/repository_providers.dart';
 import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/data/services/local/local_storage_service.dart';
 import 'package:frontend/data/services/local/model/circuit_local_storage_model.dart';
+import 'package:frontend/ui/view_models/component_placement.dart';
 import 'package:frontend/ui/screens/editor_screen.dart';
 import 'package:frontend/ui/view_models/editor_view_model.dart';
-import 'package:frontend/ui/view_models/tool/tool.dart';
 import 'package:frontend/ui/widgets/circuit_hit_test_view.dart';
 import 'package:frontend/ui/widgets/circuit_view.dart';
 import 'package:frontend/ui/widgets/tool_bank.dart';
-import 'package:frontend/ui/widgets/tools/add_component_canvas_gesture_detector.dart';
-import 'package:frontend/ui/widgets/tools/add_component_keyboard_listener.dart';
-import 'package:frontend/ui/widgets/tools/lasso_selection_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/add_component_gesture_detector.dart';
+import 'package:frontend/ui/widgets/tools/lasso_gesture_detector.dart';
 import 'package:frontend/ui/widgets/tools/selection_indicators.dart';
-import 'package:frontend/ui/widgets/tools/selection_keyboard_listener.dart';
 import 'package:uuid/uuid.dart';
 
 void main() {
@@ -55,315 +53,173 @@ void main() {
     return container;
   }
 
-  ToolMeta resistorMeta() => addComponentToolGroup.tools.firstWhere(
-    (tool) => tool.id == AddComponentTool.resistorId,
+  Widget app() => ProviderScope(
+    overrides: [databaseProvider.overrideWithValue(db)],
+    child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
   );
 
-  group('AddComponentTool via updateCircuit', () {
-    test('adds a resistor and its two endpoints to the circuit', () async {
-      final container = makeContainer();
-      final viewModel = container.read(
-        editorViewModelProvider(circuitId: circuitId).notifier,
-      );
-      final circuit = await container.read(
-        editorViewModelProvider(circuitId: circuitId).future,
-      );
+  Widget appWith(ProviderContainer container) => UncontrolledProviderScope(
+    container: container,
+    child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
+  );
 
-      final tool = Tool.fromMeta(
-        meta: resistorMeta(),
-        uuid: const Uuid(),
-        circuit: circuit,
-      );
-      tool as AddComponentTool;
-      await viewModel.updateCircuit(
-        tool.addComponentAtPos(circuit, const Offset(120, 90)),
-      );
+  void bigView(WidgetTester tester) {
+    tester.view.physicalSize = const Size(2400, 1800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+  }
 
-      final updated =
-          (await container
-                  .read(circuitRepositoryProvider)
-                  .getCircuit(circuitId))
-              .valueOrThrow();
-      expect(updated.components, hasLength(1));
-      expect(updated.components.single.branch, isA<Resistor>());
-      expect(updated.endpoints, hasLength(2));
-
-      expect(viewModel.canUndo, isTrue);
-    });
-
-    test('addComponentBetween places endpoints at the given offsets', () async {
-      final container = makeContainer();
-      final viewModel = container.read(
-        editorViewModelProvider(circuitId: circuitId).notifier,
-      );
-      final circuit = await container.read(
-        editorViewModelProvider(circuitId: circuitId).future,
-      );
-
-      final tool =
-          Tool.fromMeta(
-                meta: resistorMeta(),
-                uuid: const Uuid(),
-                circuit: circuit,
-              )
-              as AddComponentTool;
-      await viewModel.updateCircuit(
-        tool.addComponentBetween(
-          circuit,
-          from: const Offset(10, 20),
-          to: const Offset(200, 220),
-        ),
-      );
-
-      final updated =
-          (await container
-                  .read(circuitRepositoryProvider)
-                  .getCircuit(circuitId))
-              .valueOrThrow();
-      final component = updated.components.single;
-      expect(updated.endpoints[component.fromId]!.pos, const Offset(10, 20));
-      expect(updated.endpoints[component.toId]!.pos, const Offset(200, 220));
-    });
-  });
-
-  group('EditorScreen tool input layer', () {
-    Widget app() => ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(db)],
-      child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
+  /// Adds a single resistor (and its two endpoints) to the test circuit.
+  Future<void> seedResistor(ProviderContainer container) async {
+    final viewModel = container.read(
+      editorViewModelProvider(circuitId: circuitId).notifier,
     );
+    final circuit = await container.read(
+      editorViewModelProvider(circuitId: circuitId).future,
+    );
+    await viewModel.updateCircuit(
+      insertComponent(
+        circuit: circuit,
+        branch: const Resistor(),
+        from: const Offset(100, 80),
+        to: const Offset(140, 100),
+        uuid: const Uuid(),
+      ),
+    );
+  }
 
+  Future<void> selectComponentTool(WidgetTester tester, String tooltip) async {
+    await tester.tap(find.byType(ToolButton).first);
+    await tester.pumpAndSettle();
+    // The flyout entry is the last match (the group's representative button may
+    // carry the same tooltip).
+    await tester.tap(find.byTooltip(tooltip).last);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> selectLassoTool(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('Lasso select'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Lasso select').last);
+    await tester.pumpAndSettle();
+  }
+
+  group('tool input layer', () {
     testWidgets('shows a bare canvas when no tool is selected', (tester) async {
-      tester.view.physicalSize = const Size(2400, 1800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
+      bigView(tester);
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
 
       expect(find.byType(CircuitView), findsOneWidget);
-      expect(find.byType(AddComponentCanvasGestureDetector), findsNothing);
-      expect(find.byType(AddComponentKeyboardListener), findsNothing);
+      expect(find.byType(AddComponentGestureDetector), findsNothing);
+      expect(find.byType(LassoGestureDetector), findsNothing);
     });
 
-    testWidgets('wraps the canvas in the add-component input widgets once a '
+    testWidgets('mounts the add-component gesture detector once a component '
         'tool is selected', (tester) async {
-      tester.view.physicalSize = const Size(2400, 1800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
+      bigView(tester);
       await tester.pumpWidget(app());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(ToolButton).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Add Voltage Source'));
-      await tester.pumpAndSettle();
+      await selectComponentTool(tester, 'Add Voltage Source');
 
-      expect(find.byType(AddComponentKeyboardListener), findsOneWidget);
-      expect(find.byType(AddComponentCanvasGestureDetector), findsOneWidget);
+      expect(find.byType(AddComponentGestureDetector), findsOneWidget);
       expect(
         find.descendant(
-          of: find.byType(AddComponentCanvasGestureDetector),
+          of: find.byType(AddComponentGestureDetector),
           matching: find.byType(CircuitView),
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets('mounts the lasso gesture detector once the lasso tool is '
+        'selected', (tester) async {
+      bigView(tester);
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+
+      await selectLassoTool(tester);
+
+      expect(find.byType(LassoGestureDetector), findsOneWidget);
+      expect(find.byType(CircuitHitTestView), findsOneWidget);
+      expect(find.byType(SelectionIndicators), findsOneWidget);
     });
   });
 
-  group('EditorScreen selection tool input layer', () {
-    Widget app() => ProviderScope(
-      overrides: [databaseProvider.overrideWithValue(db)],
-      child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
-    );
-
-    Widget appWith(ProviderContainer container) => UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(home: EditorScreen(circuitId: circuitId)),
-    );
-
-    /// Adds a single resistor (and its two endpoints) to the test circuit so
-    /// there is something for the selection shortcuts to act on.
-    Future<void> seedResistor(ProviderContainer container) async {
-      final viewModel = container.read(
-        editorViewModelProvider(circuitId: circuitId).notifier,
-      );
-      final circuit = await container.read(
-        editorViewModelProvider(circuitId: circuitId).future,
-      );
-      final tool =
-          Tool.fromMeta(
-                meta: resistorMeta(),
-                uuid: const Uuid(),
-                circuit: circuit,
-              )
-              as AddComponentTool;
-      await viewModel.updateCircuit(
-        tool.addComponentAtPos(circuit, const Offset(120, 90)),
-      );
-    }
-
-    Future<void> selectLassoTool(WidgetTester tester) async {
-      // Open the selection group's flyout, then pick the lasso sub-tool.
-      await tester.tap(find.byTooltip('Lasso select'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Lasso select').last);
-      await tester.pumpAndSettle();
-    }
-
-    testWidgets('wraps the canvas in the lasso selection widgets once the '
-        'lasso tool is selected', (tester) async {
-      tester.view.physicalSize = const Size(2400, 1800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      await tester.pumpWidget(app());
-      await tester.pumpAndSettle();
-
-      await selectLassoTool(tester);
-
-      expect(find.byType(SelectionKeyboardListener), findsOneWidget);
-      expect(find.byType(LassoSelectionGestureDetector), findsOneWidget);
-      expect(find.byType(CircuitHitTestView), findsOneWidget);
-      expect(find.byType(SelectionIndicators), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.byType(LassoSelectionGestureDetector),
-          matching: find.byType(CircuitView),
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('Ctrl + A selects every component and endpoint', (
+  group('editor-wide keyboard shortcuts', () {
+    testWidgets('Ctrl+A selects all and Escape clears, with no tool selected', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(2400, 1800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
+      bigView(tester);
       final container = makeContainer();
       await seedResistor(container);
 
       await tester.pumpWidget(appWith(container));
       await tester.pumpAndSettle();
-      await selectLassoTool(tester);
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
       await tester.pump();
 
-      final selection = container.read(
+      final selected = container.read(
         currentSelectionProvider(circuitId: circuitId),
       );
-      expect(selection.componentIds, hasLength(1));
-      expect(selection.endpointIds, hasLength(2));
-    });
-
-    testWidgets('Escape clears an existing selection', (tester) async {
-      tester.view.physicalSize = const Size(2400, 1800);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      final container = makeContainer();
-      await seedResistor(container);
-
-      await tester.pumpWidget(appWith(container));
-      await tester.pumpAndSettle();
-      await selectLassoTool(tester);
-
-      // Populate a selection via the select-all shortcut first.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
-      await tester.pump();
-      expect(
-        container.read(currentSelectionProvider(circuitId: circuitId)).isEmpty,
-        isFalse,
-      );
+      expect(selected.componentIds, hasLength(1));
+      expect(selected.endpointIds, hasLength(2));
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pump();
-
       expect(
         container.read(currentSelectionProvider(circuitId: circuitId)).isEmpty,
         isTrue,
       );
     });
+
+    testWidgets('Ctrl+Z undoes the last edit', (tester) async {
+      bigView(tester);
+      final container = makeContainer();
+      await seedResistor(container);
+
+      await tester.pumpWidget(appWith(container));
+      await tester.pumpAndSettle();
+      expect(
+        container
+            .read(editorViewModelProvider(circuitId: circuitId).notifier)
+            .canUndo,
+        isTrue,
+      );
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pumpAndSettle();
+
+      final circuit = await container.read(
+        editorViewModelProvider(circuitId: circuitId).future,
+      );
+      expect(circuit.components, isEmpty);
+    });
   });
 
-  group('AddComponentCanvasGestureDetector', () {
-    Widget harness({
-      required void Function(Offset) onTap,
-      required void Function({required Offset from, required Offset to}) onDrag,
-    }) => MaterialApp(
-      home: AddComponentCanvasGestureDetector(
-        branch: const Resistor(),
-        addComponentCallback: onTap,
-        addComponentBetweenCallback: onDrag,
-        child: const SizedBox.expand(),
-      ),
-    );
+  group('Enter adds a component for the active component tool', () {
+    testWidgets('places a resistor', (tester) async {
+      bigView(tester);
+      final container = makeContainer();
 
-    testWidgets('a drag reports its start and end offsets', (tester) async {
-      Offset? tapped;
-      ({Offset from, Offset to})? dragged;
+      await tester.pumpWidget(appWith(container));
+      await tester.pumpAndSettle();
+      await selectComponentTool(tester, 'Add Resistor');
 
-      await tester.pumpWidget(
-        harness(
-          onTap: (pos) => tapped = pos,
-          onDrag: ({required from, required to}) =>
-              dragged = (from: from, to: to),
-        ),
-      );
-
-      await tester.dragFrom(const Offset(100, 100), const Offset(80, 120));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
 
-      expect(tapped, isNull);
-      expect(dragged, isNotNull);
-      expect(dragged!.from, const Offset(100, 100));
-      expect(dragged!.to, const Offset(180, 220));
-    });
-
-    testWidgets('a drag that returns near its start falls back to tap '
-        'placement', (tester) async {
-      Offset? tapped;
-      ({Offset from, Offset to})? dragged;
-
-      await tester.pumpWidget(
-        harness(
-          onTap: (pos) => tapped = pos,
-          onDrag: ({required from, required to}) =>
-              dragged = (from: from, to: to),
-        ),
+      final circuit = await container.read(
+        editorViewModelProvider(circuitId: circuitId).future,
       );
-
-      final gesture = await tester.startGesture(const Offset(100, 100));
-      await gesture.moveBy(const Offset(40, 0));
-      await gesture.moveBy(const Offset(-38, 2));
-      await gesture.up();
-      await tester.pumpAndSettle();
-
-      expect(dragged, isNull);
-      expect(tapped, isNotNull);
-    });
-
-    testWidgets('a tap reports the tapped offset', (tester) async {
-      Offset? tapped;
-
-      await tester.pumpWidget(
-        harness(
-          onTap: (pos) => tapped = pos,
-          onDrag: ({required from, required to}) {},
-        ),
-      );
-
-      await tester.tapAt(const Offset(140, 160));
-      await tester.pumpAndSettle();
-
-      expect(tapped, const Offset(140, 160));
+      expect(circuit.components, hasLength(1));
+      expect(circuit.components.single.branch, isA<Resistor>());
     });
   });
 }

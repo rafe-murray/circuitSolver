@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/ui/view_models/tool/tool.dart';
+import 'package:frontend/ui/view_models/tool/tool_catalog.dart';
 
 /// Floating card of tool groups shown over the circuit editor canvas.
 ///

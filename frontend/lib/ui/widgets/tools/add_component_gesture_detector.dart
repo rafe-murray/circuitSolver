@@ -1,59 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/data/model/circuit_models.dart';
 import 'package:frontend/ui/core/themes/circuit_theme.dart';
+import 'package:frontend/ui/view_models/component_placement.dart';
+import 'package:frontend/ui/view_models/editor_intents.dart';
 import 'package:frontend/ui/widgets/component_painter.dart';
 
-/// Catches canvas gestures for the "add component" tool.
+/// Catches canvas gestures for the "add component" tool and dispatches an
+/// [AddComponentIntent] describing where to place the component.
 ///
 /// A tap drops a default-sized component at the tapped point. A drag places a
 /// component whose two endpoints are the drag's start and end points, with a
 /// live preview drawn under the pointer while the drag is in progress.
-class AddComponentCanvasGestureDetector extends StatefulWidget {
-  /// Called when the user taps (or performs a negligibly short drag) at
-  /// [position] in canvas coordinates.
-  final void Function(Offset position) addComponentCallback;
-
-  /// Called when the user completes a drag, with the endpoints in canvas
-  /// coordinates.
-  final void Function({required Offset from, required Offset to})
-  addComponentBetweenCallback;
-
-  /// The branch rendered in the drag preview.
+class AddComponentGestureDetector extends StatefulWidget {
+  /// The branch rendered in the drag preview and carried on the dispatched
+  /// intent.
   final BranchModel branch;
 
-  final Widget? child;
+  final Widget child;
 
-  const AddComponentCanvasGestureDetector({
+  const AddComponentGestureDetector({
     super.key,
-    required this.addComponentCallback,
-    required this.addComponentBetweenCallback,
     required this.branch,
     required this.child,
   });
 
   @override
-  State<AddComponentCanvasGestureDetector> createState() =>
-      _AddComponentCanvasGestureDetectorState();
+  State<AddComponentGestureDetector> createState() =>
+      _AddComponentGestureDetectorState();
 }
 
-class _AddComponentCanvasGestureDetectorState
-    extends State<AddComponentCanvasGestureDetector> {
+class _AddComponentGestureDetectorState
+    extends State<AddComponentGestureDetector> {
   /// Distance below which a drag is treated as a tap.
   static const _dragSlop = 8.0;
 
   Offset? _dragStart;
   Offset? _dragCurrent;
 
+  void _placeAt(Offset point) {
+    const half = Offset(tapComponentHalfExtent, tapComponentHalfExtent);
+    Actions.maybeInvoke(
+      context,
+      AddComponentIntent(
+        branch: widget.branch,
+        from: point - half,
+        to: point + half,
+      ),
+    );
+  }
+
+  void _placeBetween(Offset from, Offset to) {
+    Actions.maybeInvoke(
+      context,
+      AddComponentIntent(branch: widget.branch, from: from, to: to),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dragStart = _dragStart;
     final dragCurrent = _dragCurrent;
     return GestureDetector(
-      behavior: HitTestBehavior
-          .opaque, // Ensures the entire space catches the hit test
-      onTapUp: (details) {
-        widget.addComponentCallback(details.localPosition);
-      },
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (details) => _placeAt(details.localPosition),
       // onPanDown reports the true press position; onPanStart only fires once
       // the drag has moved past the gesture arena's slop.
       onPanDown: (details) {
@@ -80,14 +89,14 @@ class _AddComponentCanvasGestureDetectorState
         });
         if (start == null || end == null) return;
         if ((end - start).distance < _dragSlop) {
-          widget.addComponentCallback(start);
+          _placeAt(start);
         } else {
-          widget.addComponentBetweenCallback(from: start, to: end);
+          _placeBetween(start, end);
         }
       },
       child: Stack(
         children: [
-          if (widget.child != null) widget.child!,
+          widget.child,
           if (dragStart != null &&
               dragCurrent != null &&
               (dragCurrent - dragStart).distance >= _dragSlop)

@@ -205,7 +205,8 @@ abstract class _$SelectedTool extends $Notifier<ToolMeta?> {
 /// The user's current selection of components and endpoints for [circuitId].
 ///
 /// Transient UI state: it is not persisted and takes no part in the circuit
-/// model or the undo history.
+/// model or the undo history. Kept alive because it can be set from an
+/// editor-wide shortcut (select-all) at a moment when nothing is watching it.
 
 @ProviderFor(CurrentSelection)
 final currentSelectionProvider = CurrentSelectionFamily._();
@@ -213,20 +214,22 @@ final currentSelectionProvider = CurrentSelectionFamily._();
 /// The user's current selection of components and endpoints for [circuitId].
 ///
 /// Transient UI state: it is not persisted and takes no part in the circuit
-/// model or the undo history.
+/// model or the undo history. Kept alive because it can be set from an
+/// editor-wide shortcut (select-all) at a moment when nothing is watching it.
 final class CurrentSelectionProvider
     extends $NotifierProvider<CurrentSelection, Selection> {
   /// The user's current selection of components and endpoints for [circuitId].
   ///
   /// Transient UI state: it is not persisted and takes no part in the circuit
-  /// model or the undo history.
+  /// model or the undo history. Kept alive because it can be set from an
+  /// editor-wide shortcut (select-all) at a moment when nothing is watching it.
   CurrentSelectionProvider._({
     required CurrentSelectionFamily super.from,
     required UuidValue super.argument,
   }) : super(
          retry: null,
          name: r'currentSelectionProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -264,12 +267,13 @@ final class CurrentSelectionProvider
   }
 }
 
-String _$currentSelectionHash() => r'ab4bc2fdabc80aeb4ba456a783dd3f3378f2c38e';
+String _$currentSelectionHash() => r'07e48b2453721228f593d6901319397b4b83177a';
 
 /// The user's current selection of components and endpoints for [circuitId].
 ///
 /// Transient UI state: it is not persisted and takes no part in the circuit
-/// model or the undo history.
+/// model or the undo history. Kept alive because it can be set from an
+/// editor-wide shortcut (select-all) at a moment when nothing is watching it.
 
 final class CurrentSelectionFamily extends $Family
     with
@@ -286,13 +290,14 @@ final class CurrentSelectionFamily extends $Family
         name: r'currentSelectionProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   /// The user's current selection of components and endpoints for [circuitId].
   ///
   /// Transient UI state: it is not persisted and takes no part in the circuit
-  /// model or the undo history.
+  /// model or the undo history. Kept alive because it can be set from an
+  /// editor-wide shortcut (select-all) at a moment when nothing is watching it.
 
   CurrentSelectionProvider call({required UuidValue circuitId}) =>
       CurrentSelectionProvider._(argument: circuitId, from: this);
@@ -304,7 +309,8 @@ final class CurrentSelectionFamily extends $Family
 /// The user's current selection of components and endpoints for [circuitId].
 ///
 /// Transient UI state: it is not persisted and takes no part in the circuit
-/// model or the undo history.
+/// model or the undo history. Kept alive because it can be set from an
+/// editor-wide shortcut (select-all) at a moment when nothing is watching it.
 
 abstract class _$CurrentSelection extends $Notifier<Selection> {
   late final _$args = ref.$arg as UuidValue;
@@ -368,7 +374,7 @@ final class EditorViewModelProvider
   }
 }
 
-String _$editorViewModelHash() => r'089f91dd4fdace13197ea4d18b8a95f6d6ac4965';
+String _$editorViewModelHash() => r'2e92594d14e2b079e753115d5e127595419d1183';
 
 final class EditorViewModelFamily extends $Family
     with
