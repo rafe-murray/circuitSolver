@@ -17,6 +17,13 @@
         "CIRCUITSOLVER_BUILD_TESTS": "ON",
         "CIRCUITSOLVER_TEST_COVERAGE": true
       }
+    },
+    {
+      "name": "ci",
+      "inherits": "tests",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux-release"
+      }
     }
   ]
 }
