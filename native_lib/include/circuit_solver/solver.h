@@ -8,8 +8,11 @@
 #include "circuit_solver/errors.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/expressionNode.h"
+
 namespace circuitsolver::solver {
 
+using circuitsolver::expression::Expression;
+using errors::Error;
 class Solution {
  public:
   Solution(const std::vector<Expression>& solvedExpressions,
@@ -36,7 +39,7 @@ class PartitionSolver {
   virtual auto Solve(
       const std::vector<Expression>& expressions,
       std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
-      -> std::expected<Solution, CircuitSolverError> = 0;
+      -> std::expected<Solution, Error> = 0;
 };
 
 class NonLinearPartitionSolver : public PartitionSolver {
@@ -46,11 +49,43 @@ class NonLinearPartitionSolver : public PartitionSolver {
   auto Solve(
       const std::vector<Expression>& expressions,
       std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
-      -> std::expected<Solution, CircuitSolverError> override;
+      -> std::expected<Solution, Error> override;
 
  private:
   std::unique_ptr<ceres::Solver> ceresSolver;
 };
+
+class LinearPartitionSolver : public PartitionSolver {
+ public:
+  LinearPartitionSolver() = default;
+  auto Solve(
+      const std::vector<Expression>& expressions,
+      std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+      -> std::expected<Solution, Error> override;
+};
+
+/// Solves linear partitions with a linear solver and all other partitions with
+/// a non-linear solver
+class HybridPartitionSolver : public PartitionSolver {
+ public:
+  HybridPartitionSolver();
+
+  /// @param linearSolver solves partitions where `isPartitionLinear` is true
+  /// @param nonLinearSolver solves all other partitions
+  HybridPartitionSolver(std::unique_ptr<PartitionSolver> linearSolver,
+                        std::unique_ptr<PartitionSolver> nonLinearSolver);
+  auto Solve(
+      const std::vector<Expression>& expressions,
+      std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+      -> std::expected<Solution, Error> override;
+
+ private:
+  std::unique_ptr<PartitionSolver> linearSolver;
+  std::unique_ptr<PartitionSolver> nonLinearSolver;
+};
+
+auto isPartitionLinear(const std::vector<Expression>& expressions,
+                       ConditionMap conditionMap) -> bool;
 
 class Solver {
  public:
@@ -58,7 +93,7 @@ class Solver {
   explicit Solver(std::unique_ptr<PartitionSolver> partitionSolver);
   // PartitionSolver partitionSolver;
   auto Solve(const std::vector<Expression>& expressions)
-      -> std::expected<Solution, CircuitSolverError>;
+      -> std::expected<Solution, errors::Error>;
 
  private:
   std::unique_ptr<PartitionSolver> partitionSolver;

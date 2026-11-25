@@ -67,6 +67,7 @@ target_sources(
     src/edge.cpp
     src/errors.cpp
     src/expression.cpp
+    src/expressionIterator.cpp
     src/expressionNode.cpp
     src/logging.cpp
     src/solver.cpp
@@ -77,6 +78,7 @@ target_include_directories(circuitsolver PUBLIC include)
 include(FetchContent)
 
 find_package(Ceres CONFIG REQUIRED)
+find_package(Eigen3 CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(stduuid CONFIG REQUIRED)
 find_package(glog CONFIG REQUIRED)
@@ -96,7 +98,7 @@ protobuf_generate(
 set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
 
 # TODO: make some headers private
-target_link_libraries(circuitsolver PRIVATE Ceres::ceres)
+target_link_libraries(circuitsolver PRIVATE Ceres::ceres Eigen3::Eigen)
 
 target_link_libraries(circuitsolver PUBLIC
   protobuf::libprotobuf

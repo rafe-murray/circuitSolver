@@ -5,13 +5,24 @@
 #include <cassert>
 #include <memory>
 #include <optional>
-#include <span>
 #include <utility>
 
 #include "circuit_solver/branch.h"
-#include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
+
+using circuitsolver::branch::BranchConnections;
+using circuitsolver::branch::CurrentSource;
+using circuitsolver::branch::IdealDiode;
+using circuitsolver::branch::IdealDiodeParameters;
+using circuitsolver::branch::RealDiode;
+using circuitsolver::branch::RealDiodeParameters;
+using circuitsolver::branch::Resistor;
+using circuitsolver::branch::VoltageSource;
+using circuitsolver::branch::ZenerDiode;
+using circuitsolver::branch::ZenerDiodeParameters;
+
+using namespace circuitsolver::edge;
 
 Edge::Edge(uuids::uuid id, std::unique_ptr<Branch> branch)
     : id(id), branch(std::move(branch)) {}

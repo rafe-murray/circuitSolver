@@ -1,17 +1,21 @@
-#ifndef EDGE_H
-#define EDGE_H
+#pragma once
 
 #include <stduuid/uuid.h>
 
 #include <memory>
 #include <optional>
-#include <span>
 #include <unordered_map>
 
 #include "circuit_solver/branch.h"
 #include "circuit_solver/expression.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
+
+namespace circuitsolver::edge {
+using circuitsolver::branch::Branch;
+using circuitsolver::expression::Expression;
+using circuitsolver::vertex::Vertex;
+using circuitsolver::vertex::VertexMap;
 
 /// Represents a circuit component
 class Edge {
@@ -50,4 +54,4 @@ class Edge {
 
 using EdgeMap = std::unordered_map<uuids::uuid, std::unique_ptr<Edge>>;
 
-#endif
+}  // namespace circuitsolver::edge

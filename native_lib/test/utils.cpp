@@ -2,6 +2,7 @@
 
 #include <absl/status/status.h>
 #include <google/protobuf/json/json.h>
+#include <google/protobuf/util/field_comparator.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/util/message_differencer.h>
 #include <stduuid/uuid.h>
@@ -22,13 +23,20 @@
 #include "gtest/gtest.h"
 
 using google::protobuf::json::MessageToJsonString;
+using google::protobuf::util::DefaultFieldComparator;
 using google::protobuf::util::MessageDifferencer;
 
 auto IsEqual(const char* actualExpression, const char* expectedExpression,
              const proto::CircuitGraph& actual,
              const proto::CircuitGraph& expected) -> testing::AssertionResult {
-  bool equal = MessageDifferencer::Equals(actual, expected);
-  if (equal) {
+  auto comparator = DefaultFieldComparator{};
+  comparator.set_float_comparison(DefaultFieldComparator::APPROXIMATE);
+  // Like IsWithinRelativeTolerance, fall back to an absolute tolerance near 0
+  comparator.SetDefaultFractionAndMargin(defaultRelativeTolerance,
+                                         defaultRelativeTolerance);
+  auto differencer = MessageDifferencer{};
+  differencer.set_field_comparator(&comparator);
+  if (differencer.Compare(actual, expected)) {
     return testing::AssertionSuccess();
   }
   std::string actualJson{};

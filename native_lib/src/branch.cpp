@@ -12,7 +12,9 @@
 #include "circuit_solver/vertex.h"
 
 using circuitsolver::expression::exp;
+using circuitsolver::expression::Expression;
 
+using namespace circuitsolver::branch;
 Branch::Branch(BranchConnections connections)
     : connections(std::move(connections)) {}
 auto Branch::getFrom() const -> Vertex { return connections.from; }

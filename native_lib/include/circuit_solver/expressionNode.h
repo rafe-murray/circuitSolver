@@ -1,21 +1,17 @@
-#ifndef EXPRESSIONNODE_H
-#define EXPRESSIONNODE_H
+#pragma once
 
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <memory>
 #include <ostream>
 #include <span>
 #include <unordered_map>
-#include <unordered_set>
-#include <vector>
 
-struct BinaryOpNode;
-struct ExpressionNode;
-struct TernaryOpNode;
-struct UnaryOpNode;
-struct VariableNode;
+class BinaryOpNode;
+class ExpressionNode;
+class TernaryOpNode;
+class UnaryOpNode;
+class VariableNode;
 class Condition;
 
 // NOTE: if this class needs to have improved performance, we can do the
@@ -37,31 +33,24 @@ auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
 }
 
 /// A single node in the AST of an `Expression`
-struct ExpressionNode {
+class ExpressionNode {
+ public:
+  enum class Kind : uint8_t {
+    BinaryOp,
+    TernaryOp,
+    UnaryOp,
+    Variable,
+  };
+
   /// virtual destructor to enable dynamic dispatch
   virtual ~ExpressionNode() = default;
-
-  /// Stores pointers to all unknown values in the AST with `this` as a root in
-  /// `unknowns`
-  ///
-  /// @param unknowns a set of unknown values to add the unknowns in this AST
-  /// to. Unknowns in this AST may or may not be already present already;
-  virtual void getUnknowns(std::unordered_set<double*>& unknowns) = 0;
 
   /// Prints the node to `out`
   /// @param out the stream to print to
   /// @return `out`
   virtual auto serialize(std::ostream& out) const -> std::ostream& = 0;
 
-  /// Marks the subtree of this node as known. This should be a no-op for node
-  /// type that are not VariableNodes
-  virtual void markKnown() = 0;
-
-  // TODO: find a better name for discontinuities
-
-  /// gets a list of conditions for this subtree
-  [[nodiscard]] virtual auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>> = 0;
+  [[nodiscard]] virtual auto kind() const -> Kind = 0;
 
  protected:
   ExpressionNode() = default;
@@ -71,51 +60,22 @@ struct ExpressionNode {
   auto operator=(ExpressionNode&& other) -> ExpressionNode& = default;
 };
 
-/// Types of binary operations
-enum class BinaryOp : uint8_t { MUL, DIV, ADD, SUB };
-
 /// A Binary operation node in the AST
-struct BinaryOpNode : ExpressionNode {
+class BinaryOpNode : public ExpressionNode {
+ public:
+  /// Types of binary operations
+  enum class Op : uint8_t { MUL, DIV, ADD, SUB };
+
   /// Creates a `BinaryOpNode`
   ///
   /// @param lhs the left hand side of the operation
   /// @param rhs the right hand side of the operation
   /// @param op the type of operation
-  BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs, BinaryOp op);
-
-  /// Evaluates this node in the AST
-  ///
-  /// @param parameters an array of values to be used for the unknowns
-  /// @param map a mapping from pointers to the unknown values to the index of
-  /// the corresponding value to use in `parameters`
-  /// @return the value of the AST with `this` as a root
-  template <typename T>
-  auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
-                              const ConditionMap& conditionMap) const -> T {
-    switch (op) {
-      case BinaryOp::MUL:
-        return expressionNode::evaluate(lhs, parameters, map, conditionMap) *
-               expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::DIV:
-        return expressionNode::evaluate(lhs, parameters, map, conditionMap) /
-               expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::ADD:
-        return expressionNode::evaluate(lhs, parameters, map, conditionMap) +
-               expressionNode::evaluate(rhs, parameters, map, conditionMap);
-      case BinaryOp::SUB:
-        return expressionNode::evaluate(lhs, parameters, map, conditionMap) -
-               expressionNode::evaluate(rhs, parameters, map, conditionMap);
-    }
-  }
-
-  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+  BinaryOpNode(ExpressionNodePtr lhs, ExpressionNodePtr rhs, Op op);
 
   auto serialize(std::ostream& out) const -> std::ostream& override;
 
-  void markKnown() override;
-
-  [[nodiscard]] auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>> override;
+  [[nodiscard]] auto kind() const -> Kind override;
 
   /// The left hand side of the operation
   ExpressionNodePtr lhs;
@@ -124,23 +84,22 @@ struct BinaryOpNode : ExpressionNode {
   ExpressionNodePtr rhs;
 
   /// The type of operation
-  BinaryOp op;
+  Op op;
 };
-
-/// Types of binary operations that return booleans
-enum class BooleanBinaryOp : uint8_t { LT, LEQ, GT, GEQ };
 
 /// A Binary operation node in the AST that return a boolean value.
 /// NOTE: all other nodes return `double` values
-class Condition : public std::enable_shared_from_this<Condition> {
+class Condition {
  public:
+  /// Types of binary operations that return booleans
+  enum class Op : uint8_t { LT, LEQ, GT, GEQ };
+
   /// Creates a `Condition`
   ///
   /// @param lhs the left hand side of the operation
   /// @param rhs the right hand side of the operation
   /// @param op the type of operation
-  Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs,
-            BooleanBinaryOp op);
+  Condition(const ExpressionNodePtr& lhs, const ExpressionNodePtr& rhs, Op op);
 
   [[nodiscard]] auto getError() const -> std::shared_ptr<BinaryOpNode>;
 
@@ -150,25 +109,12 @@ class Condition : public std::enable_shared_from_this<Condition> {
   /// @return a pointer to the value of the unknown
   [[nodiscard]] auto getConstraint() const -> double*;
 
-  /// Stores pointers to all unknown values in the AST with `this` as a root in
-  /// `unknowns`
-  ///
-  /// @param unknowns a set of unknown values to add the unknowns in this AST
-  /// to. Unknowns in this AST may or may not be already present already;
-  void getUnknowns(std::unordered_set<double*>& unknowns) const;
-
   /// Prints the node to `out`
   ///
   /// @param out the stream to print to
   /// @return `out`
   auto serialize(std::ostream& out) const -> std::ostream&;
 
-  void markKnown() const;
-  [[nodiscard]] auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>>;
-  void getDiscontinuityError(std::vector<ExpressionNodePtr>& error) const;
-
- private:
   /// Value of the condition. The condition is true if this is greater than zero
   ExpressionNodePtr val;
 
@@ -183,7 +129,8 @@ class Condition : public std::enable_shared_from_this<Condition> {
 };
 
 /// A Ternary operation node in the AST
-struct TernaryOpNode : ExpressionNode {
+class TernaryOpNode : public ExpressionNode {
+ public:
   /// Creates a `TernaryOpNode`
   ///
   /// @param condition what to test to determine which expression to use
@@ -192,34 +139,12 @@ struct TernaryOpNode : ExpressionNode {
   TernaryOpNode(std::shared_ptr<const Condition> condition,
                 ExpressionNodePtr valIfTrue, ExpressionNodePtr valIfFalse);
 
-  /// Evaluates this node in the AST
-  ///
-  /// @param parameters an array of values to be used for the unknowns
-  /// @param map a mapping from pointers to the unknown values to the index of
-  /// the corresponding value to use in `parameters`
-  /// @return the value of the AST with `this` as a root
-  template <typename T>
-  auto evaluateImplementation(std::span<T> parameters,
-                              const ExpressionMap& expressionMap,
-                              const ConditionMap& conditionMap) const -> T {
-    return conditionMap.at(condition)
-               ? expressionNode::evaluate(valIfTrue, parameters, expressionMap,
-                                          conditionMap)
-               : expressionNode::evaluate(valIfFalse, parameters, expressionMap,
-                                          conditionMap);
-  }
-
-  void getUnknowns(std::unordered_set<double*>& unknowns) override;
-
   auto serialize(std::ostream& out) const -> std::ostream& override;
 
   /// The condition used to determine which expression to evaluate
   std::shared_ptr<const Condition> condition;
 
-  void markKnown() override;
-
-  [[nodiscard]] auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>> override;
+  [[nodiscard]] auto kind() const -> Kind override;
 
   /// The expression to evaluate if `condition` is true
   ExpressionNodePtr valIfTrue;
@@ -228,54 +153,32 @@ struct TernaryOpNode : ExpressionNode {
   ExpressionNodePtr valIfFalse;
 };
 
-/// Types of unary operations
-enum class UnaryOp : uint8_t { EXP, NEG };
-
 /// A Unary operation node in the AST
-struct UnaryOpNode : ExpressionNode {
+class UnaryOpNode : public ExpressionNode {
+ public:
+  /// Types of unary operations
+  enum class Op : uint8_t { EXP, NEG };
+
   /// Creates a `UnaryOpNode`
   ///
   /// @param operand the operand for the operation
   /// @param op the type of operation
-  UnaryOpNode(ExpressionNodePtr operand, UnaryOp op);
-
-  /// Evaluates this node in the AST
-  ///
-  /// @param parameters an array of values to be used for the unknowns
-  /// @param map a mapping from pointers to the unknown values to the index of
-  /// the corresponding value to use in `parameters`
-  /// @return the value of the AST with `this` as a root
-  template <typename T>
-  auto evaluateImplementation(std::span<T> parameters, const ExpressionMap& map,
-                              const ConditionMap& conditionMap) const -> T {
-    switch (op) {
-      case UnaryOp::EXP:
-        return exp(
-            expressionNode::evaluate(operand, parameters, map, conditionMap));
-      case UnaryOp::NEG:
-        return -(
-            expressionNode::evaluate(operand, parameters, map, conditionMap));
-    }
-  }
-
-  void getUnknowns(std::unordered_set<double*>& unknowns) override;
+  UnaryOpNode(ExpressionNodePtr operand, Op op);
 
   auto serialize(std::ostream& out) const -> std::ostream& override;
 
-  void markKnown() override;
-
-  [[nodiscard]] auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>> override;
+  [[nodiscard]] auto kind() const -> Kind override;
 
   /// The operand for the operation
   ExpressionNodePtr operand;
 
   /// The type of operation
-  UnaryOp op;
+  Op op;
 };
 
 /// A node representing a single known or unknown value in the AST
-struct VariableNode : ExpressionNode {
+class VariableNode : public ExpressionNode {
+ public:
   /// Creates a `VariableNode` representing an unknown
   VariableNode();
 
@@ -284,29 +187,9 @@ struct VariableNode : ExpressionNode {
   /// @param value the value of the node
   explicit VariableNode(double value);
 
-  /// Evaluates this node in the AST
-  ///
-  /// @param parameters an array of values to be used for the unknowns
-  /// @param map a mapping from pointers to the unknown values to the index of
-  /// the corresponding value to use in `parameters`
-  /// @return the value of the AST with `this` as a root
-  template <typename T>
-  auto evaluateImplementation(std::span<T> parameters,
-                              const ExpressionMap& map) const -> T {
-    if (known) {
-      return T(value);
-    }
-    return parameters[map.at(&value)];
-  }
-
-  void getUnknowns(std::unordered_set<double*>& unknowns) override;
-
   auto serialize(std::ostream& out) const -> std::ostream& override;
 
-  void markKnown() override;
-
-  [[nodiscard]] auto getConditions() const
-      -> std::unordered_set<std::shared_ptr<const Condition>> override;
+  [[nodiscard]] auto kind() const -> Kind override;
 
   /// The value of this node
   double value;
@@ -315,48 +198,5 @@ struct VariableNode : ExpressionNode {
   bool known;
 };
 
-namespace expressionNode {
-class InvalidNodeTypeException : public std::exception {
-  [[nodiscard]] auto what() const noexcept -> const char* override {
-    return "Invalid ExpressionNode type. Valid types are VariableNode, "
-           "BinaryOpNode, UnaryOpNode, and TernaryOpNode";
-  }
-};
-
-// TODO: add a NodeType enum and use that instead of RTTI for evaluate since
-// this is called very frequently
-
-/// Evaluates the AST with `root` as a root.
-///
-/// Note that this is templated so that `ceres` can do automatic
-/// differentiation
-/// @param parameters an array of values to be used for the unknowns
-/// @param map a mapping from pointers to the unknown values to the index of
-/// the corresponding value to use in `parameters`
-/// @return the value of the AST with `root` as a root
-template <typename T>
-auto evaluate(const ExpressionNodePtr& root, std::span<const T> parameters,
-              const ExpressionMap& map, const ConditionMap& conditionMap) -> T {
-  if (std::shared_ptr<VariableNode> node =
-          std::dynamic_pointer_cast<VariableNode>(root)) {
-    return node->evaluateImplementation(parameters, map);
-  }
-  if (std::shared_ptr<BinaryOpNode> node =
-          std::dynamic_pointer_cast<BinaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map, conditionMap);
-  }
-  if (std::shared_ptr<UnaryOpNode> node =
-          std::dynamic_pointer_cast<UnaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map, conditionMap);
-  }
-  if (std::shared_ptr<TernaryOpNode> node =
-          std::dynamic_pointer_cast<TernaryOpNode>(root)) {
-    return node->evaluateImplementation(parameters, map, conditionMap);
-  }
-  throw InvalidNodeTypeException{};
-}
-}  // namespace expressionNode
-
 auto operator<<(std::ostream& out, const ExpressionNodePtr& node)
     -> std::ostream&;
-#endif

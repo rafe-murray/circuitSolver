@@ -5,13 +5,23 @@
 #include <stduuid/uuid.h>
 
 #include <string>
+#include <utility>
 
 #include "circuit_solver/branch.h"
 #include "circuit_solver/circuitGraph.h"
 #include "circuit_solver/edge.h"
+#include "circuit_solver/errors.h"
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 #include "utils.h"
+
+using circuitsolver::branch::IdealDiode;
+using circuitsolver::branch::RealDiode;
+using circuitsolver::branch::Resistor;
+using circuitsolver::branch::VoltageSource;
+using circuitsolver::circuitgraph::CircuitGraph;
+using circuitsolver::edge::Edge;
+using circuitsolver::vertex::Vertex;
 
 TEST(CircuitTest, BuildBasicCircuit) {
   CircuitGraph cg;
@@ -34,7 +44,7 @@ TEST(CircuitTest, BuildBasicCircuit) {
   EXPECT_TRUE(cg.addEdge(vs));
   EXPECT_TRUE(cg.addEdge(r1));
   EXPECT_TRUE(cg.addEdge(r2));
-  ASSERT_TRUE(cg.solveCircuit());
+  ASSERT_TRUE(cg.solveCircuit().has_value());
   EXPECT_TRUE(IsWithinRelativeTolerance(ref.getVoltage().evaluate(), 0));
   EXPECT_TRUE(IsWithinRelativeTolerance(5, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(3, v2.getVoltage().evaluate()));
@@ -76,7 +86,7 @@ TEST(CircuitTest, RealDiode) {
   EXPECT_TRUE(cg.addEdge(r3));
   EXPECT_TRUE(cg.addEdge(r4));
 
-  ASSERT_TRUE(cg.solveCircuit());
+  ASSERT_TRUE(cg.solveCircuit().has_value());
   EXPECT_TRUE(IsWithinRelativeTolerance(8.595, v1.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(8.006, v2.getVoltage().evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(337.17e-6, d.getCurrent().evaluate()));
@@ -138,7 +148,33 @@ TEST(CircuitTest, ContradictoryCircuitHasNoSolution) {
 
   auto result = cg.solveCircuit();
   ASSERT_FALSE(result);
-  EXPECT_EQ(result.error().type(), circuitsolver::ErrorType::NoSolution);
+  EXPECT_EQ(result.error().type(),
+            circuitsolver::errors::ErrorType::NoSolution);
+}
+
+TEST(CircuitTest, FloatingNodesAreUnderdetermined) {
+  CircuitGraph cg;
+  auto gen = getUuidGenerator();
+  Vertex ref(gen(), 0);
+  Vertex v1(gen());
+  // v2 and v3 are only connected to each other, so their voltages are arbitrary
+  Vertex v2(gen());
+  Vertex v3(gen());
+  Edge vs(gen(), VoltageSource({.from = ref, .to = v1}, 5));
+  Edge r1(gen(), Resistor({.from = v1, .to = ref}, 1000));
+  Edge r2(gen(), Resistor({.from = v2, .to = v3}, 1000));
+  EXPECT_TRUE(cg.addVertex(ref));
+  EXPECT_TRUE(cg.addVertex(v1));
+  EXPECT_TRUE(cg.addVertex(v2));
+  EXPECT_TRUE(cg.addVertex(v3));
+  EXPECT_TRUE(cg.addEdge(vs));
+  EXPECT_TRUE(cg.addEdge(r1));
+  EXPECT_TRUE(cg.addEdge(r2));
+
+  auto result = cg.solveCircuit();
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(),
+            circuitsolver::errors::ErrorType::UnderdeterminedSystem);
 }
 
 // TODO: update these files
@@ -146,14 +182,12 @@ TEST(CircuitTest, BasicCircuitFromProtobuf) {
   auto cgmUnsolved = GetMessageFromJsonFile("001-unsolved.json");
   auto cgOptionalUnsolved = CircuitGraph::fromProto(cgmUnsolved);
   ASSERT_TRUE(cgOptionalUnsolved.has_value());
-  auto cgUnsolved = cgOptionalUnsolved->get();
-  ASSERT_TRUE(cgUnsolved->solveCircuit());
+  auto cgUnsolved = std::move(cgOptionalUnsolved.value());
+  auto result = cgUnsolved->solveCircuit();
+  ASSERT_TRUE(result.has_value());
 
   auto cgmSolved = GetMessageFromJsonFile("001-solved.json");
-  auto cgOptionalSolved = CircuitGraph::fromProto(cgmSolved);
-  ASSERT_TRUE(cgOptionalSolved.has_value());
-  auto cgSolved = cgOptionalSolved->get();
-  ASSERT_EQ(*cgUnsolved, *cgSolved);
+  EXPECT_PRED_FORMAT2(IsEqual, cgUnsolved->toProto(), cgmSolved);
 }
 
 // TODO: mock the UUID generation for better consistency
@@ -178,7 +212,8 @@ TEST(CircuitTest, BasicCircuitToProtobuf) {
   EXPECT_TRUE(cg.addEdge(vs));
   EXPECT_TRUE(cg.addEdge(r1));
   EXPECT_TRUE(cg.addEdge(r2));
-  cg.solveCircuit();
+  auto result = cg.solveCircuit();
+  ASSERT_TRUE(result.has_value());
   auto buffer = cg.toProto();
   std::string output;
   absl::Status status =

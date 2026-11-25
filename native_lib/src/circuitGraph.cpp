@@ -15,7 +15,6 @@
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -28,9 +27,10 @@
 #include "circuit_solver/solver.h"
 #include "circuit_solver/vertex.h"
 
-using circuitsolver::CircuitSolverError;
 using circuitsolver::constants::solutionCostThreshold;
 using circuitsolver::constants::unknownSeedStdDeviation;
+using circuitsolver::errors::Error;
+using circuitsolver::expression::Expression;
 
 // TODO: reorganize this file
 
@@ -46,9 +46,10 @@ using circuitsolver::constants::unknownSeedStdDeviation;
  * - A way to set the values of the unknowns from this array
  */
 
+using namespace circuitsolver::circuitgraph;
 // TODO: fix case of no discontinuities
 auto CircuitGraph::solveCircuit()
-    -> std::expected<std::reference_wrapper<CircuitGraph>, CircuitSolverError> {
+    -> std::expected<std::reference_wrapper<CircuitGraph>, Error> {
   auto solver = circuitsolver::solver::Solver{};
   auto expressions = getExpressions();
   auto solution = solver.Solve(expressions);

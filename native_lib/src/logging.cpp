@@ -1,11 +1,19 @@
 #include <absl/base/log_severity.h>
+#include <absl/log/log_entry.h>
 #include <absl/log/log_sink.h>
 #include <absl/log/log_sink_registry.h>
 #include <circuit_solver/logging.h>
 #include <glog/log_severity.h>
 #include <glog/logging.h>
 #include <spdlog/common.h>
+#include <spdlog/logger.h>
 #include <spdlog/spdlog.h>
+
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace circuitsolver::logging {
 GlogToSpdlogSink::GlogToSpdlogSink(std::shared_ptr<spdlog::logger> logger)

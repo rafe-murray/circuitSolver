@@ -15,9 +15,12 @@
 #include "circuit_solver/expression.h"
 #include "circuit_solver/expressionNode.h"
 
-using circuitsolver::CircuitSolverError;
-using circuitsolver::ErrorType;
 using circuitsolver::constants::solutionCostThreshold;
+using circuitsolver::errors::Error;
+using circuitsolver::errors::ErrorType;
+using circuitsolver::expression::Expression;
+using circuitsolver::solver::HybridPartitionSolver;
+using circuitsolver::solver::LinearPartitionSolver;
 using circuitsolver::solver::PartitionSolver;
 using circuitsolver::solver::Solution;
 using circuitsolver::solver::Solver;
@@ -33,11 +36,11 @@ class FakePartitionSolver : public PartitionSolver {
   auto Solve(
       const std::vector<Expression>& expressions,
       std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
-      -> std::expected<Solution, CircuitSolverError> override {
+      -> std::expected<Solution, Error> override {
     auto cost = costs.at(nextPartition++);
     if (!cost.has_value()) {
       return std::unexpected{
-          CircuitSolverError{ErrorType::NoSolution, "Partition failed"},
+          Error{ErrorType::NoSolution, "Partition failed"},
       };
     }
     return Solution{expressions, std::move(conditionMap), *cost};
@@ -48,15 +51,61 @@ class FakePartitionSolver : public PartitionSolver {
   size_t nextPartition = 0;
 };
 
+/// Counts how many partitions it is asked to solve
+class CountingPartitionSolver : public PartitionSolver {
+ public:
+  explicit CountingPartitionSolver(int& calls) : calls(calls) {}
+
+  auto Solve(
+      const std::vector<Expression>& expressions,
+      std::unordered_map<std::shared_ptr<const Condition>, bool> conditionMap)
+      -> std::expected<Solution, Error> override {
+    calls++;
+    return Solution{expressions, std::move(conditionMap), 0};
+  }
+
+ private:
+  int& calls;
+};
+
+/// Solves `expressions` with a HybridPartitionSolver
+///
+/// @return the number of calls to the linear and non-linear solvers
+auto countHybridCalls(const std::vector<Expression>& expressions)
+    -> std::pair<int, int> {
+  auto linearCalls = 0;
+  auto nonLinearCalls = 0;
+  auto solver = Solver{std::make_unique<HybridPartitionSolver>(
+      std::make_unique<CountingPartitionSolver>(linearCalls),
+      std::make_unique<CountingPartitionSolver>(nonLinearCalls))};
+  EXPECT_TRUE(solver.Solve(expressions));
+  return {linearCalls, nonLinearCalls};
+}
+
+/// Fails every partition with an error of `type`
+class FailingPartitionSolver : public PartitionSolver {
+ public:
+  explicit FailingPartitionSolver(ErrorType type) : type(type) {}
+
+  auto Solve(const std::vector<Expression>& /*expressions*/,
+             std::unordered_map<std::shared_ptr<const Condition>,
+                                bool> /*conditionMap*/)
+      -> std::expected<Solution, Error> override {
+    return std::unexpected{Error{type, "Partition failed"}};
+  }
+
+ private:
+  ErrorType type;
+};
+
 /// Solves an expression with two conditions, which has four partitions
 auto solveWithCosts(std::vector<std::optional<double>> costs)
-    -> std::expected<Solution, CircuitSolverError> {
+    -> std::expected<Solution, Error> {
   auto x = Expression{};
   auto y = Expression{};
   auto expression = Expression::makeConditional(x > Expression(0.0), x, y) +
                     Expression::makeConditional(y > Expression(0.0), y, x);
-  auto solver =
-      Solver{std::make_unique<FakePartitionSolver>(std::move(costs))};
+  auto solver = Solver{std::make_unique<FakePartitionSolver>(std::move(costs))};
   return solver.Solve({expression});
 }
 }  // namespace
@@ -74,8 +123,8 @@ TEST(SolverTest, SkipsFailedPartitions) {
 }
 
 TEST(SolverTest, NoSolutionWhenAllPartitionsFail) {
-  auto result = solveWithCosts(
-      {std::nullopt, std::nullopt, std::nullopt, std::nullopt});
+  auto result =
+      solveWithCosts({std::nullopt, std::nullopt, std::nullopt, std::nullopt});
   ASSERT_FALSE(result);
   EXPECT_EQ(result.error().type(), ErrorType::NoSolution);
 }
@@ -85,4 +134,108 @@ TEST(SolverTest, NoSolutionWhenBestCostExceedsThreshold) {
   auto result = solveWithCosts({cost, cost * 2, std::nullopt, cost * 3});
   ASSERT_FALSE(result);
   EXPECT_EQ(result.error().type(), ErrorType::NoSolution);
+}
+
+TEST(LinearPartitionSolverTest, SolvesLinearSystem) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto result = LinearPartitionSolver{}.Solve({x + y - 3, x - y - 1}, {});
+  ASSERT_TRUE(result) << result.error().message();
+  EXPECT_LT(result->getCost(), solutionCostThreshold);
+  EXPECT_DOUBLE_EQ(*x.getPtrToUnknown(), 2);
+  EXPECT_DOUBLE_EQ(*y.getPtrToUnknown(), 1);
+}
+
+TEST(LinearPartitionSolverTest, SolvesSubstitutedSubexpressions) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto z = Expression{};
+  auto one = Expression{1.0};
+  // 1/(1 + 1/y) and exp(z) are each replaced with a single unknown
+  auto result = LinearPartitionSolver{}.Solve(
+      {x + one / (one + one / y) - 3, x - Expression(2.5),
+       circuitsolver::expression::exp(z) * 2 + x - 4.5},
+      {});
+  ASSERT_TRUE(result) << result.error().message();
+  EXPECT_LT(result->getCost(), solutionCostThreshold);
+  EXPECT_DOUBLE_EQ(*x.getPtrToUnknown(), 2.5);
+  // 1/(1 + 1/y) = 0.5
+  EXPECT_NEAR(*y.getPtrToUnknown(), 1, 1e-12);
+  // exp(z) = 1
+  EXPECT_NEAR(*z.getPtrToUnknown(), 0, 1e-12);
+}
+
+TEST(LinearPartitionSolverTest, RejectsNonLinearSystem) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto result = LinearPartitionSolver{}.Solve({x * y - 1, x - 1}, {});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::InvalidInput);
+}
+
+TEST(LinearPartitionSolverTest, RejectsUnderdeterminedSystem) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto result = LinearPartitionSolver{}.Solve({x + y - 1}, {});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
+}
+
+TEST(LinearPartitionSolverTest, RejectsKernelValueOutsideRange) {
+  auto x = Expression{};
+  // exp(x) = -1 has no solution
+  auto result = LinearPartitionSolver{}.Solve(
+      {circuitsolver::expression::exp(x) + 1}, {});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::NoSolution);
+}
+
+TEST(LinearPartitionSolverTest, SolverChoosesConsistentPartition) {
+  auto x = Expression{};
+  // x > 0 gives x = 2. x <= 0 gives x = 3, which contradicts its partition
+  auto expression =
+      Expression::makeConditional(x > Expression(0.0), x - 2, x - 3);
+  auto solver = Solver{std::make_unique<LinearPartitionSolver>()};
+  auto result = solver.Solve({expression});
+  ASSERT_TRUE(result) << result.error().message();
+  result->apply();
+  EXPECT_DOUBLE_EQ(*x.getPtrToUnknown(), 2);
+}
+
+TEST(HybridPartitionSolverTest, UsesLinearSolverForLinearPartitions) {
+  auto x = Expression{};
+  auto y = Expression{};
+  EXPECT_EQ(countHybridCalls({x + y - 3, x - y - 1}), std::pair(1, 0));
+}
+
+TEST(HybridPartitionSolverTest, UsesNonLinearSolverForNonLinearPartitions) {
+  auto x = Expression{};
+  auto y = Expression{};
+  EXPECT_EQ(countHybridCalls({x * y - 2, x - 1}), std::pair(0, 1));
+}
+
+TEST(HybridPartitionSolverTest, ChoosesSolverPerPartition) {
+  auto x = Expression{};
+  auto y = Expression{};
+  // Linear when x > 0, non-linear otherwise
+  auto expression =
+      Expression::makeConditional(x > Expression(0.0), x - 2, x * y - 2);
+  EXPECT_EQ(countHybridCalls({expression, y - 1}), std::pair(1, 1));
+}
+
+TEST(SolverTest, ReportsUnderdeterminedSystemWhenNoPartitionIsSolved) {
+  auto x = Expression{};
+  auto solver = Solver{std::make_unique<FailingPartitionSolver>(
+      ErrorType::UnderdeterminedSystem)};
+  auto result = solver.Solve({x});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
+}
+
+TEST(SolverTest, ReportsUnderdeterminedLinearSystem) {
+  auto x = Expression{};
+  auto y = Expression{};
+  auto result = Solver{}.Solve({x + y - 1});
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().type(), ErrorType::UnderdeterminedSystem);
 }

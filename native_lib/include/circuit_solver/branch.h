@@ -1,5 +1,4 @@
-#ifndef BRANCH_H
-#define BRANCH_H
+#pragma once
 
 #include <memory>
 
@@ -7,6 +6,9 @@
 #include "circuit_solver/proto.h"
 #include "circuit_solver/vertex.h"
 
+namespace circuitsolver::branch {
+using circuitsolver::expression::Expression;
+using circuitsolver::vertex::Vertex;
 struct BranchConnections {
   Vertex from;
   Vertex to;
@@ -166,4 +168,4 @@ class ZenerDiode : public Branch {
  private:
   ZenerDiodeParameters parameters;
 };
-#endif
+}  // namespace circuitsolver::branch
