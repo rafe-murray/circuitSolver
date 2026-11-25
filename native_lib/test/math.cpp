@@ -77,3 +77,47 @@ TEST(MathTest, CeresOptimizationLarge) {
   EXPECT_TRUE(IsWithinRelativeTolerance(-2.40797, y.evaluate()));
   EXPECT_TRUE(IsWithinRelativeTolerance(1, z.evaluate()));
 }
+
+TEST(MathTest, LinearExpressions) {
+  using circuitsolver::expression::isLinear;
+  Expression x, y;
+  EXPECT_TRUE((x * 2 + y / 4 - 3).isLinear({}));
+  EXPECT_TRUE((x + Expression(1) / (Expression(1) + Expression(1) / y))
+                  .isLinear({}));
+  // Kernels that are affine functions of each other are the same kernel
+  EXPECT_TRUE(isLinear({x + Expression(1) / y, x - Expression(2) / y}, {}));
+  EXPECT_TRUE(isLinear({Expression(1) / (Expression(1) / x) + y, x - y}, {}));
+  EXPECT_FALSE((x * y).isLinear({}));
+  EXPECT_FALSE((x / y).isLinear({}));
+  EXPECT_FALSE((Expression(1) / (x + y)).isLinear({}));
+  EXPECT_FALSE((y + Expression(1) / y).isLinear({}));
+  EXPECT_FALSE(isLinear({x + y, Expression(1) / y}, {}));
+  EXPECT_FALSE(isLinear({circuitsolver::expression::exp(x), x}, {}));
+}
+
+TEST(MathTest, LinearExpressionsWithConditions) {
+  Expression x, y;
+  auto condition = x < 0;
+  Expression e = Expression::makeConditional(condition, x * y, x + y);
+  auto conditions = e.getConditions();
+  ASSERT_EQ(conditions.size(), 1);
+  const auto& ptr = *conditions.begin();
+  EXPECT_FALSE(e.isLinear({{ptr, true}}));
+  EXPECT_TRUE(e.isLinear({{ptr, false}}));
+}
+
+TEST(MathTest, LinearizeRecordsKernels) {
+  Expression x, y;
+  auto system = circuitsolver::expression::linearize(
+      {x + Expression(2) / (Expression(1) + Expression(1) / y) - 3}, {});
+  ASSERT_TRUE(system.has_value());
+  ASSERT_EQ(system->rows.size(), 1);
+  EXPECT_EQ(system->rows[0].constant, -3);
+  EXPECT_EQ(system->kernels.size(), 2);
+  const auto& yKernel = system->kernels.at(y.getPtrToUnknown());
+  EXPECT_EQ(system->rows[0].coefficients.at(yKernel), 2);
+  // z = 1 / (1 + 1/y) = 0.75 => y = 3
+  auto yValue = yKernel->invert(0.75);
+  ASSERT_TRUE(yValue.has_value());
+  EXPECT_TRUE(IsWithinRelativeTolerance(3, *yValue));
+}

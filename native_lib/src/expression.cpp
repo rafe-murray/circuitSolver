@@ -10,9 +10,12 @@
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <optional>
 #include <span>
 #include <stdexcept>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -250,10 +253,22 @@ auto Expression::makeConditional(const Condition& condition,
       std::move(valIfFalse.root))};
 }
 
-auto Expression::isConstant() const -> bool {
-  std::shared_ptr<VariableNode> v =
-      std::dynamic_pointer_cast<VariableNode>(root);
-  return v && v->known;
+namespace {
+auto nodeIsConstant(const ExpressionNodePtr& node) -> bool {
+  if (node->kind() == ExpressionNode::Kind::Variable) {
+    auto variable = std::static_pointer_cast<VariableNode>(node);
+    if (variable->known) {
+      return true;
+    }
+  }
+  return false;
+}
+}  // namespace
+
+auto Expression::isConstant() const -> bool { return nodeIsConstant(root); }
+
+auto Expression::isLinear(const ConditionMap& conditionMap) const -> bool {
+  return circuitsolver::expression::isLinear({*this}, conditionMap);
 }
 
 void Expression::setConditionMap(const ConditionMap& conditionMap) {
@@ -425,5 +440,256 @@ auto getDefaultOptions() -> ceres::Solver::Options {
   options.use_nonmonotonic_steps = true;
   options.max_consecutive_nonmonotonic_steps = maxConsecutiveNonMonotonicSteps;
   return options;
+}
+
+auto Kernel::invert(double value) const -> std::optional<double> {
+  switch (kind) {
+    case Kind::Unknown:
+      return value;
+    case Kind::Reciprocal:
+      // value = 1 / (inner + param)
+      if (value == 0) {
+        return std::nullopt;
+      }
+      return inner->invert((1 / value) - param);
+    case Kind::Exp:
+      // value = exp(param * inner)
+      if (value <= 0) {
+        return std::nullopt;
+      }
+      return inner->invert(std::log(value) / param);
+  }
+  return std::nullopt;
+}
+
+namespace {
+/// Interns kernels so that structurally equal kernels share a single pointer
+class KernelPool {
+ public:
+  auto unknown(double* value) -> KernelPtr {
+    return intern(Kernel::Kind::Unknown, value, nullptr, 0);
+  }
+  auto reciprocal(const KernelPtr& inner, double shift) -> KernelPtr {
+    return intern(Kernel::Kind::Reciprocal, inner->unknown, inner, shift);
+  }
+  auto exp(const KernelPtr& inner, double scale) -> KernelPtr {
+    return intern(Kernel::Kind::Exp, inner->unknown, inner, scale);
+  }
+
+ private:
+  auto intern(Kernel::Kind kind, double* unknown, const KernelPtr& inner,
+              double param) -> KernelPtr {
+    auto [it, inserted] =
+        kernels.try_emplace(std::tuple{kind, unknown, inner.get(), param});
+    if (inserted) {
+      it->second = std::make_shared<const Kernel>(Kernel{
+          .kind = kind,
+          .unknown = unknown,
+          .inner = inner,
+          .param = param,
+      });
+    }
+    return it->second;
+  }
+
+  std::map<std::tuple<Kernel::Kind, double*, const Kernel*, double>, KernelPtr>
+      kernels;
+};
+
+auto isConstantForm(const LinearForm& form) -> bool {
+  return form.coefficients.empty();
+}
+
+auto termForm(const KernelPtr& kernel, double coefficient) -> LinearForm {
+  return {.coefficients = {{kernel, coefficient}}};
+}
+
+auto scaled(LinearForm form, double factor) -> LinearForm {
+  if (factor == 0) {
+    return {};
+  }
+  form.constant *= factor;
+  for (auto& [kernel, coefficient] : form.coefficients) {
+    coefficient *= factor;
+  }
+  return form;
+}
+
+/// @return `lhs + sign * rhs`
+auto sum(LinearForm lhs, const LinearForm& rhs, double sign) -> LinearForm {
+  lhs.constant += sign * rhs.constant;
+  for (const auto& [kernel, coefficient] : rhs.coefficients) {
+    auto& total = lhs.coefficients[kernel];
+    total += sign * coefficient;
+    // Drop cancelled terms so e.g. (x + 1) - x is recognized as constant
+    if (total == 0) {
+      lhs.coefficients.erase(kernel);
+    }
+  }
+  return lhs;
+}
+
+auto product(const LinearForm& lhs, const LinearForm& rhs)
+    -> std::optional<LinearForm> {
+  if (isConstantForm(lhs)) {
+    return scaled(rhs, lhs.constant);
+  }
+  if (isConstantForm(rhs)) {
+    return scaled(lhs, rhs.constant);
+  }
+  return std::nullopt;
+}
+
+/// @return `1 / form`
+auto reciprocal(const LinearForm& form, KernelPool& pool)
+    -> std::optional<LinearForm> {
+  if (isConstantForm(form)) {
+    if (form.constant == 0) {
+      return std::nullopt;
+    }
+    return LinearForm{.constant = 1 / form.constant};
+  }
+  // A denominator of multiple kernels (e.g. 1/(x + y)) is a function of
+  // multiple unknowns, so it can't be replaced by a kernel
+  if (form.coefficients.size() != 1) {
+    return std::nullopt;
+  }
+  const auto& [kernel, a] = *form.coefficients.begin();
+  const double b = form.constant;
+  if (b == 0) {
+    switch (kernel->kind) {
+      case Kernel::Kind::Reciprocal:
+        // 1 / (a / (k + s)) = (k + s) / a
+        return scaled(
+            sum(termForm(kernel->inner, 1), {.constant = kernel->param}, 1),
+            1 / a);
+      case Kernel::Kind::Exp:
+        // 1 / (a * exp(s * k)) = exp(-s * k) / a
+        return termForm(pool.exp(kernel->inner, -kernel->param), 1 / a);
+      case Kernel::Kind::Unknown:
+        break;
+    }
+  }
+  // 1 / (a * k + b) = (1 / a) * 1 / (k + b / a)
+  return termForm(pool.reciprocal(kernel, b / a), 1 / a);
+}
+
+/// @return `exp(form)`
+auto exponential(const LinearForm& form, KernelPool& pool)
+    -> std::optional<LinearForm> {
+  if (isConstantForm(form)) {
+    return LinearForm{.constant = std::exp(form.constant)};
+  }
+  if (form.coefficients.size() != 1) {
+    return std::nullopt;
+  }
+  const auto& [kernel, a] = *form.coefficients.begin();
+  // exp(a * k + b) = exp(b) * exp(a * k)
+  return termForm(pool.exp(kernel, a), std::exp(form.constant));
+}
+
+/// Computes the LinearForm of `node`. Its children must already be in `forms`
+///
+/// @return the LinearForm, or std::nullopt if `node` is not an affine function
+/// of kernels
+auto nodeForm(
+    const ExpressionNodePtr& node,
+    const std::unordered_map<ExpressionNodePtr, std::optional<LinearForm>>&
+        forms,
+    const ConditionMap& conditionMap, KernelPool& pool)
+    -> std::optional<LinearForm> {
+  switch (node->kind()) {
+    case ExpressionNode::Kind::BinaryOp: {
+      auto binOp = std::static_pointer_cast<BinaryOpNode>(node);
+      const auto& lhs = forms.at(binOp->lhs);
+      const auto& rhs = forms.at(binOp->rhs);
+      if (!lhs || !rhs) {
+        return std::nullopt;
+      }
+      switch (binOp->op) {
+        case BinaryOpNode::Op::MUL:
+          return product(*lhs, *rhs);
+        case BinaryOpNode::Op::DIV: {
+          auto inverse = reciprocal(*rhs, pool);
+          if (!inverse) {
+            return std::nullopt;
+          }
+          return product(*lhs, *inverse);
+        }
+        case BinaryOpNode::Op::ADD:
+          return sum(*lhs, *rhs, 1);
+        case BinaryOpNode::Op::SUB:
+          return sum(*lhs, *rhs, -1);
+      }
+      break;
+    }
+    case ExpressionNode::Kind::TernaryOp: {
+      auto ternOp = std::static_pointer_cast<TernaryOpNode>(node);
+      return forms.at(conditionMap.at(ternOp->condition) ? ternOp->valIfTrue
+                                                         : ternOp->valIfFalse);
+    }
+    case ExpressionNode::Kind::UnaryOp: {
+      auto unOp = std::static_pointer_cast<UnaryOpNode>(node);
+      const auto& operand = forms.at(unOp->operand);
+      if (!operand) {
+        return std::nullopt;
+      }
+      switch (unOp->op) {
+        case UnaryOpNode::Op::EXP:
+          return exponential(*operand, pool);
+        case UnaryOpNode::Op::NEG:
+          return scaled(*operand, -1);
+      }
+      break;
+    }
+    case ExpressionNode::Kind::Variable: {
+      auto variable = std::static_pointer_cast<VariableNode>(node);
+      if (variable->known) {
+        return LinearForm{.constant = variable->value};
+      }
+      return termForm(pool.unknown(&variable->value), 1);
+    }
+  }
+  return std::nullopt;
+}
+}  // namespace
+
+auto linearize(const std::vector<Expression>& expressions,
+               const ConditionMap& conditionMap)
+    -> std::optional<LinearSystem> {
+  auto pool = KernelPool{};
+  // A node that can't be linearized only matters if it is reachable from a
+  // root through the branches selected by `conditionMap`, so failures are
+  // recorded rather than returned immediately
+  auto forms =
+      std::unordered_map<ExpressionNodePtr, std::optional<LinearForm>>{};
+  auto system = LinearSystem{};
+  system.rows.reserve(expressions.size());
+  for (const auto& expression : expressions) {
+    for (const auto& node : expression.nodes()) {
+      if (!forms.contains(node)) {
+        forms[node] = nodeForm(node, forms, conditionMap, pool);
+      }
+    }
+    const auto& form = forms.at(expression.root);
+    if (!form) {
+      return std::nullopt;
+    }
+    for (const auto& [kernel, coefficient] : form->coefficients) {
+      auto [it, inserted] = system.kernels.try_emplace(kernel->unknown, kernel);
+      // Each unknown must be replaced by a single kernel, otherwise e.g.
+      // y + 1/y would be treated as two independent unknowns
+      if (!inserted && it->second != kernel) {
+        return std::nullopt;
+      }
+    }
+    system.rows.push_back(*form);
+  }
+  return system;
+}
+
+auto isLinear(const std::vector<Expression>& expressions,
+              const ConditionMap& conditionMap) -> bool {
+  return linearize(expressions, conditionMap).has_value();
 }
 }  // namespace circuitsolver::expression

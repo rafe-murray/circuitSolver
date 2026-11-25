@@ -64,7 +64,6 @@ class LinearPartitionSolver : public PartitionSolver {
       -> std::expected<Solution, Error> override;
 };
 
-auto isExpressionLinear(const Expression& expression) -> bool;
 auto isPartitionLinear(const std::vector<Expression>& expressions,
                        ConditionMap conditionMap) -> bool;
 

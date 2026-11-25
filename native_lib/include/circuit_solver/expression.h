@@ -5,8 +5,10 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <span>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,6 +22,78 @@ class ExpressionCostFunctor;
 
 namespace circuitsolver::expression {
 class Expression;
+
+/// A function of a single unknown that a linear solver can treat as an unknown
+/// in its own right. Every kernel is injective, so the value of the unknown can
+/// be recovered from the value of the kernel with `invert`.
+///
+/// Kernels are canonicalized so that two kernels that are affine functions of
+/// one another are represented by the same kernel (e.g. 2/y and 1/y are both
+/// expressed in terms of the kernel 1/y).
+struct Kernel {
+  enum class Kind : uint8_t {
+    /// The unknown itself
+    Unknown,
+    /// `1 / (inner + param)`
+    Reciprocal,
+    /// `exp(param * inner)`
+    Exp,
+  };
+
+  Kind kind;
+
+  /// The single unknown this kernel depends on
+  double* unknown;
+
+  /// The kernel this one is applied to. `nullptr` iff `kind == Kind::Unknown`
+  std::shared_ptr<const Kernel> inner;
+
+  /// The shift (`Reciprocal`) or scale (`Exp`) applied to `inner`
+  double param = 0;
+
+  /// Computes the value of `unknown` that results in this kernel having the
+  /// value `value`
+  ///
+  /// @param value the value of this kernel
+  /// @return the value of `unknown`, or std::nullopt if `value` is outside of
+  /// the range of this kernel
+  [[nodiscard]] auto invert(double value) const -> std::optional<double>;
+};
+using KernelPtr = std::shared_ptr<const Kernel>;
+
+/// An affine function of kernels: `constant + sum(coefficient * kernel)`
+struct LinearForm {
+  double constant = 0;
+  std::unordered_map<KernelPtr, double> coefficients;
+};
+
+/// A system of expressions rewritten as a linear system over kernels
+struct LinearSystem {
+  /// `rows[i]` is equivalent to the i-th linearized expression. Each row is to
+  /// be solved for `rows[i] == 0`
+  std::vector<LinearForm> rows;
+
+  /// The kernel that replaces each unknown. Every kernel used in `rows` appears
+  /// here exactly once, so the map from unknowns to kernels is a bijection
+  std::unordered_map<double*, KernelPtr> kernels;
+};
+
+/// Rewrites `expressions` as a linear system by replacing nonlinear
+/// subexpressions of a single unknown with kernels (e.g. `x + 1/(1 + 1/y)`
+/// becomes `x + z` with `z = 1/(1 + 1/y)`)
+///
+/// @param expressions the expressions to linearize
+/// @param conditionMap the value of every condition the expressions depend on
+/// @return the linear system, or std::nullopt if no bijection between the
+/// unknowns and a set of kernels makes every expression linear
+auto linearize(const std::vector<Expression>& expressions,
+               const ConditionMap& conditionMap) -> std::optional<LinearSystem>;
+
+/// Checks if `expressions` can be solved by a linear solver
+///
+/// @return true iff `linearize(expressions, conditionMap)` succeeds
+auto isLinear(const std::vector<Expression>& expressions,
+              const ConditionMap& conditionMap) -> bool;
 
 /// Exponentiates an expression
 ///
@@ -102,7 +176,12 @@ class Expression {
   /// unknowns
   auto isConstant() const -> bool;
 
-  auto isLinear() const -> bool;
+  /// Checks if this expression can be solved by a linear solver
+  ///
+  /// @param conditionMap the value of every condition this expression depends
+  /// on
+  /// @return true iff `linearize({*this}, conditionMap)` succeeds
+  auto isLinear(const ConditionMap& conditionMap) const -> bool;
 
   /// Gets the unknowns this Expression depends on
   ///
@@ -249,6 +328,9 @@ class Expression {
   friend auto operator<<(std::ostream& out, const Expression& e)
       -> std::ostream&;
   friend auto exp(Expression arg) -> Expression;
+  friend auto linearize(const std::vector<Expression>& expressions,
+                        const ConditionMap& conditionMap)
+      -> std::optional<LinearSystem>;
 };
 
 auto getDefaultOptions() -> ceres::Solver::Options;

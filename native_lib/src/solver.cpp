@@ -212,8 +212,6 @@ auto Solver::Solve(const std::vector<Expression>& expressions)
   }
   return bestSolution;
 }
-auto isExpressionLinear(const Expression& expression) -> bool { return {}; }
-
 auto isPartitionLinear(const std::vector<Expression>& expressions,
                        ConditionMap conditionMap) -> bool {
   return {};
